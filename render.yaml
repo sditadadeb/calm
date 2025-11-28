@@ -1,0 +1,18 @@
+# Render Blueprint - Deploy automático
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Backend - Java Spring Boot
+  - type: web
+    name: numia-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: CORS_ORIGINS
+        value: "*"
+

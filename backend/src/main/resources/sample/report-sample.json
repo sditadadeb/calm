@@ -1,0 +1,12 @@
+{
+  "name": "Ana Pérez",
+  "role": "Software Engineer",
+  "period": "2025-Q4",
+  "rating": 5,
+  "comments": "Excellent work on the migration project and mentoring juniors.",
+  "metrics": {
+    "tasksCompleted": "32",
+    "codeQuality": "97%",
+    "onTimeDelivery": "100%"
+  }
+}

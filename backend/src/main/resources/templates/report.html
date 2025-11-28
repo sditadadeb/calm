@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Performance Review - Numia</title>
+    <style>
+      body { 
+        font-family: Arial, Helvetica, sans-serif; 
+        margin: 30px 40px; 
+        color: #1a1a1a; 
+        font-size: 10px; 
+        line-height: 1.4;
+      }
+      
+      /* Header */
+      .header { 
+        margin-bottom: 20px;
+      }
+      .header h1 { 
+        margin: 0; 
+        font-size: 18px; 
+        color: #7C3AED;
+        font-weight: 700;
+      }
+      .header h1 .review-text { 
+        text-decoration: underline;
+        text-decoration-color: #7C3AED;
+      }
+      .header h1 .grey { 
+        color: #6B7280;
+        font-weight: 400;
+      }
+      
+      /* Section titles */
+      h2 { 
+        font-size: 12px; 
+        color: #1a1a1a;
+        margin: 18px 0 10px 0;
+        font-weight: 700;
+      }
+      .underline-purple {
+        text-decoration: underline;
+        text-decoration-color: #7C3AED;
+        text-underline-offset: 2px;
+      }
+      h3 { 
+        font-size: 11px; 
+        color: #1a1a1a;
+        margin: 12px 0 6px 0;
+        font-weight: 700;
+      }
+      
+      /* Datos generales */
+      .datos-list {
+        margin: 8px 0;
+        padding-left: 18px;
+      }
+      .datos-list li {
+        margin: 4px 0;
+      }
+      .label-purple {
+        color: #7C3AED;
+        font-weight: 600;
+      }
+      
+      /* Tabla fechas */
+      .tabla-fechas {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 9px;
+      }
+      .tabla-fechas th {
+        background: #F9FAFB;
+        padding: 6px 8px;
+        text-align: center;
+        border: 1px solid #E5E7EB;
+        font-weight: 600;
+      }
+      .tabla-fechas td {
+        padding: 6px 8px;
+        text-align: center;
+        border: 1px solid #E5E7EB;
+      }
+      
+      /* Objetivos */
+      .objetivo {
+        margin: 10px 0;
+        padding-left: 15px;
+      }
+      .objetivo-header {
+        margin-bottom: 4px;
+      }
+      .objetivo-num {
+        font-weight: 700;
+      }
+      .objetivo-titulo {
+        font-weight: 600;
+      }
+      .ponderacion {
+        float: right;
+        color: #6B7280;
+        font-style: italic;
+        font-size: 9px;
+      }
+      .objetivo-desc {
+        margin: 4px 0 0 10px;
+        color: #374151;
+        font-size: 9px;
+        text-align: justify;
+      }
+      
+      /* Progreso */
+      .progreso-item {
+        margin: 8px 0;
+        padding-left: 18px;
+      }
+      .progreso-header {
+        margin-bottom: 3px;
+      }
+      .estado {
+        padding: 1px 6px;
+        border-radius: 2px;
+        font-size: 8px;
+        font-weight: 600;
+      }
+      .estado-cumplido {
+        background: #D1FAE5;
+        color: #065F46;
+      }
+      .estado-proceso {
+        background: #FEF3C7;
+        color: #92400E;
+      }
+      .estado-nocumplido {
+        background: #FEE2E2;
+        color: #991B1B;
+      }
+      .progreso-detalle {
+        margin: 2px 0 2px 10px;
+        font-size: 9px;
+        color: #4B5563;
+      }
+      
+      .resultado-box {
+        background: #7C3AED;
+        color: white;
+        padding: 6px 12px;
+        display: inline-block;
+        font-weight: 700;
+        font-size: 10px;
+        margin: 8px 0;
+      }
+      
+      /* Core Values */
+      .core-values-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0;
+        font-size: 9px;
+      }
+      .core-values-table th {
+        background: #F9FAFB;
+        padding: 5px;
+        text-align: center;
+        border: 1px solid #E5E7EB;
+        font-weight: 600;
+      }
+      .core-values-table td {
+        padding: 5px;
+        text-align: center;
+        border: 1px solid #E5E7EB;
+      }
+      .core-values-table td.cv-label {
+        text-align: left;
+        font-weight: 500;
+        padding-left: 8px;
+      }
+      .core-values-table td.cv-selected {
+        background: #7C3AED;
+        color: white;
+        font-weight: 700;
+      }
+      
+      /* Escala bono */
+      .escala-bono {
+        margin: 8px 0;
+        font-size: 9px;
+      }
+      .escala-bono ul {
+        margin: 4px 0;
+        padding-left: 18px;
+      }
+      .escala-bono li {
+        margin: 2px 0;
+      }
+      
+      /* Plan de acción */
+      .plan-item {
+        border-bottom: 1px solid #E5E7EB;
+        padding: 4px 0;
+        margin: 4px 0;
+      }
+      
+      /* Feedback */
+      .feedback-question {
+        font-weight: 600;
+        margin: 8px 0 4px 0;
+        padding-left: 18px;
+      }
+      .feedback-question:before {
+        content: "• ";
+        color: #1a1a1a;
+      }
+      .feedback-answer {
+        border-bottom: 1px solid #D1D5DB;
+        padding: 6px 0;
+        margin-left: 18px;
+        min-height: 16px;
+        font-size: 9px;
+      }
+      
+      /* Seguimiento */
+      .seguimiento-list {
+        margin: 8px 0;
+        padding-left: 18px;
+      }
+      .seguimiento-list li {
+        margin: 4px 0;
+      }
+      
+      /* Firma */
+      .firma-section {
+        margin-top: 30px;
+      }
+      .firma-row {
+        margin-top: 35px;
+      }
+      .firma-line {
+        display: inline-block;
+        width: 45%;
+        border-top: 1px solid #1a1a1a;
+        padding-top: 4px;
+        font-size: 9px;
+      }
+      .firma-line-right {
+        margin-left: 8%;
+      }
+      
+      /* Footer */
+      .footer {
+        margin-top: 25px;
+        padding-top: 8px;
+        border-top: 1px solid #E5E7EB;
+        font-size: 8px;
+        color: #6B7280;
+        text-align: center;
+      }
+
+      /* Page break hints */
+      .page-break {
+        page-break-before: always;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Performance <span class="review-text">Review</span> <span class="grey">&gt; Numia</span></h1>
+    </div>
+
+    <h2>1. Datos generales</h2>
+    <ul class="datos-list">
+      <li><span class="label-purple">Nombre del/de la colaborador/a:</span> {{nombre}}</li>
+      <li><span class="label-purple">Posición:</span> {{posicion}}</li>
+      <li><span class="label-purple">Fecha de ingreso:</span> {{fechaIngreso}}</li>
+      <li><span class="label-purple">Evaluador/a:</span> {{evaluador}}</li>
+    </ul>
+    
+    <table class="tabla-fechas">
+      <thead>
+        <tr>
+          <th>Definición de objetivos</th>
+          <th>Mid Year <span class="underline-purple">Review</span></th>
+          <th>Final <span class="underline-purple">Review</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{definicionObjetivos}}</td>
+          <td>{{midYearReview}}</td>
+          <td>{{finalReviewDate}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. Objetivos SMART de la posición</h2>
+    <p style="font-size: 9px; color: #6B7280; margin-bottom: 8px;">Peso: 100% total - distribución según cada objetivo</p>
+    {{objetivos}}
+
+    <h2>3. Progreso hacia los objetivos</h2>
+    
+    <h3>Mid Year <span class="underline-purple">Review</span></h3>
+    {{midYearProgreso}}
+    <div class="resultado-box">Resultado parcial Objetivos SMART: {{resultadoParcialSmart}}%</div>
+
+    <h3>Final <span class="underline-purple">Review</span></h3>
+    {{finalProgreso}}
+    <div class="resultado-box">Resultado restante final Objetivos SMART: {{resultadoFinalSmart}}%</div>
+
+    <h2>4. Core <span class="underline-purple">Values</span></h2>
+    <p style="font-size: 9px; color: #6B7280; margin-bottom: 6px;">Evalúa en una escala del 1 al 5:</p>
+    <table class="core-values-table">
+      <thead>
+        <tr>
+          <th style="width: 40%;">Core <span class="underline-purple">Value</span></th>
+          <th>1</th>
+          <th>2</th>
+          <th>3</th>
+          <th>4</th>
+          <th>5</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cv-label">Resolvemos eficientemente</td>
+          {{resolvemosEficientemente}}
+        </tr>
+        <tr>
+          <td class="cv-label">Somos transparentes</td>
+          {{somosTransparentes}}
+        </tr>
+        <tr>
+          <td class="cv-label">Nos desafiamos para mejorar</td>
+          {{nosDesafiamos}}
+        </tr>
+        <tr>
+          <td class="cv-label">Confiamos en el otro</td>
+          {{confiamosEnElOtro}}
+        </tr>
+      </tbody>
+    </table>
+    <div class="resultado-box">Resultado final Core <span style="text-decoration:underline">Values</span>: {{resultadoCoreValues}}/20</div>
+
+    <h2>5. Áreas de mejora</h2>
+    <p style="font-size: 9px; margin-bottom: 6px;">Identifica oportunidades de mejora según la performance resultante:</p>
+    <div class="escala-bono">
+      <ul>
+        <li><strong>16 a 20</strong> - Accede al 100% del bono.</li>
+        <li><strong>13 a 15</strong> - Bono para acompañamiento y accede al 75% del bono.</li>
+        <li><strong>10 a 12</strong> - Accede al 50% del bono.</li>
+        <li><strong>Debajo de 10</strong> - No accede al bono.</li>
+      </ul>
+    </div>
+    <p style="margin: 8px 0; font-size: 9px;">{{areasMejora}}</p>
+    
+    <p style="font-weight: 600; margin: 10px 0 6px 0;">Plan de acción para mejorar:</p>
+    <div class="plan-item">1. {{planAccion1}}</div>
+    <div class="plan-item">2. {{planAccion2}}</div>
+    <div class="plan-item">3. {{planAccion3}}</div>
+
+    <h2>6. <span class="underline-purple">Feedback</span> del colaborador</h2>
+    <div class="feedback-question">¿Qué opinas sobre tu desempeño hasta ahora?</div>
+    <div class="feedback-answer">{{feedbackDesempeno}}</div>
+    
+    <div class="feedback-question">¿Qué apoyo adicional necesitas para lograr tus objetivos?</div>
+    <div class="feedback-answer">{{feedbackApoyo}}</div>
+
+    <h2>7. Seguimiento</h2>
+    <p style="font-weight: 600; margin-bottom: 6px;">Próximos pasos y fechas:</p>
+    <ul class="seguimiento-list">
+      <li>Fecha Bono proporcional: {{fechaBonoProporcional}}</li>
+      <li>Fecha Bono restante (final): {{fechaBonoFinal}}</li>
+    </ul>
+    
+    <div class="firma-section">
+      <div class="firma-row">
+        <div class="firma-line">Firma del evaluador: _________________</div>
+        <div class="firma-line firma-line-right">Firma del colaborador: _________________</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Performance Review System - Numia © 2025
+    </div>
+  </body>
+</html>
