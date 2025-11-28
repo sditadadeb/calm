@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-ENV VITE_API_URL=https://performance-review-numia-api.onrender.com
+ENV VITE_API_URL=https://numia-backend.onrender.com
 RUN npm run build
 
 # Production stage - serve with nginx

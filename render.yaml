@@ -4,7 +4,7 @@
 services:
   # Backend - Java Spring Boot
   - type: web
-    name: performance-review-numia-api
+    name: numia-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
@@ -14,11 +14,11 @@ services:
       - key: PORT
         value: 8080
       - key: CORS_ORIGINS
-        value: https://performance-review-numia.onrender.com
+        value: https://numia-frontend.onrender.com
 
   # Frontend - React/Vite with Nginx
   - type: web
-    name: performance-review-numia
+    name: numia-frontend
     env: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
