@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(originPatterns = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS})
 public class AuthController {
 
     // Usuarios hardcodeados
@@ -67,4 +67,3 @@ public class AuthController {
         }
     }
 }
-
