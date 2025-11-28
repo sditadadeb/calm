@@ -14,5 +14,20 @@ services:
       - key: PORT
         value: 8080
       - key: CORS_ORIGINS
-        value: "*"
+        value: https://numia-frontend.onrender.com
 
+  # Frontend - React/Vite (Static Site)
+  - type: web
+    name: numia-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    region: oregon
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://numia-backend.onrender.com
