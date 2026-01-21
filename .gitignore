@@ -8,6 +8,11 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
+# Otros proyectos (ignorar)
+numia-surveys/
+numiaturecibo/
+numia-vision/
+
 # IDE
 .idea/
 *.iml

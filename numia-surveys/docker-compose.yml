@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: numia-surveys-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=jdbc:postgresql://db:5432/numia_surveys
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - MAILGUN_FROM=${MAILGUN_FROM}
+      - BULKSMS_TOKEN_ID=${BULKSMS_TOKEN_ID}
+      - BULKSMS_TOKEN_SECRET=${BULKSMS_TOKEN_SECRET}
+      - SURVEY_BASE_URL=${SURVEY_BASE_URL:-http://localhost/s}
+    depends_on:
+      - db
+    networks:
+      - numia-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: numia-surveys-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - numia-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: numia-surveys-db
+    environment:
+      - POSTGRES_DB=numia_surveys
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - numia-network
+    restart: unless-stopped
+
+networks:
+  numia-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

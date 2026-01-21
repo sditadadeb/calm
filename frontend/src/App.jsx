@@ -449,7 +449,22 @@ function PerformanceReview({ user, onLogout }) {
 
           {activeSection === 5 && (
             <section className="section">
-              <h2>5. Core Values</h2>
+              <h2>
+                5. Core Values
+                <a 
+                  href="https://docs.google.com/document/d/18vuVQirtcTrpnjU0OUNDkTj7A3weIH5fO4s8IKByjR4/edit?tab=t.0" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="info-icon"
+                  title="Ver documento de Core Values"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </a>
+              </h2>
               <p className="section-desc">Evalúa en una escala del 1 al 5</p>
               <div className="core-values-grid">
                 {[
