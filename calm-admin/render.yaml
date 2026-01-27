@@ -1,0 +1,49 @@
+# Render Blueprint - CALM Admin
+# Deploy: https://render.com/deploy?repo=https://github.com/sditadadeb/calm
+
+services:
+  # Backend API
+  - type: web
+    name: calm-admin-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AWS_S3_METADATA_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_METADATA_SECRET_KEY
+        sync: false
+      - key: AWS_S3_TRANSCRIPTIONS_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_TRANSCRIPTIONS_SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+    healthCheckPath: /actuator/health
+
+  # Frontend Static Site
+  - type: web
+    name: calm-admin-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: ./frontend
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
