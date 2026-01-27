@@ -6,9 +6,11 @@ import com.calm.admin.dto.TranscriptionDTO;
 import com.calm.admin.service.TranscriptionService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -86,6 +88,14 @@ public class TranscriptionController {
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncTranscriptions() {
         return ResponseEntity.ok(transcriptionService.forceSync());
+    }
+
+    /**
+     * Sync with Server-Sent Events for real-time progress updates.
+     */
+    @GetMapping(value = "/sync/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter syncWithProgress() {
+        return transcriptionService.forceSyncWithProgress();
     }
 
     @GetMapping("/sellers")

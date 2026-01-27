@@ -10,9 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -255,6 +259,106 @@ public class TranscriptionService {
         result.put("timestamp", LocalDateTime.now());
         
         return result;
+    }
+
+    /**
+     * Sync with Server-Sent Events for real-time progress updates.
+     */
+    public SseEmitter forceSyncWithProgress() {
+        SseEmitter emitter = new SseEmitter(600000L); // 10 minutes timeout
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        executor.execute(() -> {
+            try {
+                // Phase 1: Import from S3
+                sendEvent(emitter, "phase", "import", "Importando desde S3...", 0, 0);
+                
+                long beforeCount = repository.count();
+                List<String> recordingIds = s3Service.listAllRecordingIds();
+                int totalToImport = 0;
+                
+                // Count new ones first
+                List<String> newIds = new ArrayList<>();
+                for (String recordingId : recordingIds) {
+                    if (!repository.existsByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
+                        newIds.add(recordingId);
+                    }
+                }
+                totalToImport = newIds.size();
+                
+                sendEvent(emitter, "import_start", null, "Importando " + totalToImport + " transcripciones...", 0, totalToImport);
+                
+                int importedCount = 0;
+                for (String recordingId : newIds) {
+                    try {
+                        importTranscription(recordingId);
+                        importedCount++;
+                        sendEvent(emitter, "import_progress", recordingId, "Importando...", importedCount, totalToImport);
+                    } catch (Exception e) {
+                        log.error("Error importing {}: {}", recordingId, e.getMessage());
+                    }
+                }
+                
+                sendEvent(emitter, "import_complete", null, "Importación completada: " + importedCount, importedCount, totalToImport);
+                
+                // Phase 2: Analyze
+                List<Transcription> unanalyzed = repository.findByAnalyzedFalse();
+                int totalToAnalyze = unanalyzed.size();
+                
+                sendEvent(emitter, "analyze_start", null, "Analizando " + totalToAnalyze + " transcripciones...", 0, totalToAnalyze);
+                
+                int analyzedCount = 0;
+                for (Transcription transcription : unanalyzed) {
+                    try {
+                        analyzeTranscription(transcription.getRecordingId());
+                        analyzedCount++;
+                        sendEvent(emitter, "analyze_progress", transcription.getRecordingId(), 
+                                "Analizando: " + transcription.getUserName(), analyzedCount, totalToAnalyze);
+                    } catch (Exception e) {
+                        log.error("Error analyzing {}: {}", transcription.getRecordingId(), e.getMessage());
+                    }
+                }
+                
+                // Complete
+                Map<String, Object> result = new HashMap<>();
+                result.put("imported", importedCount);
+                result.put("analyzed", analyzedCount);
+                result.put("timestamp", LocalDateTime.now().toString());
+                
+                sendEvent(emitter, "complete", null, "Sincronización completada", analyzedCount, totalToAnalyze);
+                emitter.send(SseEmitter.event().name("result").data(result));
+                emitter.complete();
+                
+            } catch (Exception e) {
+                log.error("Error during sync with progress: {}", e.getMessage());
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(e.getMessage()));
+                    emitter.completeWithError(e);
+                } catch (IOException ignored) {}
+            } finally {
+                executor.shutdown();
+            }
+        });
+
+        emitter.onCompletion(executor::shutdown);
+        emitter.onTimeout(executor::shutdown);
+        
+        return emitter;
+    }
+
+    private void sendEvent(SseEmitter emitter, String type, String id, String message, int current, int total) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("type", type);
+            data.put("id", id);
+            data.put("message", message);
+            data.put("current", current);
+            data.put("total", total);
+            data.put("percent", total > 0 ? Math.round((current * 100.0) / total) : 0);
+            emitter.send(SseEmitter.event().name("progress").data(data));
+        } catch (IOException e) {
+            log.warn("Failed to send SSE event: {}", e.getMessage());
+        }
     }
     
     /**
