@@ -31,17 +31,65 @@ public class ChatGPTAnalyzerService {
     private static final String MAX_TOKENS_KEY = "openai_max_tokens";
 
     private static final String DEFAULT_PROMPT = """
-Eres un experto analista de ventas de colchones para la empresa CALM. 
+Eres un experto analista de ventas de colchones para la empresa CALM Argentina.
 Tu tarea es analizar transcripciones de interacciones entre vendedores y clientes en tiendas físicas.
+
+⚠️ IMPORTANTE: Las transcripciones pueden tener errores de reconocimiento de voz, palabras cortadas o caracteres extraños. 
+Debes interpretar el contexto general de la conversación.
+
+═══════════════════════════════════════════════════════════════════
+🔴 CRITERIOS PARA DETERMINAR SI HUBO VENTA (saleCompleted = true):
+═══════════════════════════════════════════════════════════════════
+
+⚠️ REGLA CRÍTICA: Si aparece CUALQUIERA de estas frases, ES VENTA (saleCompleted=true):
+- "dirección de entrega" o "direccion de entrega" 
+- "nombre y apellido"
+- "te llega mañana" / "llegando mañana" / "entregado para mañana"
+- "rango horario" / "horario de entrega"
+- "sale del depósito" / "envío a domicilio"
+
+Estas frases SOLO se dicen cuando YA SE CONCRETÓ la compra. No importa si después dice "chau" o "gracias".
+
+📦 SEÑALES DE PROCESO DE COMPRA (indica venta aunque no diga "lo compro"):
+- El vendedor pide DIRECCIÓN DE ENTREGA o datos de envío → ES VENTA
+- El vendedor pide NOMBRE Y APELLIDO del cliente → ES VENTA  
+- Se menciona una FECHA DE ENTREGA específica → ES VENTA
+- Se coordina un HORARIO DE ENTREGA → ES VENTA
+- El vendedor menciona que sale del DEPÓSITO para envío → ES VENTA
+
+💰 SEÑALES DE PAGO/TRANSACCIÓN:
+- Se menciona pasar tarjeta, transferencia, efectivo como pago actual
+- Se habla de cuotas o financiación COMO FORMA DE PAGO acordada
+- Se aplican descuentos específicos ("te queda en X pesos")
+- Se menciona seña o depósito para reservar
+
+✅ CONFIRMACIONES EXPLÍCITAS:
+- "lo llevo", "lo compro", "me lo quedo", "dale", "listo", "cerramos"
+- El cliente acepta una propuesta de precio final
+- Se genera factura o comprobante
+
+═══════════════════════════════════════════════════════════════════
+🟢 NO ES VENTA (saleCompleted = false) si:
+═══════════════════════════════════════════════════════════════════
+- Solo hay consultas de precios sin cierre
+- El cliente dice "lo pienso", "vuelvo", "consulto"
+- La conversación termina con "gracias" o "chau" sin confirmación de compra
+- Solo se muestran productos sin proceso de compra
+- El cliente está comparando y no decide
+
+⚠️ REGLA DE ORO: Si el vendedor pide datos de entrega (dirección, nombre), ES UNA VENTA.
+
+═══════════════════════════════════════════════════════════════════
 
 Debes responder SIEMPRE en formato JSON válido con la siguiente estructura exacta:
 {
     "saleCompleted": true/false,
+    "saleEvidence": "Cita la frase EXACTA de la transcripción que indica venta, o describe por qué no hubo venta",
     "noSaleReason": "string o null si hubo venta",
     "productsDiscussed": ["producto1", "producto2"],
     "customerObjections": ["objeción1", "objeción2"],
     "improvementSuggestions": ["sugerencia1", "sugerencia2"],
-    "executiveSummary": "Resumen ejecutivo de la interacción",
+    "executiveSummary": "Resumen ejecutivo de la interacción (2-3 oraciones)",
     "sellerScore": 1-10,
     "sellerStrengths": ["fortaleza1", "fortaleza2"],
     "sellerWeaknesses": ["debilidad1", "debilidad2"],
@@ -50,20 +98,21 @@ Debes responder SIEMPRE en formato JSON válido con la siguiente estructura exac
 
 CRITERIOS DE EVALUACIÓN PARA sellerScore (1-10):
 - 1-3: Atención deficiente, no muestra interés, no conoce productos
-- 4-5: Atención básica, responde preguntas pero no propone
-- 6-7: Buena atención, explica productos, intenta cerrar
-- 8-9: Excelente atención, maneja objeciones, técnicas de venta
-- 10: Excepcional, cierra venta con upselling/cross-selling
+- 4-5: Atención básica, responde preguntas pero no propone activamente
+- 6-7: Buena atención, explica productos, intenta cerrar venta
+- 8-9: Excelente atención, maneja objeciones, logra cerrar o casi cierra
+- 10: Excepcional, cierra venta con valor agregado (upselling/cross-selling)
 
-Para noSaleReason, categoriza en una de estas opciones si aplica:
+Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
 - "Precio alto"
-- "Comparando opciones"
+- "Comparando opciones"  
 - "Indecisión"
 - "Sin stock"
 - "Financiación"
 - "Tiempo de entrega"
 - "Medidas"
 - "Solo mirando"
+- "Volverá luego"
 - "Otro"
 """;
 
@@ -155,12 +204,70 @@ Para noSaleReason, categoriza en una de estas opciones si aplica:
                     .getContent();
 
             log.info("Received analysis response from ChatGPT");
-            return parseAnalysisResponse(response);
+            AnalysisResult result = parseAnalysisResponse(response);
+            
+            // Post-processing: Override ChatGPT decision if clear sale signals are detected
+            String saleSignal = detectSaleSignals(transcriptionText);
+            if (saleSignal != null && !result.isSaleCompleted()) {
+                log.info("Sale signal detected by keyword matching, overriding ChatGPT decision: {}", saleSignal);
+                result.setSaleCompleted(true);
+                result.setSaleEvidence("Detectado por palabras clave: " + saleSignal);
+                result.setNoSaleReason(null);
+            }
+            
+            return result;
 
         } catch (Exception e) {
             log.error("Error analyzing transcription with ChatGPT: {}", e.getMessage());
             return createMockAnalysis();
         }
+    }
+    
+    /**
+     * Detects clear sale signals in the transcription text using keyword matching.
+     * This acts as a safety net when ChatGPT fails to detect obvious sales.
+     * @return The detected signal phrase, or null if no clear sale signal found
+     */
+    private String detectSaleSignals(String text) {
+        if (text == null) return null;
+        
+        String lowerText = text.toLowerCase()
+                .replace("ã¡", "a").replace("ã©", "e").replace("ã­", "i")
+                .replace("ã³", "o").replace("ãº", "u").replace("ã±", "n");
+        
+        // Phrases that ONLY appear when a sale is being processed
+        String[][] saleSignals = {
+            {"direccion de entrega", "dirección de entrega"},
+            {"nombre y apellido"},
+            {"te llega manana", "te llega mañana", "llegando manana", "llegando mañana"},
+            {"entregado para manana", "entregado para mañana"},
+            {"rango horario de"},
+            {"coordinamos el envio", "coordinamos el envío"},
+            {"sale del deposito", "sale del depósito"},
+            {"genero la factura"},
+            {"paso la tarjeta", "pasame la tarjeta"},
+            {"te queda en", "te quedaria en"}  // Price confirmation
+        };
+        
+        for (String[] signals : saleSignals) {
+            for (String signal : signals) {
+                if (lowerText.contains(signal)) {
+                    return signal;
+                }
+            }
+        }
+        
+        // Combined signals: if address AND tomorrow/delivery mentioned
+        boolean hasDeliveryMention = lowerText.contains("envio") || lowerText.contains("envío") || 
+                                     lowerText.contains("entrega") || lowerText.contains("domicilio");
+        boolean hasTomorrowMention = lowerText.contains("manana") || lowerText.contains("mañana");
+        boolean hasNameRequest = lowerText.contains("nombre") || lowerText.contains("apellido");
+        
+        if (hasDeliveryMention && hasTomorrowMention && hasNameRequest) {
+            return "Combinación: nombre + entrega + mañana";
+        }
+        
+        return null;
     }
 
     private AnalysisResult parseAnalysisResponse(String response) {
@@ -178,6 +285,7 @@ Para noSaleReason, categoriza en una de estas opciones si aplica:
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
+            result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
             result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull() 
                     ? root.get("noSaleReason").asText() : null);
             result.setProductsDiscussed(jsonArrayToList(root.get("productsDiscussed")));
@@ -210,6 +318,7 @@ Para noSaleReason, categoriza en una de estas opciones si aplica:
     private AnalysisResult createMockAnalysis() {
         AnalysisResult result = new AnalysisResult();
         result.setSaleCompleted(false);
+        result.setSaleEvidence("Análisis no disponible");
         result.setNoSaleReason("Análisis pendiente - API Key no configurada");
         result.setProductsDiscussed(Arrays.asList("Pendiente de análisis"));
         result.setCustomerObjections(new ArrayList<>());

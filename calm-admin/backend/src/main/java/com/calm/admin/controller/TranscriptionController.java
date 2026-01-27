@@ -99,6 +99,15 @@ public class TranscriptionController {
     }
     
     /**
+     * Re-analiza solo las transcripciones marcadas como "no venta".
+     * Útil para corregir errores de detección después de mejorar el prompt.
+     */
+    @PostMapping("/reanalyze-no-sales")
+    public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
+        return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
+    }
+    
+    /**
      * Validates recording ID to prevent path traversal and injection attacks.
      */
     private void validateRecordingId(String recordingId) {

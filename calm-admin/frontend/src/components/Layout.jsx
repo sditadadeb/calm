@@ -53,12 +53,10 @@ export default function Layout({ children }) {
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="calm-logo">
-              calm
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-3xl font-bold text-[#FF8C00]">calm</span>
           </div>
-          <p className="text-xs text-gray-400 mt-2 ml-1">Panel de Administración</p>
+          <p className="text-xs text-gray-400 mt-1">Panel de Administración</p>
         </div>
 
         {/* Navigation */}

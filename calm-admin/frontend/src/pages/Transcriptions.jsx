@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock } from 'lucide-react';
 import useStore from '../store/useStore';
 import Filters from '../components/Filters';
@@ -8,11 +8,38 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Transcriptions() {
-  const { transcriptions, loading, fetchTranscriptions, analyzeTranscription } = useStore();
+  const { transcriptions, loading, fetchTranscriptions, analyzeTranscription, setFilters } = useStore();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    // Read URL params and set filters
+    const urlFilters = {};
+    
+    const userId = searchParams.get('userId');
+    const branchId = searchParams.get('branchId');
+    const saleCompleted = searchParams.get('saleCompleted');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const minScore = searchParams.get('minScore');
+    const maxScore = searchParams.get('maxScore');
+
+    if (userId) urlFilters.userId = userId;
+    if (branchId) urlFilters.branchId = branchId;
+    if (saleCompleted !== null && saleCompleted !== '') {
+      urlFilters.saleCompleted = saleCompleted === 'true';
+    }
+    if (dateFrom) urlFilters.dateFrom = dateFrom;
+    if (dateTo) urlFilters.dateTo = dateTo;
+    if (minScore) urlFilters.minScore = parseInt(minScore);
+    if (maxScore) urlFilters.maxScore = parseInt(maxScore);
+
+    // Set filters from URL if any exist
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+    }
+    
     fetchTranscriptions();
-  }, []);
+  }, [searchParams]);
 
   const handleAnalyze = async (recordingId, e) => {
     e.preventDefault();

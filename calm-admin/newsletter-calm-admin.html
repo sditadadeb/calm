@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter CALM Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #FF8C00 0%, #FFB347 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 35px;
+        }
+        
+        .section-title {
+            color: #FF8C00;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #FFE4C4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title .icon {
+            font-size: 1.5rem;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #FFF8F0 0%, #FFF5E6 100%);
+            border-left: 4px solid #FF8C00;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .highlight-box p {
+            margin: 0;
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th {
+            background: #FF8C00;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+        
+        .metric-card h4 {
+            color: #FF8C00;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .metric-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .metric-card li {
+            padding: 5px 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .metric-card li::before {
+            content: "•";
+            color: #FF8C00;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .benefit-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #FFE4C4;
+            text-align: center;
+        }
+        
+        .benefit-card h4 {
+            color: #FF8C00;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        
+        .benefit-card p {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .check-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .check-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .check-list li::before {
+            content: "✓";
+            color: white;
+            background: #4CAF50;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .tech-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
+        .badge {
+            background: #f0f0f0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        
+        .step {
+            text-align: center;
+            flex: 1;
+            padding: 15px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: #FF8C00;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: 600;
+        }
+        
+        .step p {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        .footer {
+            background: #333;
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        
+        .footer .logo {
+            color: #FF8C00;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .footer p {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .footer .tagline {
+            color: #FF8C00;
+            font-style: italic;
+            margin-top: 15px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">calm</div>
+            <h1>📊 CALM Admin Dashboard</h1>
+            <p class="subtitle">Sistema de Análisis Inteligente de Atenciones en Sucursales</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Introducción -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🎯</span> ¿Qué es?</h2>
+                <p>Desarrollamos un <strong>panel de administración inteligente</strong> que analiza automáticamente las transcripciones de las interacciones entre vendedores y clientes en nuestras sucursales físicas.</p>
+                
+                <div class="highlight-box">
+                    <p><strong>Utilizando Inteligencia Artificial (GPT-4)</strong>, el sistema evalúa cada conversación y genera métricas accionables para mejorar nuestras ventas.</p>
+                </div>
+            </div>
+            
+            <!-- Qué analiza -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🔍</span> ¿Qué analiza?</h2>
+                <p>Por cada atención en sucursal, el sistema determina:</p>
+                
+                <table>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Descripción</th>
+                    </tr>
+                    <tr>
+                        <td>✅ <strong>Venta concretada</strong></td>
+                        <td>Si el cliente compró o no</td>
+                    </tr>
+                    <tr>
+                        <td>📝 <strong>Evidencia de venta</strong></td>
+                        <td>Frase exacta que confirma la compra</td>
+                    </tr>
+                    <tr>
+                        <td>❓ <strong>Razón de no-venta</strong></td>
+                        <td>Por qué no se cerró (precio, indecisión, stock, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td>⭐ <strong>Score del vendedor</strong></td>
+                        <td>Puntuación 1-10 de la atención</td>
+                    </tr>
+                    <tr>
+                        <td>💪 <strong>Fortalezas</strong></td>
+                        <td>Qué hizo bien el vendedor</td>
+                    </tr>
+                    <tr>
+                        <td>📈 <strong>Áreas de mejora</strong></td>
+                        <td>Oportunidades de desarrollo</td>
+                    </tr>
+                    <tr>
+                        <td>🛏️ <strong>Productos mencionados</strong></td>
+                        <td>Qué colchones/productos se discutieron</td>
+                    </tr>
+                    <tr>
+                        <td>🎯 <strong>Objeciones del cliente</strong></td>
+                        <td>Dudas o resistencias detectadas</td>
+                    </tr>
+                    <tr>
+                        <td>📋 <strong>Resumen ejecutivo</strong></td>
+                        <td>Síntesis de la interacción</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Métricas del Dashboard -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">📊</span> Métricas del Dashboard</h2>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>🏢 A nivel empresa</h4>
+                        <ul>
+                            <li>Total de atenciones</li>
+                            <li>Tasa de conversión (% de ventas)</li>
+                            <li>Score promedio de vendedores</li>
+                            <li>Razones más frecuentes de no-venta</li>
+                        </ul>
+                    </div>
+                    <div class="metric-card">
+                        <h4>🏪 Por sucursal</h4>
+                        <ul>
+                            <li>Ranking de sucursales por conversión</li>
+                            <li>Comparativa de performance</li>
+                            <li>Volumen de atenciones</li>
+                        </ul>
+                    </div>
+                    <div class="metric-card">
+                        <h4>👤 Por vendedor</h4>
+                        <ul>
+                            <li>Ranking individual de vendedores</li>
+                            <li>Tasa de cierre personal</li>
+                            <li>Evolución de score</li>
+                            <li>Fortalezas y áreas de mejora</li>
+                        </ul>
+                    </div>
+                    <div class="metric-card">
+                        <h4>📈 Tendencias</h4>
+                        <ul>
+                            <li>Objeciones más comunes</li>
+                            <li>Productos más consultados</li>
+                            <li>Patrones de no-venta</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Beneficios -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🎯</span> Beneficios</h2>
+                
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <h4>📊 Para Gerencia</h4>
+                        <p>Visibilidad completa del funnel de ventas. Decisiones basadas en datos. ROI de capacitaciones.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>👥 Para Supervisores</h4>
+                        <p>Identificar mejores prácticas. Coaching personalizado. Detectar necesidades de training.</p>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>🏆 Para Vendedores</h4>
+                        <p>Feedback objetivo y constructivo. Saber qué mejorar. Reconocimiento por buen desempeño.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seguridad -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🔒</span> Seguridad</h2>
+                <p>El sistema cuenta con múltiples capas de protección:</p>
+                
+                <ul class="check-list">
+                    <li>Autenticación con usuario y contraseña</li>
+                    <li>Tokens de sesión seguros (JWT)</li>
+                    <li>Protección contra ataques de fuerza bruta</li>
+                    <li>Datos encriptados</li>
+                    <li>Acceso restringido solo a usuarios autorizados</li>
+                </ul>
+            </div>
+            
+            <!-- Tecnología -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🛠️</span> Tecnología</h2>
+                
+                <div class="tech-badges">
+                    <span class="badge">☕ Java + Spring Boot</span>
+                    <span class="badge">⚛️ React</span>
+                    <span class="badge">🤖 OpenAI GPT-4</span>
+                    <span class="badge">☁️ AWS S3</span>
+                    <span class="badge">🔐 JWT Auth</span>
+                </div>
+            </div>
+            
+            <!-- Próximos pasos -->
+            <div class="section">
+                <h2 class="section-title"><span class="icon">🚀</span> Próximos pasos</h2>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <p>Piloto con equipo de supervisores</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <p>Capacitación en uso del dashboard</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <p>Iteración basada en feedback</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <p>Rollout a todas las sucursales</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Nota final -->
+            <div class="highlight-box">
+                <p>💡 <strong>Importante:</strong> El dashboard está diseñado para ser una herramienta de <strong>mejora continua</strong>, no de fiscalización. El objetivo es potenciar las habilidades de nuestro equipo comercial y aumentar la satisfacción de nuestros clientes.</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="logo">calm</div>
+            <p>#TeamCALM</p>
+            <p class="tagline">"Porque un buen descanso empieza con una buena atención"</p>
+        </div>
+    </div>
+</body>
+</html>
+

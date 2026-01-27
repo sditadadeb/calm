@@ -106,6 +106,7 @@ public class TranscriptionService {
         );
         
         transcription.setSaleCompleted(analysis.isSaleCompleted());
+        transcription.setSaleEvidence(analysis.getSaleEvidence());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
         transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
         transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
@@ -153,6 +154,8 @@ public class TranscriptionService {
 
     public DashboardMetricsDTO getDashboardMetrics() {
         long total = repository.count();
+        long analyzed = repository.countAnalyzed();
+        long pendingAnalysis = repository.countPendingAnalysis();
         long sales = repository.countSales();
         long noSales = repository.countNoSales();
         Double avgScore = repository.averageSellerScore();
@@ -165,9 +168,9 @@ public class TranscriptionService {
                     sm.setBranchName((String) row[2]);
                     sm.setTotalInteractions(((Number) row[3]).longValue());
                     sm.setSales(((Number) row[4]).longValue());
-                    sm.setNoSales(((Number) row[3]).longValue() - ((Number) row[4]).longValue());
+                    sm.setNoSales(((Number) row[5]).longValue()); // Ahora viene directo de la query
                     sm.setConversionRate(calculateRate(((Number) row[4]).longValue(), ((Number) row[3]).longValue()));
-                    sm.setAverageScore(row[5] != null ? ((Number) row[5]).doubleValue() : 0.0);
+                    sm.setAverageScore(row[6] != null ? ((Number) row[6]).doubleValue() : 0.0);
                     return sm;
                 })
                 .sorted((a, b) -> Double.compare(b.getConversionRate(), a.getConversionRate()))
@@ -180,9 +183,9 @@ public class TranscriptionService {
                     bm.setBranchName((String) row[1]);
                     bm.setTotalInteractions(((Number) row[2]).longValue());
                     bm.setSales(((Number) row[3]).longValue());
-                    bm.setNoSales(((Number) row[2]).longValue() - ((Number) row[3]).longValue());
+                    bm.setNoSales(((Number) row[4]).longValue()); // Ahora viene directo de la query
                     bm.setConversionRate(calculateRate(((Number) row[3]).longValue(), ((Number) row[2]).longValue()));
-                    bm.setAverageScore(row[4] != null ? ((Number) row[4]).doubleValue() : 0.0);
+                    bm.setAverageScore(row[5] != null ? ((Number) row[5]).doubleValue() : 0.0);
                     return bm;
                 })
                 .sorted((a, b) -> Double.compare(b.getConversionRate(), a.getConversionRate()))
@@ -198,9 +201,12 @@ public class TranscriptionService {
         
         DashboardMetricsDTO metrics = new DashboardMetricsDTO();
         metrics.setTotalTranscriptions(total);
+        metrics.setAnalyzedTranscriptions(analyzed);
+        metrics.setPendingAnalysis(pendingAnalysis);
         metrics.setTotalSales(sales);
         metrics.setTotalNoSales(noSales);
-        metrics.setConversionRate(calculateRate(sales, total));
+        // Conversión basada en ANALIZADAS, no en total
+        metrics.setConversionRate(calculateRate(sales, analyzed));
         metrics.setAverageSellerScore(avgScore != null ? avgScore : 0.0);
         metrics.setSellerMetrics(sellerMetrics);
         metrics.setBranchMetrics(branchMetrics);
@@ -250,6 +256,49 @@ public class TranscriptionService {
         
         return result;
     }
+    
+    /**
+     * Re-analiza solo las transcripciones marcadas como "no venta".
+     * Útil para corregir posibles errores de detección después de mejorar el prompt.
+     */
+    @Transactional
+    public Map<String, Object> reanalyzeNoSales() {
+        List<Transcription> noSales = repository.findAnalyzedNoSales();
+        log.info("🔄 Re-analizando {} transcripciones marcadas como 'no venta'...", noSales.size());
+        
+        int reanalyzed = 0;
+        int corrected = 0;
+        
+        for (Transcription transcription : noSales) {
+            try {
+                boolean wasSale = transcription.getSaleCompleted() != null && transcription.getSaleCompleted();
+                
+                // Re-analyze
+                analyzeTranscription(transcription.getRecordingId());
+                reanalyzed++;
+                
+                // Check if it was corrected
+                Transcription updated = repository.findById(transcription.getRecordingId()).orElse(null);
+                if (updated != null && updated.getSaleCompleted() != null && updated.getSaleCompleted() && !wasSale) {
+                    corrected++;
+                    log.info("✅ Corregida: {} - {} (ahora es VENTA)", 
+                            transcription.getRecordingId(), transcription.getUserName());
+                }
+            } catch (Exception e) {
+                log.error("Error re-analizando {}: {}", transcription.getRecordingId(), e.getMessage());
+            }
+        }
+        
+        log.info("🏁 Re-análisis completado: {} procesadas, {} corregidas a VENTA", reanalyzed, corrected);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalNoSales", noSales.size());
+        result.put("reanalyzed", reanalyzed);
+        result.put("correctedToSale", corrected);
+        result.put("timestamp", LocalDateTime.now());
+        
+        return result;
+    }
 
     private boolean hasAnyFilter(FilterDTO filter) {
         return filter.getUserId() != null ||
@@ -275,6 +324,7 @@ public class TranscriptionService {
         dto.setBranchName(t.getBranchName());
         dto.setTranscriptionText(t.getTranscriptionText());
         dto.setSaleCompleted(t.getSaleCompleted());
+        dto.setSaleEvidence(t.getSaleEvidence());
         dto.setNoSaleReason(t.getNoSaleReason());
         dto.setProductsDiscussed(t.getProductsDiscussed() != null 
                 ? Arrays.asList(t.getProductsDiscussed().split(", ")) : new ArrayList<>());

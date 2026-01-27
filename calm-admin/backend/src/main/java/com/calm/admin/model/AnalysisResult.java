@@ -5,6 +5,7 @@ import java.util.List;
 public class AnalysisResult {
     
     private boolean saleCompleted;
+    private String saleEvidence; // Evidencia que confirma/descarta la venta
     private String noSaleReason;
     private List<String> productsDiscussed;
     private List<String> customerObjections;
@@ -19,6 +20,9 @@ public class AnalysisResult {
 
     public boolean isSaleCompleted() { return saleCompleted; }
     public void setSaleCompleted(boolean saleCompleted) { this.saleCompleted = saleCompleted; }
+
+    public String getSaleEvidence() { return saleEvidence; }
+    public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
 
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }

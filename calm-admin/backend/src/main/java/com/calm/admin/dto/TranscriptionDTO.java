@@ -12,6 +12,7 @@ public class TranscriptionDTO {
     private String branchName;
     private String transcriptionText;
     private Boolean saleCompleted;
+    private String saleEvidence;
     private String noSaleReason;
     private List<String> productsDiscussed;
     private List<String> customerObjections;
@@ -46,6 +47,9 @@ public class TranscriptionDTO {
 
     public Boolean getSaleCompleted() { return saleCompleted; }
     public void setSaleCompleted(Boolean saleCompleted) { this.saleCompleted = saleCompleted; }
+
+    public String getSaleEvidence() { return saleEvidence; }
+    public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
 
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }

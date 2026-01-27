@@ -6,6 +6,8 @@ import java.util.Map;
 public class DashboardMetricsDTO {
     
     private long totalTranscriptions;
+    private long analyzedTranscriptions;
+    private long pendingAnalysis;
     private long totalSales;
     private long totalNoSales;
     private double conversionRate;
@@ -20,6 +22,12 @@ public class DashboardMetricsDTO {
 
     public long getTotalTranscriptions() { return totalTranscriptions; }
     public void setTotalTranscriptions(long totalTranscriptions) { this.totalTranscriptions = totalTranscriptions; }
+
+    public long getAnalyzedTranscriptions() { return analyzedTranscriptions; }
+    public void setAnalyzedTranscriptions(long analyzedTranscriptions) { this.analyzedTranscriptions = analyzedTranscriptions; }
+
+    public long getPendingAnalysis() { return pendingAnalysis; }
+    public void setPendingAnalysis(long pendingAnalysis) { this.pendingAnalysis = pendingAnalysis; }
 
     public long getTotalSales() { return totalSales; }
     public void setTotalSales(long totalSales) { this.totalSales = totalSales; }

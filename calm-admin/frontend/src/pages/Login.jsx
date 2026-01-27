@@ -42,10 +42,12 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md px-6">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-[#f5a203] to-[#F7931E] mb-4 shadow-lg shadow-orange-500/30">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#FF8C00] mb-4 shadow-lg shadow-orange-500/30">
             <span className="text-4xl font-bold text-white">C</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">CALM Admin</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            <span className="text-[#FF8C00]">calm</span> Admin
+          </h1>
           <p className="text-gray-400">Panel de Análisis de Ventas</p>
         </div>
 
