@@ -1,26 +1,43 @@
-# Render Blueprint - Deploy automático
-# https://render.com/docs/blueprint-spec
-
+# Render Blueprint - CALM Admin Dashboard
 services:
-  # Backend - Java Spring Boot
   - type: web
-    name: numia-backend
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    region: oregon
+    name: calm-admin-api
+    runtime: docker
+    dockerfilePath: ./calm-admin/backend/Dockerfile
+    dockerContext: ./calm-admin/backend
     plan: free
     envVars:
-      - key: PORT
-        value: 8080
-      - key: CORS_ORIGINS
-        value: https://numia-frontend.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AWS_S3_METADATA_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_METADATA_SECRET_KEY
+        sync: false
+      - key: AWS_S3_TRANSCRIPTIONS_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_TRANSCRIPTIONS_SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+    healthCheckPath: /actuator/health
 
-  # Frontend - React/Vite with Nginx
   - type: web
-    name: numia-frontend
-    env: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
-    region: oregon
+    name: calm-admin-frontend
+    runtime: static
+    rootDir: ./calm-admin/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     plan: free
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
