@@ -1,13 +1,11 @@
-# Render Blueprint - CALM Admin
-# Deploy: https://render.com/deploy?repo=https://github.com/sditadadeb/calm
-
+# Render Blueprint - CALM Admin Dashboard
 services:
-  # Backend API
   - type: web
     name: calm-admin-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    plan: free
     envVars:
       - key: JWT_SECRET
         generateValue: true
@@ -29,20 +27,16 @@ services:
         sync: false
     healthCheckPath: /actuator/health
 
-  # Frontend Static Site
   - type: web
     name: calm-admin-frontend
     runtime: static
+    rootDir: ./frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    rootDir: ./frontend
+    plan: free
     envVars:
       - key: VITE_API_URL
         sync: false
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
     routes:
       - type: rewrite
         source: /*
