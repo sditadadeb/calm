@@ -136,13 +136,10 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FF6B35] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">C</span>
+            <div className="px-3 py-1.5 rounded-lg bg-[#F5A623]">
+              <span className="text-white font-bold text-lg">calm</span>
             </div>
-            <div>
-              <span className="text-xl font-bold text-[#FF6B35]">calm</span>
-              <span className="text-xl font-light text-white"> Admin</span>
-            </div>
+            <span className="text-xl font-light text-white">Admin</span>
           </div>
           <p className="text-xs text-slate-400 mt-2">Panel de Administración</p>
         </div>
@@ -161,7 +158,7 @@ export default function Layout({ children }) {
                   to={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-[#FF6B35] text-white shadow-lg shadow-[#FF6B35]/30' 
+                      ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
                       : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
@@ -185,7 +182,7 @@ export default function Layout({ children }) {
                       to={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                         isActive 
-                          ? 'bg-[#FF6B35] text-white shadow-lg shadow-[#FF6B35]/30' 
+                          ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
                           : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                       }`}
                     >
@@ -200,7 +197,7 @@ export default function Layout({ children }) {
                   <button
                     onClick={handleSync}
                     disabled={syncing || loading}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] hover:from-[#E55A2B] hover:to-[#FF6B35] transition-all duration-200 shadow-lg shadow-[#FF6B35]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-[#F5A623] to-[#FFBB54] hover:from-[#D4911F] hover:to-[#F5A623] transition-all duration-200 shadow-lg shadow-[#F5A623]/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
                     <span className="font-medium text-sm">
@@ -215,7 +212,7 @@ export default function Layout({ children }) {
                     <div className="mt-3">
                       <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] h-2 rounded-full transition-all duration-300 ease-out"
+                          className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] h-2 rounded-full transition-all duration-300 ease-out"
                           style={{ width: `${syncProgress.percent}%` }}
                         />
                       </div>
@@ -261,7 +258,7 @@ export default function Layout({ children }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-slate-700 rounded-xl">
-                    <PageIcon className="w-6 h-6 text-[#FF6B35]" />
+                    <PageIcon className="w-6 h-6 text-[#F5A623]" />
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-white">{currentPage.name}</h1>
@@ -276,7 +273,7 @@ export default function Layout({ children }) {
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-slate-500 uppercase tracking-wide">Conversión</p>
-                      <p className="text-2xl font-bold text-[#FF6B35]">{dashboardMetrics?.conversionRate || '--'}%</p>
+                      <p className="text-2xl font-bold text-[#F5A623]">{dashboardMetrics?.conversionRate || '--'}%</p>
                     </div>
                   </div>
                   <span className="text-sm text-slate-300 bg-slate-700 px-4 py-2 rounded-full">
@@ -287,7 +284,7 @@ export default function Layout({ children }) {
                     })}
                   </span>
                   {/* Meta Badge */}
-                  <div className="hidden lg:flex items-center gap-2 bg-[#FF6B35]/20 text-[#FF6B35] px-4 py-2 rounded-full border border-[#FF6B35]/30">
+                  <div className="hidden lg:flex items-center gap-2 bg-[#F5A623]/20 text-[#F5A623] px-4 py-2 rounded-full border border-[#F5A623]/30">
                     <TrendingUp className="w-4 h-4" />
                     <span className="text-sm font-medium">Meta: {metaPercent}% cumplida</span>
                   </div>

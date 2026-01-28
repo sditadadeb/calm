@@ -9,17 +9,17 @@ export default function MetricCard({
   trendValue,
   variant = 'default' 
 }) {
-  // Variantes con colores CALM (naranja #FF6B35)
+  // Variantes con colores CALM (naranja #F5A623)
   const variants = {
-    default: 'bg-slate-800 border-l-4 border-l-[#FF6B35] border border-slate-700',
-    primary: 'bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] text-white border-0',
+    default: 'bg-slate-800 border-l-4 border-l-[#F5A623] border border-slate-700',
+    primary: 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white border-0',
     success: 'bg-slate-800 border-l-4 border-l-green-500 border border-slate-700',
     danger: 'bg-slate-800 border-l-4 border-l-red-500 border border-slate-700',
     warning: 'bg-slate-800 border-l-4 border-l-amber-500 border border-slate-700',
   };
 
   const iconBg = {
-    default: 'bg-[#FF6B35]/20 text-[#FF6B35]',
+    default: 'bg-[#F5A623]/20 text-[#F5A623]',
     primary: 'bg-white/20 text-white',
     success: 'bg-green-500/20 text-green-400',
     danger: 'bg-red-500/20 text-red-400',

@@ -25,7 +25,7 @@ import useStore from '../store/useStore';
 import MetricCard from '../components/MetricCard';
 
 // Colores CALM
-const COLORS = ['#FF6B35', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
+const COLORS = ['#F5A623', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 
 export default function Dashboard() {
   const { dashboardMetrics, loading, fetchDashboardMetrics } = useStore();
@@ -38,7 +38,7 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="mt-4 text-slate-400">Cargando datos...</p>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function Dashboard() {
     return (
       <div className="bg-slate-800 rounded-2xl p-12 text-center border border-slate-700">
         <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-8 h-8 text-[#FF6B35]" />
+          <FileText className="w-8 h-8 text-[#F5A623]" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">Sin datos disponibles</h3>
         <p className="text-slate-400">Sincroniza desde S3 para comenzar</p>
@@ -121,7 +121,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-bold text-white">Top Vendedores</h3>
               <p className="text-sm text-slate-400">Comparativa de ventas</p>
             </div>
-            <Link to="/sellers" className="text-sm text-[#FF6B35] font-semibold flex items-center gap-1 hover:text-[#FF8C5A]">
+            <Link to="/sellers" className="text-sm text-[#F5A623] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
               Ver todos <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -208,8 +208,8 @@ export default function Dashboard() {
         {/* Top Sellers Ranking */}
         <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#FF6B35]/20 rounded-xl">
-              <Users className="w-5 h-5 text-[#FF6B35]" />
+            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
+              <Users className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
               <h3 className="font-bold text-white">Ranking Vendedores</h3>
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   'bg-slate-600 text-slate-300'
@@ -246,8 +246,8 @@ export default function Dashboard() {
         {/* Branch Performance */}
         <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#FF6B35]/20 rounded-xl">
-              <Building2 className="w-5 h-5 text-[#FF6B35]" />
+            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
+              <Building2 className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
               <h3 className="font-bold text-white">Rendimiento Sucursales</h3>
@@ -261,7 +261,7 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   'bg-slate-600 text-slate-300'

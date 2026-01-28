@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --calm-orange: #FF6B35;
-  --calm-orange-light: #FF8C5A;
-  --calm-orange-dark: #E55A2B;
+  --calm-yellow: #F5A623;
+  --calm-yellow-light: #FFBB54;
+  --calm-yellow-dark: #D4911F;
   --calm-slate-900: #0f172a;
   --calm-slate-800: #1e293b;
   --calm-slate-700: #334155;
@@ -41,7 +41,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF6B35;
+  background: #F5A623;
 }
 
 /* Card styles - Dark theme */
@@ -64,7 +64,7 @@ body {
   border-radius: 16px;
   padding: 24px;
   border: 1px solid #334155;
-  border-left: 4px solid #FF6B35;
+  border-left: 4px solid #F5A623;
   transition: all 0.3s ease;
 }
 
@@ -100,7 +100,7 @@ body {
 
 .badge-pending {
   background: rgba(255, 107, 53, 0.2);
-  color: #FF6B35;
+  color: #F5A623;
   font-weight: 600;
 }
 
@@ -129,7 +129,7 @@ body {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #FF6B35;
+  border-bottom: 2px solid #F5A623;
 }
 
 .data-table tbody tr {
@@ -168,7 +168,7 @@ body {
 
 /* Button styles - CALM orange */
 .btn-primary {
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
   color: white;
   font-weight: 600;
   padding: 12px 24px;
@@ -204,8 +204,8 @@ body {
 }
 
 .btn-secondary:hover {
-  border-color: #FF6B35;
-  color: #FF6B35;
+  border-color: #F5A623;
+  color: #F5A623;
   background: rgba(255, 107, 53, 0.1);
 }
 
@@ -223,7 +223,7 @@ body {
 
 .input-field:focus {
   outline: none;
-  border-color: #FF6B35;
+  border-color: #F5A623;
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
 }
 
@@ -258,7 +258,7 @@ select.input-field option {
 
 .tag-primary {
   background: rgba(255, 107, 53, 0.2);
-  color: #FF6B35;
+  color: #F5A623;
 }
 
 .tag-success {
@@ -288,12 +288,12 @@ select.input-field option {
   height: 100%;
   border-radius: 4px;
   transition: width 0.5s ease;
-  background: linear-gradient(90deg, #FF6B35, #FF8C5A);
+  background: linear-gradient(90deg, #F5A623, #FFBB54);
 }
 
 /* Ranking badges - CALM colors */
 .rank-badge-1 {
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
   color: white;
 }
 
@@ -326,7 +326,7 @@ select.input-field option {
 }
 
 .sidebar-nav-item.active {
-  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+  background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
 }
