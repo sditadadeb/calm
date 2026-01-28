@@ -601,4 +601,14 @@ public class AdvancedAnalyzerService {
         
         return emitter;
     }
+    
+    /**
+     * Borra todos los análisis avanzados para poder re-ejecutar
+     */
+    public long clearAllAnalyses() {
+        long count = advancedAnalysisRepository.count();
+        advancedAnalysisRepository.deleteAll();
+        logger.info("Deleted {} advanced analyses", count);
+        return count;
+    }
 }

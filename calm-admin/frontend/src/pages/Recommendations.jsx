@@ -19,7 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import useStore from '../store/useStore';
-import { getRecommendationsMetrics, getRecommendationsByVendor } from '../api';
+import { getRecommendationsMetrics, getRecommendationsByVendor, clearRecommendationsAnalyses } from '../api';
 import {
   RadarChart,
   PolarGrid,
@@ -199,6 +199,22 @@ export default function Recommendations() {
         alert(`Reintento completado: ${analysisProgress.current} transcripciones procesadas`);
       }
     });
+  };
+
+  // Limpiar todos los análisis para re-ejecutar
+  const clearAnalyses = async () => {
+    if (!confirm('¿Estás seguro? Esto borrará todos los análisis avanzados y deberás ejecutarlos de nuevo.')) {
+      return;
+    }
+    
+    try {
+      const response = await clearRecommendationsAnalyses();
+      alert(`Se borraron ${response.data.deleted} análisis. Ahora puedes ejecutar el análisis nuevamente.`);
+      loadAdvancedMetrics();
+    } catch (error) {
+      console.error('Error clearing analyses:', error);
+      alert('Error al borrar los análisis: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   const hasAdvancedData = advancedMetrics?.hasData;
@@ -1124,6 +1140,23 @@ export default function Recommendations() {
                 >
                   <RefreshCw className="w-4 h-4" />
                   Reintentar ({missingCount})
+                </button>
+              )}
+              
+              {/* Botón de limpiar análisis */}
+              {hasAdvancedData && (
+                <button
+                  onClick={clearAnalyses}
+                  disabled={analyzing}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                    analyzing 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                  }`}
+                  title="Borrar todos los análisis para re-ejecutar"
+                >
+                  <Database className="w-4 h-4" />
+                  Limpiar
                 </button>
               )}
             </div>

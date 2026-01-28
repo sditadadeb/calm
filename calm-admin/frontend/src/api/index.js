@@ -82,5 +82,6 @@ export const resetPromptConfig = () => api.post('/config/prompt/reset');
 // Recommendations (Advanced Analysis)
 export const getRecommendationsMetrics = () => api.get('/recommendations/metrics');
 export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');
+export const clearRecommendationsAnalyses = () => api.delete('/recommendations/clear');
 
 export default api;

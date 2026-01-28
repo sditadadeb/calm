@@ -63,4 +63,19 @@ public class RecommendationsController {
     public SseEmitter retryMissing() {
         return advancedAnalyzerService.retryMissingAnalyses();
     }
+    
+    /**
+     * Borra todos los análisis avanzados para poder re-ejecutar
+     * Solo ADMIN puede ejecutar
+     */
+    @DeleteMapping("/clear")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> clearAnalyses() {
+        long deleted = advancedAnalyzerService.clearAllAnalyses();
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "deleted", deleted,
+            "message", "Análisis borrados. Puede ejecutar el análisis nuevamente."
+        ));
+    }
 }
