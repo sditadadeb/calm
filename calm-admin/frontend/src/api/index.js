@@ -22,11 +22,11 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401 responses (unauthorized)
+// Handle 401/403 responses (unauthorized/forbidden - token expired or invalid)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
