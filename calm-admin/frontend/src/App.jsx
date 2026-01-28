@@ -9,6 +9,7 @@ import Sellers from './pages/Sellers';
 import Branches from './pages/Branches';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
+import Recommendations from './pages/Recommendations';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
                 <Route path="/transcriptions/:id" element={<TranscriptionDetail />} />
                 <Route path="/sellers" element={<Sellers />} />
                 <Route path="/branches" element={<Branches />} />
+                <Route path="/recommendations" element={<Recommendations />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>

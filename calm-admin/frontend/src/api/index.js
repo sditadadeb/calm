@@ -79,4 +79,8 @@ export const getPromptConfig = () => api.get('/config/prompt');
 export const updatePromptConfig = (config) => api.put('/config/prompt', config);
 export const resetPromptConfig = () => api.post('/config/prompt/reset');
 
+// Recommendations (Advanced Analysis)
+export const getRecommendationsMetrics = () => api.get('/recommendations/metrics');
+export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');
+
 export default api;

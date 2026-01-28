@@ -78,30 +78,7 @@ export default function Dashboard() {
     : [];
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#f5a623] to-[#e6951a] rounded-[20px] p-8 text-white shadow-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Bienvenido al Panel CALM</h1>
-            <p className="text-white/80">
-              Analiza el rendimiento de ventas y mejora la conversión
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            <div className="text-center">
-              <p className="text-white/70 text-sm">Total atenciones</p>
-              <p className="text-4xl font-bold">{totalTranscriptions}</p>
-            </div>
-            <div className="w-px h-16 bg-white/30" />
-            <div className="text-center">
-              <p className="text-white/70 text-sm">Conversión</p>
-              <p className="text-4xl font-bold">{conversionRate}%</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* Main Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard

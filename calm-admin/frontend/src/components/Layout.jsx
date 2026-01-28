@@ -8,10 +8,22 @@ import {
   Settings,
   LogOut,
   User,
-  UserPlus
+  UserPlus,
+  Lightbulb
 } from 'lucide-react';
 import useStore from '../store/useStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Configuración de páginas con subtítulos
+const pageConfig = {
+  '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
+  '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
+  '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
+  '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
+  '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
+  '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
+  '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
+};
 
 // Navegación base (visible para todos)
 const baseNavigation = [
@@ -19,6 +31,7 @@ const baseNavigation = [
   { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
   { name: 'Vendedores', href: '/sellers', icon: Users },
   { name: 'Sucursales', href: '/branches', icon: Building2 },
+  { name: 'Recomendaciones', href: '/recommendations', icon: Lightbulb },
 ];
 
 // Navegación solo para ADMIN
@@ -30,13 +43,20 @@ const adminNavigation = [
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
+  const { loading, fetchDashboardMetrics, fetchTranscriptions, dashboardMetrics } = useStore();
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0, phase: '' });
 
   // Get user from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
+
+  // Load metrics for header on mount
+  useEffect(() => {
+    if (!dashboardMetrics) {
+      fetchDashboardMetrics();
+    }
+  }, []);
 
   const handleSync = () => {
     setSyncing(true);
@@ -220,25 +240,45 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 px-8 py-4 sticky top-0 z-10 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-[#2d2d2d]">
-                {[...baseNavigation, ...adminNavigation].find(n => n.href === location.pathname)?.name || 'Panel'}
-              </h2>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500 bg-[#fff8eb] px-4 py-2 rounded-full">
-                {new Date().toLocaleDateString('es-AR', { 
-                  weekday: 'long', 
-                  day: 'numeric',
-                  month: 'short'
-                })}
-              </span>
-            </div>
-          </div>
-        </header>
+        {/* Unified Header */}
+        {(() => {
+          const currentPage = pageConfig[location.pathname] || { name: 'Panel', subtitle: '', icon: LayoutDashboard };
+          const PageIcon = currentPage.icon;
+          return (
+            <header className="bg-gradient-to-r from-[#f5a623] to-[#e6951a] px-8 py-5 sticky top-0 z-10 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <PageIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-white">{currentPage.name}</h1>
+                    <p className="text-sm text-white/70">{currentPage.subtitle}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="hidden md:flex items-center gap-6">
+                    <div className="text-center">
+                      <p className="text-xs text-white/60">Atenciones</p>
+                      <p className="text-lg font-bold text-white">{dashboardMetrics?.totalTranscriptions || '--'}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-white/60">Conversión</p>
+                      <p className="text-lg font-bold text-white">{dashboardMetrics?.conversionRate || '--'}%</p>
+                    </div>
+                  </div>
+                  <span className="text-sm text-white bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
+                    {new Date().toLocaleDateString('es-AR', { 
+                      weekday: 'short', 
+                      day: 'numeric',
+                      month: 'short'
+                    })}
+                  </span>
+                </div>
+              </div>
+            </header>
+          );
+        })()}
 
         {/* Page content */}
         <div className="p-8 animate-fade-in">

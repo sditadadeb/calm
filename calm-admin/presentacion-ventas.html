@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numia Voice Analytics - Presentación</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .slide {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            padding: 50px 70px;
+            position: relative;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .slide.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Header bar */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            height: 28px;
+            opacity: 0.9;
+        }
+        
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #fff 0%, #a8a8a8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .slide-indicator {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
+        
+        /* Typography */
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+        }
+        
+        h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+        
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .gradient-text-alt {
+            background: linear-gradient(90deg, #22d3ee 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-glow {
+            background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.05) 100%);
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        
+        /* Stats */
+        .stat-big {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 8px;
+        }
+        
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: linear-gradient(90deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.2) 100%);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #a5b4fc;
+            margin-bottom: 16px;
+        }
+        
+        /* Lists */
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .feature-list li:last-child { border-bottom: none; }
+        
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        /* Workflow */
+        .workflow {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        
+        .workflow-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .workflow-step::after {
+            content: "→";
+            position: absolute;
+            right: -20px;
+            top: 20px;
+            color: rgba(255,255,255,0.2);
+            font-size: 20px;
+        }
+        
+        .workflow-step:last-child::after { display: none; }
+        
+        .step-num {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+        
+        .step-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .step-desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+        }
+        
+        /* Content layouts */
+        .content-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            height: calc(100% - 100px);
+        }
+        
+        .content-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: calc(100% - 100px);
+        }
+        
+        /* Problem cards */
+        .problem-card {
+            background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.05) 100%);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .solution-card {
+            background: linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(22,163,74,0.05) 100%);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+        
+        /* CTA */
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(99,102,241,0.3);
+        }
+        
+        /* Decorative */
+        .glow-orb {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .orb-1 { top: -100px; right: -100px; }
+        .orb-2 { bottom: -150px; left: -150px; }
+        
+        /* Footer nav */
+        .footer-nav {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-dot.active {
+            background: #6366f1;
+            box-shadow: 0 0 10px #6366f1;
+        }
+        
+        .nav-dot:hover { background: rgba(255,255,255,0.4); }
+        
+        /* Icon placeholder */
+        .icon-box {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(139,92,246,0.1) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        
+        /* Metrics row */
+        .metrics-row {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .metric-item {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        /* Price card */
+        .price-box {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.05) 100%);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            max-width: 380px;
+            margin: 0 auto;
+        }
+
+        .price-value {
+            font-size: 48px;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Cover -->
+    <div class="slide active" id="slide1">
+        <div class="glow-orb orb-1"></div>
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">01 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">Voice Analytics powered by AI</span>
+            <h1>Transformá cada conversación<br>en <span class="gradient-text">inteligencia de ventas</span></h1>
+            <p style="max-width: 550px; font-size: 16px;">
+                Analizamos las interacciones presenciales de tu equipo comercial con IA 
+                para aumentar la tasa de conversión y optimizar el rendimiento.
+            </p>
+            <div class="metrics-row">
+                <div class="metric-item">
+                    <div class="metric-value gradient-text">+35%</div>
+                    <div class="metric-label">Conversión</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value gradient-text-alt">-40%</div>
+                    <div class="metric-label">Tiempo de training</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value gradient-text">100%</div>
+                    <div class="metric-label">Visibilidad</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 2: Problem -->
+    <div class="slide" id="slide2">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">02 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">El desafío</span>
+            <h2>Lo que no medís, no lo podés mejorar</h2>
+            <div class="grid-2" style="max-width: 900px;">
+                <div>
+                    <div class="problem-card">
+                        <h3>❌ Caja negra de ventas</h3>
+                        <p>No sabés qué pasa realmente en las conversaciones presenciales entre vendedor y cliente.</p>
+                    </div>
+                    <div class="problem-card">
+                        <h3>❌ Decisiones sin datos</h3>
+                        <p>Los gerentes toman decisiones basadas en intuición, no en información real.</p>
+                    </div>
+                    <div class="problem-card">
+                        <h3>❌ Oportunidades perdidas</h3>
+                        <p>Clientes que se van sin comprar y no entendés por qué.</p>
+                    </div>
+                </div>
+                <div class="card card-glow" style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                    <div class="stat-big" style="color: #ef4444;">67%</div>
+                    <p style="margin-top: 12px;">de las empresas no tienen visibilidad de sus conversaciones de venta presencial</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Solution -->
+    <div class="slide" id="slide3">
+        <div class="glow-orb orb-2"></div>
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">03 / 10</span>
+        </div>
+        <div class="content-split">
+            <div>
+                <span class="tag">La solución</span>
+                <h2>Numia <span class="gradient-text">Voice Analytics</span></h2>
+                <p style="margin-bottom: 24px;">
+                    Grabamos, transcribimos y analizamos automáticamente cada interacción 
+                    de venta presencial usando Inteligencia Artificial de última generación.
+                </p>
+                <ul class="feature-list">
+                    <li><span class="check-icon">✓</span> Transcripción automática de conversaciones</li>
+                    <li><span class="check-icon">✓</span> Análisis con GPT-4 de cada interacción</li>
+                    <li><span class="check-icon">✓</span> Métricas de rendimiento por vendedor</li>
+                    <li><span class="check-icon">✓</span> Identificación de motivos de no-venta</li>
+                    <li><span class="check-icon">✓</span> Sugerencias de mejora personalizadas</li>
+                </ul>
+            </div>
+            <div style="text-align: center;">
+                <div class="card card-glow" style="padding: 40px;">
+                    <div class="stat-big gradient-text">+35%</div>
+                    <div class="stat-label">Incremento promedio en conversión</div>
+                    <p style="margin-top: 20px; font-size: 13px;">en los primeros 90 días de implementación</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: How it works -->
+    <div class="slide" id="slide4">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">04 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">Proceso</span>
+            <h2>¿Cómo funciona?</h2>
+            <p style="max-width: 600px;">Integramos tecnología de vanguardia en tu operación sin fricciones.</p>
+            
+            <div class="workflow">
+                <div class="workflow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-title">Grabación</div>
+                    <div class="step-desc">El vendedor inicia grabación desde su dispositivo</div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-title">Transcripción</div>
+                    <div class="step-desc">IA convierte audio a texto en minutos</div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-num">3</div>
+                    <div class="step-title">Análisis</div>
+                    <div class="step-desc">GPT-4 extrae insights y métricas clave</div>
+                </div>
+                <div class="workflow-step">
+                    <div class="step-num">4</div>
+                    <div class="step-title">Dashboard</div>
+                    <div class="step-desc">Visualización en tiempo real para gerentes</div>
+                </div>
+            </div>
+            
+            <div class="grid-4" style="margin-top: 40px;">
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">⚡</div>
+                    <div style="font-size: 13px; font-weight: 600;">Real-time</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.4);">Procesamiento instantáneo</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">🔒</div>
+                    <div style="font-size: 13px; font-weight: 600;">Seguro</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.4);">Datos encriptados</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">🔌</div>
+                    <div style="font-size: 13px; font-weight: 600;">Integrable</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.4);">APIs abiertas</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">📱</div>
+                    <div style="font-size: 13px; font-weight: 600;">Multi-device</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.4);">Web & Mobile</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Features -->
+    <div class="slide" id="slide5">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">05 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">Funcionalidades</span>
+            <h2>Dashboard de Inteligencia Comercial</h2>
+            
+            <div class="grid-2" style="margin-top: 20px; gap: 16px;">
+                <div class="card">
+                    <div class="icon-box">🎯</div>
+                    <h3>Detección de Ventas</h3>
+                    <p>Identifica automáticamente si cada interacción resultó en venta, y clasifica las razones de no-venta.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box">⭐</div>
+                    <h3>Score de Vendedor</h3>
+                    <p>Puntuación de 1-10 basada en técnica de venta, manejo de objeciones y cierre.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box">📊</div>
+                    <h3>Analytics por Sucursal</h3>
+                    <p>Compará el rendimiento entre diferentes puntos de venta y detectá mejores prácticas.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box">💡</div>
+                    <h3>Coaching con IA</h3>
+                    <p>Recomendaciones personalizadas para cada vendedor basadas en sus oportunidades de mejora.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Metrics -->
+    <div class="slide" id="slide6">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">06 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">KPIs</span>
+            <h2>Métricas que vas a poder trackear</h2>
+            
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="card card-glow" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📈</div>
+                    <h3>Tasa de Conversión</h3>
+                    <p>Por vendedor, sucursal y período de tiempo</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+                    <h3>Motivos de No-Venta</h3>
+                    <p>Precio, producto, competencia, timing</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🏆</div>
+                    <h3>Ranking Vendedores</h3>
+                    <p>Identificá a tus top performers</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+                    <h3>Objeciones Comunes</h3>
+                    <p>Qué dicen los clientes antes de no comprar</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📦</div>
+                    <h3>Productos Mencionados</h3>
+                    <p>Qué genera más interés y consultas</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📅</div>
+                    <h3>Evolución Temporal</h3>
+                    <p>Cómo mejora tu equipo semana a semana</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Use Case -->
+    <div class="slide" id="slide7">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">07 / 10</span>
+        </div>
+        <div class="content-split">
+            <div>
+                <span class="tag">Caso de éxito</span>
+                <h2>Retail de colchones<br><span class="gradient-text-alt">+42% conversión</span></h2>
+                <p style="margin-bottom: 20px;">
+                    Empresa con múltiples sucursales necesitaba entender por qué algunas 
+                    tiendas vendían más que otras con productos similares.
+                </p>
+                
+                <div class="solution-card">
+                    <h3 style="color: #22c55e;">✓ Implementación</h3>
+                    <p>Sistema activo en todas las sucursales, +500 conversaciones/mes analizadas</p>
+                </div>
+                
+                <div class="card" style="margin-top: 16px; font-style: italic;">
+                    <p>"Ahora sabemos exactamente qué hace diferente a nuestros mejores vendedores y podemos replicarlo."</p>
+                    <p style="margin-top: 12px; font-style: normal; font-weight: 600; color: #6366f1;">— Gerente Comercial</p>
+                </div>
+            </div>
+            <div>
+                <div class="grid-2" style="gap: 16px;">
+                    <div class="card card-glow" style="text-align: center; padding: 30px;">
+                        <div class="stat-big gradient-text">+42%</div>
+                        <div class="stat-label">Tasa de conversión</div>
+                    </div>
+                    <div class="card card-glow" style="text-align: center; padding: 30px;">
+                        <div class="stat-big gradient-text-alt">-30%</div>
+                        <div class="stat-label">Tiempo onboarding</div>
+                    </div>
+                    <div class="card" style="text-align: center; padding: 30px;">
+                        <div class="stat-big" style="color: #22c55e;">3x</div>
+                        <div class="stat-label">ROI primer trimestre</div>
+                    </div>
+                    <div class="card" style="text-align: center; padding: 30px;">
+                        <div class="stat-big" style="color: #f59e0b;">89%</div>
+                        <div class="stat-label">Adopción del equipo</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Benefits -->
+    <div class="slide" id="slide8">
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">08 / 10</span>
+        </div>
+        <div class="content-center">
+            <span class="tag">Beneficios</span>
+            <h2>Impacto en tu negocio</h2>
+            
+            <div class="grid-2" style="margin-top: 20px; max-width: 900px;">
+                <div class="solution-card">
+                    <h3 style="color: #22c55e;">✓ Aumentá las ventas</h3>
+                    <p>Identificá qué funciona y replicalo en todo el equipo comercial.</p>
+                </div>
+                <div class="solution-card">
+                    <h3 style="color: #22c55e;">✓ Reducí rotación</h3>
+                    <p>Feedback objetivo ayuda a desarrollar y retener vendedores.</p>
+                </div>
+                <div class="solution-card">
+                    <h3 style="color: #22c55e;">✓ Decisiones data-driven</h3>
+                    <p>Dejá de adivinar. Tomá decisiones basadas en datos reales.</p>
+                </div>
+                <div class="solution-card">
+                    <h3 style="color: #22c55e;">✓ Training efectivo</h3>
+                    <p>Sabé exactamente qué mejorar en cada persona del equipo.</p>
+                </div>
+            </div>
+            
+            <div class="card card-glow" style="margin-top: 30px; max-width: 600px; text-align: center; padding: 30px;">
+                <p style="font-size: 16px; color: #fff;">
+                    <strong>ROI garantizado:</strong> Si no ves mejoras medibles en 90 días, 
+                    te devolvemos tu inversión.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Pricing -->
+    <div class="slide" id="slide9">
+        <div class="glow-orb orb-1"></div>
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">09 / 10</span>
+        </div>
+        <div class="content-center" style="text-align: center;">
+            <span class="tag">Inversión</span>
+            <h2>Plan Empresarial</h2>
+            
+            <div class="price-box">
+                <div class="price-value gradient-text">Personalizado</div>
+                <p style="margin: 12px 0;">Precio según volumen y sucursales</p>
+                
+                <ul class="feature-list" style="text-align: left; margin-top: 24px;">
+                    <li><span class="check-icon">✓</span> Transcripciones ilimitadas</li>
+                    <li><span class="check-icon">✓</span> Análisis con IA avanzada</li>
+                    <li><span class="check-icon">✓</span> Dashboard en tiempo real</li>
+                    <li><span class="check-icon">✓</span> Reportes personalizados</li>
+                    <li><span class="check-icon">✓</span> Soporte dedicado</li>
+                    <li><span class="check-icon">✓</span> Implementación incluida</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: CTA -->
+    <div class="slide" id="slide10">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="header">
+            <span class="logo-text">numia</span>
+            <span class="slide-indicator">10 / 10</span>
+        </div>
+        <div class="content-center" style="text-align: center;">
+            <span class="tag">Próximo paso</span>
+            <h1>¿Listo para transformar<br>tus <span class="gradient-text">ventas presenciales</span>?</h1>
+            <p style="max-width: 500px; margin: 0 auto;">
+                Agendá una demo personalizada y descubrí cómo Voice Analytics 
+                puede impulsar los resultados de tu equipo comercial.
+            </p>
+            
+            <a href="https://numia.co/es/contacto" class="cta-button">
+                Agendar Demo Gratuita →
+            </a>
+            
+            <div style="margin-top: 40px;">
+                <p style="font-size: 14px;">
+                    📧 ventas@numia.co &nbsp;&nbsp;|&nbsp;&nbsp; 🌐 numia.co
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="footer-nav">
+        <div class="nav-dot active" onclick="goToSlide(1)"></div>
+        <div class="nav-dot" onclick="goToSlide(2)"></div>
+        <div class="nav-dot" onclick="goToSlide(3)"></div>
+        <div class="nav-dot" onclick="goToSlide(4)"></div>
+        <div class="nav-dot" onclick="goToSlide(5)"></div>
+        <div class="nav-dot" onclick="goToSlide(6)"></div>
+        <div class="nav-dot" onclick="goToSlide(7)"></div>
+        <div class="nav-dot" onclick="goToSlide(8)"></div>
+        <div class="nav-dot" onclick="goToSlide(9)"></div>
+        <div class="nav-dot" onclick="goToSlide(10)"></div>
+    </div>
+
+    <script>
+        let current = 1;
+        const total = 10;
+        
+        function goToSlide(n) {
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-dot').forEach(d => d.classList.remove('active'));
+            
+            current = n;
+            if (current > total) current = 1;
+            if (current < 1) current = total;
+            
+            document.getElementById('slide' + current).classList.add('active');
+            document.querySelectorAll('.nav-dot')[current - 1].classList.add('active');
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') goToSlide(current + 1);
+            if (e.key === 'ArrowLeft') goToSlide(current - 1);
+        });
+    </script>
+</body>
+</html>
