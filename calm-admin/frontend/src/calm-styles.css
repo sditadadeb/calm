@@ -1,9 +1,9 @@
-/* CALM Styles - Imported from calmessimple.com.ar */
+/* Seguros Analytics Styles */
 
 :root {
   --ph-survey-font-family: "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --calm-orange: #f5a203;
-  --calm-orange-dark: #F7931E;
+  --seguros-primary: #1e3a5f;
+  --seguros-secondary: #2d5a87;
 }
 
 /* Base styles */
@@ -277,26 +277,22 @@
   opacity: 1;
 }
 
-/* CALM Button styles */
-.realizar-pedido {
-  background: #f5a203 !important;
-}
-
-.btn-calm {
-  border-radius: 30px;
+/* Button styles */
+.btn-seguros {
+  border-radius: 12px;
   padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, #f5a203, #F7931E);
+  background: linear-gradient(135deg, #1e3a5f, #2d5a87);
   color: white;
   font-weight: 600;
   transition: all 0.3s ease;
 }
 
-.btn-calm:hover {
+.btn-seguros:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 162, 3, 0.4);
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
 }
 
-/* Custom scrollbar - CALM style */
+/* Custom scrollbar */
 @media (min-width: 1024px) {
   ::-webkit-scrollbar {
     width: 7px;
@@ -309,11 +305,10 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #f5a203;
+    background: #1e3a5f;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #d48f00;
+    background: #2d5a87;
   }
 }
-

@@ -4,23 +4,19 @@ import {
   FileText, 
   Users, 
   Building2, 
-  RefreshCw,
   Settings,
   LogOut,
   User,
   UserPlus,
-  Lightbulb
+  Shield
 } from 'lucide-react';
-import useStore from '../store/useStore';
-import { useState, useEffect } from 'react';
 
 // Configuración de páginas con subtítulos
 const pageConfig = {
-  '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
-  '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
-  '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
-  '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
-  '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
+  '/': { name: 'Dashboard Seguros', subtitle: 'Métricas de productores y asesores', icon: LayoutDashboard },
+  '/transcriptions': { name: 'Interacciones', subtitle: 'Historial de atención al asegurado', icon: FileText },
+  '/sellers': { name: 'Productores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
+  '/branches': { name: 'Zonas', subtitle: 'Performance por zona geográfica', icon: Building2 },
   '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
   '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
 };
@@ -28,10 +24,9 @@ const pageConfig = {
 // Navegación base (visible para todos)
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
-  { name: 'Vendedores', href: '/sellers', icon: Users },
-  { name: 'Sucursales', href: '/branches', icon: Building2 },
-  { name: 'Recomendaciones', href: '/recommendations', icon: Lightbulb },
+  { name: 'Interacciones', href: '/transcriptions', icon: FileText },
+  { name: 'Productores', href: '/sellers', icon: Users },
+  { name: 'Zonas', href: '/branches', icon: Building2 },
 ];
 
 // Navegación solo para ADMIN
@@ -40,88 +35,19 @@ const adminNavigation = [
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
+// Datos fake para el header
+const FAKE_HEADER_METRICS = {
+  polizasNuevas: 1847,
+  tasaRetencion: 87.4
+};
+
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loading, fetchDashboardMetrics, fetchTranscriptions, dashboardMetrics } = useStore();
-  const [syncing, setSyncing] = useState(false);
-  const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0, phase: '' });
 
   // Get user from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
-
-  // Load metrics for header on mount
-  useEffect(() => {
-    if (!dashboardMetrics) {
-      fetchDashboardMetrics();
-    }
-  }, []);
-
-  const handleSync = () => {
-    setSyncing(true);
-    setSyncProgress({ message: 'Conectando...', current: 0, total: 0, percent: 0, phase: 'connecting' });
-    
-    const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
-    
-    let lastProgress = { imported: 0, analyzed: 0 };
-    
-    const eventSource = new EventSource(`${apiUrl}/sync/stream?token=${token}`);
-    
-    eventSource.addEventListener('progress', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setSyncProgress({
-          message: data.message || '',
-          current: data.current || 0,
-          total: data.total || 0,
-          percent: data.percent || 0,
-          phase: data.type || ''
-        });
-        
-        // Track progress for final message
-        if (data.type === 'import_complete') {
-          lastProgress.imported = data.current;
-        }
-        if (data.type === 'analyze_progress' || data.type === 'complete') {
-          lastProgress.analyzed = data.current;
-        }
-      } catch (err) {
-        console.error('Error parsing SSE data:', err);
-      }
-    });
-    
-    eventSource.addEventListener('result', (e) => {
-      try {
-        const result = JSON.parse(e.data);
-        lastProgress = { imported: result.imported, analyzed: result.analyzed };
-      } catch (err) {
-        console.error('Error parsing result:', err);
-      }
-    });
-    
-    eventSource.addEventListener('error', (e) => {
-      console.error('SSE Error:', e);
-      eventSource.close();
-      setSyncing(false);
-      setSyncProgress({ message: '', current: 0, total: 0, percent: 0, phase: '' });
-      
-      // Check if it was a normal close or an error
-      if (eventSource.readyState === EventSource.CLOSED) {
-        // Normal close - refresh data
-        fetchDashboardMetrics();
-        fetchTranscriptions();
-        alert(`✓ Sincronización completada\nImportadas: ${lastProgress.imported}\nAnalizadas: ${lastProgress.analyzed}`);
-      } else {
-        alert('Error durante la sincronización');
-      }
-    });
-    
-    eventSource.onopen = () => {
-      console.log('SSE connection opened');
-    };
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -130,15 +56,18 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#fafafa]">
+    <div className="min-h-screen flex bg-[#f8f9fa]">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
         {/* Logo */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <span className="text-3xl font-bold text-[#FF8C00]">calm</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-[#1e3a5f] to-[#0d1f33] rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-[#1e3a5f]">Seguros Analytics</span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">Panel de Administración</p>
+          <p className="text-xs text-gray-400 mt-1">Panel de Gestión Comercial</p>
         </div>
 
         {/* Navigation */}
@@ -182,37 +111,6 @@ export default function Layout({ children }) {
                     </Link>
                   );
                 })}
-                
-                {/* Sync Button - Solo para ADMIN */}
-                <div className="mt-2">
-                  <button
-                    onClick={handleSync}
-                    disabled={syncing || loading}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white bg-gradient-to-r from-[#FF8C00] to-[#FFB347] hover:from-[#e07b00] hover:to-[#FF8C00] transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-                    <span className="font-medium text-sm">
-                      {syncing 
-                        ? (syncProgress.total > 0 
-                            ? `${syncProgress.current}/${syncProgress.total}` 
-                            : 'Conectando...')
-                        : 'Sincronizar S3'}
-                    </span>
-                  </button>
-                  {syncing && syncProgress.total > 0 && (
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div 
-                          className="bg-[#FF8C00] h-2 rounded-full transition-all duration-300 ease-out"
-                          style={{ width: `${syncProgress.percent}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 truncate" title={syncProgress.message}>
-                        {syncProgress.message}
-                      </p>
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </div>
@@ -222,8 +120,8 @@ export default function Layout({ children }) {
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#fff8eb] flex items-center justify-center">
-                <User className="w-4 h-4 text-[#FF8C00]" />
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                <User className="w-4 h-4 text-[#1e3a5f]" />
               </div>
               <span className="font-medium">{user.username || 'Usuario'}</span>
             </div>
@@ -245,10 +143,10 @@ export default function Layout({ children }) {
           const currentPage = pageConfig[location.pathname] || { name: 'Panel', subtitle: '', icon: LayoutDashboard };
           const PageIcon = currentPage.icon;
           return (
-            <header className="bg-gradient-to-r from-[#f5a623] to-[#e6951a] px-8 py-5 sticky top-0 z-10 shadow-lg">
+            <header className="bg-gradient-to-r from-[#1e3a5f] to-[#2d4a6f] px-8 py-5 sticky top-0 z-10 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <div className="p-3 bg-white/15 rounded-xl backdrop-blur-sm">
                     <PageIcon className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -259,15 +157,15 @@ export default function Layout({ children }) {
                 <div className="flex items-center gap-6">
                   <div className="hidden md:flex items-center gap-6">
                     <div className="text-center">
-                      <p className="text-xs text-white/60">Atenciones</p>
-                      <p className="text-lg font-bold text-white">{dashboardMetrics?.totalTranscriptions || '--'}</p>
+                      <p className="text-xs text-white/60">Pólizas Nuevas</p>
+                      <p className="text-lg font-bold text-white">{FAKE_HEADER_METRICS.polizasNuevas.toLocaleString()}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-white/60">Conversión</p>
-                      <p className="text-lg font-bold text-white">{dashboardMetrics?.conversionRate || '--'}%</p>
+                      <p className="text-xs text-white/60">Retención</p>
+                      <p className="text-lg font-bold text-white">{FAKE_HEADER_METRICS.tasaRetencion}%</p>
                     </div>
                   </div>
-                  <span className="text-sm text-white bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
+                  <span className="text-sm text-white bg-white/15 px-4 py-2 rounded-full backdrop-blur-sm">
                     {new Date().toLocaleDateString('es-AR', { 
                       weekday: 'short', 
                       day: 'numeric',

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: banca-analytics
+    env: static
+    rootDir: calm-admin/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=31536000
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

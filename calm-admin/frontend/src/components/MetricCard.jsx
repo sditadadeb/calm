@@ -11,18 +11,18 @@ export default function MetricCard({
 }) {
   const variants = {
     default: 'bg-white border border-gray-100',
-    primary: 'bg-gradient-to-br from-[#f5a623] to-[#e6951a] text-white border-0 shadow-lg',
-    success: 'bg-white border-l-4 border-l-green-500 border-y border-r border-gray-100',
+    primary: 'bg-gradient-to-br from-[#1e3a5f] to-[#2d4a6f] text-white border-0 shadow-lg',
+    success: 'bg-white border-l-4 border-l-emerald-500 border-y border-r border-gray-100',
     danger: 'bg-white border-l-4 border-l-red-500 border-y border-r border-gray-100',
-    warning: 'bg-white border-l-4 border-l-[#f5a623] border-y border-r border-gray-100',
+    warning: 'bg-white border-l-4 border-l-[#2d5a87] border-y border-r border-gray-100',
   };
 
   const iconBg = {
-    default: 'bg-[#fff8eb] text-[#f5a623]',
-    primary: 'bg-white/20 text-white',
-    success: 'bg-green-100 text-green-600',
+    default: 'bg-slate-100 text-[#1e3a5f]',
+    primary: 'bg-white/15 text-white',
+    success: 'bg-emerald-100 text-emerald-600',
     danger: 'bg-red-100 text-red-600',
-    warning: 'bg-[#fff8eb] text-[#f5a623]',
+    warning: 'bg-slate-100 text-[#1e3a5f]',
   };
 
   return (
@@ -32,7 +32,7 @@ export default function MetricCard({
           <p className={`text-sm font-medium ${variant === 'primary' ? 'text-white/70' : 'text-gray-500'}`}>
             {title}
           </p>
-          <p className={`text-3xl font-bold mt-2 ${variant === 'primary' ? 'text-white' : 'text-[#2d2d2d]'}`}>
+          <p className={`text-3xl font-bold mt-2 ${variant === 'primary' ? 'text-white' : 'text-[#1e3a5f]'}`}>
             {value}
           </p>
           {subtitle && (
