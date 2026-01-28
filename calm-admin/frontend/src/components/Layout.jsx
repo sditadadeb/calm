@@ -15,7 +15,7 @@ import {
 import useStore from '../store/useStore';
 import { useState, useEffect } from 'react';
 
-// Configuración de páginas con subtítulos (ORIGINAL)
+// Configuración de páginas con subtítulos
 const pageConfig = {
   '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
   '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
@@ -26,7 +26,7 @@ const pageConfig = {
   '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
 };
 
-// Navegación base (ORIGINAL)
+// Navegación base
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
@@ -131,17 +131,17 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen flex bg-slate-900">
-      {/* Sidebar - Dark Theme */}
+      {/* Sidebar - Dark Theme con colores CALM */}
       <aside className="w-64 bg-slate-800 flex flex-col border-r border-slate-700">
         {/* Logo */}
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-[#FF6B35] flex items-center justify-center">
+              <span className="text-white font-bold text-lg">C</span>
             </div>
             <div>
-              <span className="text-xl font-bold text-white">calm</span>
-              <span className="text-xl font-light text-emerald-400"> Admin</span>
+              <span className="text-xl font-bold text-[#FF6B35]">calm</span>
+              <span className="text-xl font-light text-white"> Admin</span>
             </div>
           </div>
           <p className="text-xs text-slate-400 mt-2">Panel de Administración</p>
@@ -161,7 +161,7 @@ export default function Layout({ children }) {
                   to={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                      ? 'bg-[#FF6B35] text-white shadow-lg shadow-[#FF6B35]/30' 
                       : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
@@ -185,7 +185,7 @@ export default function Layout({ children }) {
                       to={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                         isActive 
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
+                          ? 'bg-[#FF6B35] text-white shadow-lg shadow-[#FF6B35]/30' 
                           : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                       }`}
                     >
@@ -200,7 +200,7 @@ export default function Layout({ children }) {
                   <button
                     onClick={handleSync}
                     disabled={syncing || loading}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] hover:from-[#E55A2B] hover:to-[#FF6B35] transition-all duration-200 shadow-lg shadow-[#FF6B35]/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
                     <span className="font-medium text-sm">
@@ -215,7 +215,7 @@ export default function Layout({ children }) {
                     <div className="mt-3">
                       <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full transition-all duration-300 ease-out"
+                          className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] h-2 rounded-full transition-all duration-300 ease-out"
                           style={{ width: `${syncProgress.percent}%` }}
                         />
                       </div>
@@ -261,7 +261,7 @@ export default function Layout({ children }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-slate-700 rounded-xl">
-                    <PageIcon className="w-6 h-6 text-emerald-400" />
+                    <PageIcon className="w-6 h-6 text-[#FF6B35]" />
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-white">{currentPage.name}</h1>
@@ -276,7 +276,7 @@ export default function Layout({ children }) {
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-slate-500 uppercase tracking-wide">Conversión</p>
-                      <p className="text-2xl font-bold text-emerald-400">{dashboardMetrics?.conversionRate || '--'}%</p>
+                      <p className="text-2xl font-bold text-[#FF6B35]">{dashboardMetrics?.conversionRate || '--'}%</p>
                     </div>
                   </div>
                   <span className="text-sm text-slate-300 bg-slate-700 px-4 py-2 rounded-full">
@@ -287,7 +287,7 @@ export default function Layout({ children }) {
                     })}
                   </span>
                   {/* Meta Badge */}
-                  <div className="hidden lg:flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full border border-emerald-500/30">
+                  <div className="hidden lg:flex items-center gap-2 bg-[#FF6B35]/20 text-[#FF6B35] px-4 py-2 rounded-full border border-[#FF6B35]/30">
                     <TrendingUp className="w-4 h-4" />
                     <span className="text-sm font-medium">Meta: {metaPercent}% cumplida</span>
                   </div>

@@ -24,7 +24,8 @@ import {
 import useStore from '../store/useStore';
 import MetricCard from '../components/MetricCard';
 
-const COLORS = ['#f59e0b', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
+// Colores CALM
+const COLORS = ['#FF6B35', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 
 export default function Dashboard() {
   const { dashboardMetrics, loading, fetchDashboardMetrics } = useStore();
@@ -37,7 +38,7 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="mt-4 text-slate-400">Cargando datos...</p>
         </div>
       </div>
@@ -48,7 +49,7 @@ export default function Dashboard() {
     return (
       <div className="bg-slate-800 rounded-2xl p-12 text-center border border-slate-700">
         <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-8 h-8 text-emerald-400" />
+          <FileText className="w-8 h-8 text-[#FF6B35]" />
         </div>
         <h3 className="text-lg font-semibold text-white mb-2">Sin datos disponibles</h3>
         <p className="text-slate-400">Sincroniza desde S3 para comenzar</p>
@@ -79,7 +80,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Main Metrics - ORIGINAL */}
+      {/* Main Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Atenciones"
@@ -120,7 +121,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-bold text-white">Top Vendedores</h3>
               <p className="text-sm text-slate-400">Comparativa de ventas</p>
             </div>
-            <Link to="/sellers" className="text-sm text-emerald-400 font-semibold flex items-center gap-1 hover:text-emerald-300">
+            <Link to="/sellers" className="text-sm text-[#FF6B35] font-semibold flex items-center gap-1 hover:text-[#FF8C5A]">
               Ver todos <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -137,7 +138,7 @@ export default function Dashboard() {
                     color: '#fff'
                   }}
                 />
-                <Bar dataKey="ventas" name="Ventas" fill="#10b981" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="ventas" name="Ventas" fill="#22c55e" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="sinVenta" name="Sin venta" fill="#ef4444" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -207,8 +208,8 @@ export default function Dashboard() {
         {/* Top Sellers Ranking */}
         <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-emerald-500/20 rounded-xl">
-              <Users className="w-5 h-5 text-emerald-400" />
+            <div className="p-3 bg-[#FF6B35]/20 rounded-xl">
+              <Users className="w-5 h-5 text-[#FF6B35]" />
             </div>
             <div>
               <h3 className="font-bold text-white">Ranking Vendedores</h3>
@@ -222,7 +223,7 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   'bg-slate-600 text-slate-300'
@@ -234,7 +235,7 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-400 truncate">{seller.branchName}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-emerald-400">{seller.conversionRate}%</p>
+                  <p className="text-lg font-bold text-green-400">{seller.conversionRate}%</p>
                   <p className="text-xs text-slate-400">{seller.sales}/{seller.totalInteractions}</p>
                 </div>
               </div>
@@ -245,8 +246,8 @@ export default function Dashboard() {
         {/* Branch Performance */}
         <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-cyan-500/20 rounded-xl">
-              <Building2 className="w-5 h-5 text-cyan-400" />
+            <div className="p-3 bg-[#FF6B35]/20 rounded-xl">
+              <Building2 className="w-5 h-5 text-[#FF6B35]" />
             </div>
             <div>
               <h3 className="font-bold text-white">Rendimiento Sucursales</h3>
@@ -260,7 +261,7 @@ export default function Dashboard() {
                 className="flex items-center gap-4 p-4 rounded-xl bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   'bg-slate-600 text-slate-300'
@@ -272,7 +273,7 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-400">{branch.totalInteractions} atenciones</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-emerald-400">{branch.conversionRate}%</p>
+                  <p className="text-lg font-bold text-green-400">{branch.conversionRate}%</p>
                   <p className="text-xs text-slate-400">Score: {branch.averageScore?.toFixed(1) || '-'}</p>
                 </div>
               </div>

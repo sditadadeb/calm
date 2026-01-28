@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --calm-emerald: #10b981;
-  --calm-cyan: #06b6d4;
-  --calm-amber: #f59e0b;
+  --calm-orange: #FF6B35;
+  --calm-orange-light: #FF8C5A;
+  --calm-orange-dark: #E55A2B;
   --calm-slate-900: #0f172a;
   --calm-slate-800: #1e293b;
   --calm-slate-700: #334155;
@@ -24,7 +24,7 @@ body {
   color: #f1f5f9;
 }
 
-/* Custom scrollbar - Dark theme */
+/* Custom scrollbar - CALM colors */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -41,7 +41,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #FF6B35;
 }
 
 /* Card styles - Dark theme */
@@ -54,27 +54,27 @@ body {
 }
 
 .card:hover {
-  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
   transform: translateY(-2px);
 }
 
-/* Metric cards - Dark theme */
+/* Metric cards */
 .metric-card {
   background: #1e293b;
   border-radius: 16px;
   padding: 24px;
   border: 1px solid #334155;
-  border-left: 4px solid #10b981;
+  border-left: 4px solid #FF6B35;
   transition: all 0.3s ease;
 }
 
 .metric-card:hover {
-  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.2);
   transform: translateY(-2px);
 }
 
 .metric-card.success {
-  border-left-color: #10b981;
+  border-left-color: #22c55e;
 }
 
 .metric-card.danger {
@@ -85,14 +85,10 @@ body {
   border-left-color: #f59e0b;
 }
 
-.metric-card.info {
-  border-left-color: #06b6d4;
-}
-
-/* Sale status badges - Dark theme */
+/* Sale status badges */
 .badge-sale {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
   font-weight: 600;
 }
 
@@ -103,19 +99,19 @@ body {
 }
 
 .badge-pending {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
+  background: rgba(255, 107, 53, 0.2);
+  color: #FF6B35;
   font-weight: 600;
 }
 
 /* Score indicator */
-.score-excellent { color: #10b981; }
-.score-good { color: #34d399; }
+.score-excellent { color: #22c55e; }
+.score-good { color: #4ade80; }
 .score-average { color: #f59e0b; }
 .score-poor { color: #f97316; }
 .score-bad { color: #ef4444; }
 
-/* Table styles - Dark theme */
+/* Table styles */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -133,7 +129,7 @@ body {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #10b981;
+  border-bottom: 2px solid #FF6B35;
 }
 
 .data-table tbody tr {
@@ -170,9 +166,9 @@ body {
   animation: slideUp 0.4s ease-out;
 }
 
-/* Button styles - Dark theme */
+/* Button styles - CALM orange */
 .btn-primary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
   color: white;
   font-weight: 600;
   padding: 12px 24px;
@@ -181,12 +177,12 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
 }
 
 .btn-primary:disabled {
@@ -208,12 +204,12 @@ body {
 }
 
 .btn-secondary:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+  border-color: #FF6B35;
+  color: #FF6B35;
+  background: rgba(255, 107, 53, 0.1);
 }
 
-/* Input styles - Dark theme */
+/* Input styles */
 .input-field {
   background: #1e293b;
   border: 1px solid #475569;
@@ -227,18 +223,18 @@ body {
 
 .input-field:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
 }
 
 .input-field::placeholder {
   color: #64748b;
 }
 
-/* Select styles - Dark theme */
+/* Select styles */
 select.input-field {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF6B35' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px;
@@ -250,7 +246,7 @@ select.input-field option {
   color: #f1f5f9;
 }
 
-/* Tags - Dark theme */
+/* Tags */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -261,13 +257,13 @@ select.input-field option {
 }
 
 .tag-primary {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: rgba(255, 107, 53, 0.2);
+  color: #FF6B35;
 }
 
 .tag-success {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
 }
 
 .tag-danger {
@@ -280,7 +276,7 @@ select.input-field option {
   color: #fbbf24;
 }
 
-/* Progress bar - Dark theme */
+/* Progress bar */
 .progress-bar {
   height: 8px;
   background: #334155;
@@ -292,12 +288,12 @@ select.input-field option {
   height: 100%;
   border-radius: 4px;
   transition: width 0.5s ease;
-  background: linear-gradient(90deg, #10b981, #06b6d4);
+  background: linear-gradient(90deg, #FF6B35, #FF8C5A);
 }
 
-/* Ranking badges */
+/* Ranking badges - CALM colors */
 .rank-badge-1 {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
   color: white;
 }
 
@@ -330,7 +326,7 @@ select.input-field option {
 }
 
 .sidebar-nav-item.active {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
 }
