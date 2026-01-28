@@ -8,14 +8,7 @@ import {
   Users,
   Building2,
   ArrowRight,
-  TrendingUp,
-  Target,
-  DollarSign,
-  Percent,
-  CheckCircle,
-  UserPlus,
-  RefreshCcw,
-  BarChart3
+  TrendingUp
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -84,129 +77,38 @@ export default function Dashboard() {
     ? Object.entries(noSaleReasons).map(([name, value]) => ({ name, value }))
     : [];
 
-  // Datos para el embudo de ventas
-  const funnelData = [
-    { name: 'Atenciones', value: totalTranscriptions, color: 'bg-slate-600' },
-    { name: 'Interesados', value: Math.round(totalTranscriptions * 0.7), color: 'bg-slate-500' },
-    { name: 'Propuestas', value: Math.round(totalTranscriptions * 0.45), color: 'bg-cyan-500' },
-    { name: 'Cerradas', value: totalSales, color: 'bg-emerald-500' },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Main Metrics Row 1 */}
+      {/* Main Metrics - ORIGINAL */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Atenciones"
-          value={totalTranscriptions?.toLocaleString() || '0'}
-          subtitle="Interacciones del mes"
-          icon={CheckCircle}
-          accentColor="emerald"
+          value={totalTranscriptions}
+          subtitle="Transcripciones"
+          icon={FileText}
+          variant="default"
         />
         <MetricCard
-          title="Clientes Captados"
-          value={totalSales?.toLocaleString() || '0'}
-          subtitle="Nuevas ventas"
-          icon={UserPlus}
-          accentColor="cyan"
+          title="Ventas"
+          value={totalSales}
+          subtitle={`${conversionRate}% conversión`}
+          icon={ShoppingCart}
+          variant="success"
         />
         <MetricCard
-          title="Sin Conversión"
-          value={totalNoSales?.toLocaleString() || '0'}
-          subtitle="Oportunidades perdidas"
-          icon={RefreshCcw}
-          accentColor="amber"
+          title="Sin Venta"
+          value={totalNoSales}
+          subtitle="Oportunidades"
+          icon={XCircle}
+          variant="danger"
         />
         <MetricCard
-          title="Tasa Conversión"
-          value={`${conversionRate || 0}%`}
-          subtitle="Clientes que convierten"
-          icon={Target}
-          accentColor="violet"
+          title="Score Promedio"
+          value={averageSellerScore?.toFixed(1) || '-'}
+          subtitle="Calificación"
+          icon={Award}
+          variant="warning"
         />
-      </div>
-
-      {/* Metrics Row 2 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800 rounded-2xl p-6 border-l-4 border-l-emerald-500 border border-slate-700">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">Ventas Totales</p>
-              <p className="text-4xl font-bold text-white">{totalSales}</p>
-              <p className="text-sm text-slate-500 mt-2">Producción total</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-              <DollarSign className="w-7 h-7 text-emerald-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-2xl p-6 border-l-4 border-l-cyan-500 border border-slate-700">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">Cross-Selling</p>
-              <p className="text-4xl font-bold text-white">{Math.round(conversionRate * 0.7)}%</p>
-              <p className="text-sm text-slate-500 mt-2">Venta cruzada</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
-              <Percent className="w-7 h-7 text-cyan-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-2xl p-6 border-l-4 border-l-amber-500 border border-slate-700">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">Score Promedio</p>
-              <p className="text-4xl font-bold text-white">{averageSellerScore?.toFixed(1) || '-'}</p>
-              <p className="text-sm text-slate-500 mt-2">Calificación vendedores</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-              <Award className="w-7 h-7 text-amber-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-2xl p-6 border-l-4 border-l-emerald-500 border border-slate-700">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-400 mb-1">Índice Calidad</p>
-              <p className="text-4xl font-bold text-white">{Math.round((averageSellerScore || 7) * 10)}%</p>
-              <p className="text-sm text-slate-500 mt-2">Atenciones bien calificadas</p>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle className="w-7 h-7 text-emerald-500" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sales Funnel */}
-      <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-        <h3 className="text-lg font-bold text-white mb-6">Embudo de Ventas</h3>
-        <div className="flex items-end justify-between gap-4">
-          {funnelData.map((item, index) => {
-            const widthPercent = 100 - (index * 15);
-            const heightPercent = 60 + (index * 10);
-            return (
-              <div key={item.name} className="flex-1 text-center">
-                <div 
-                  className={`mx-auto rounded-lg ${item.color} transition-all duration-500 flex items-center justify-center mb-3`}
-                  style={{ 
-                    width: `${widthPercent}%`, 
-                    height: '80px',
-                  }}
-                >
-                  <span className="text-2xl font-bold text-white">{item.value.toLocaleString()}</span>
-                </div>
-                <p className="text-sm text-slate-400">{item.name}</p>
-                {index === funnelData.length - 1 && (
-                  <p className="text-xs text-emerald-400 mt-1">{conversionRate}% conversión</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* Charts Row */}
@@ -215,7 +117,7 @@ export default function Dashboard() {
         <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white">Ranking de Productores</h3>
+              <h3 className="text-lg font-bold text-white">Top Vendedores</h3>
               <p className="text-sm text-slate-400">Comparativa de ventas</p>
             </div>
             <Link to="/sellers" className="text-sm text-emerald-400 font-semibold flex items-center gap-1 hover:text-emerald-300">
@@ -236,7 +138,7 @@ export default function Dashboard() {
                   }}
                 />
                 <Bar dataKey="ventas" name="Ventas" fill="#10b981" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="sinVenta" name="Sin venta" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="sinVenta" name="Sin venta" fill="#ef4444" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -347,7 +249,7 @@ export default function Dashboard() {
               <Building2 className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Rendimiento Zonas</h3>
+              <h3 className="font-bold text-white">Rendimiento Sucursales</h3>
               <p className="text-xs text-slate-400">Por tasa de conversión</p>
             </div>
           </div>

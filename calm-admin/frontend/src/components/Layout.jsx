@@ -10,29 +10,28 @@ import {
   User,
   UserPlus,
   Lightbulb,
-  MapPin,
   TrendingUp
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useState, useEffect } from 'react';
 
-// Configuración de páginas con subtítulos
+// Configuración de páginas con subtítulos (ORIGINAL)
 const pageConfig = {
-  '/': { name: 'Dashboard Ventas', subtitle: 'Métricas de vendedores y atenciones', icon: LayoutDashboard },
-  '/transcriptions': { name: 'Interacciones', subtitle: 'Historial de conversaciones', icon: FileText },
-  '/sellers': { name: 'Productores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
-  '/branches': { name: 'Zonas', subtitle: 'Performance por punto de venta', icon: MapPin },
+  '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
+  '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
+  '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
+  '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
   '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
   '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
   '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
 };
 
-// Navegación base (visible para todos)
+// Navegación base (ORIGINAL)
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Interacciones', href: '/transcriptions', icon: FileText },
-  { name: 'Productores', href: '/sellers', icon: Users },
-  { name: 'Zonas', href: '/branches', icon: MapPin },
+  { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
+  { name: 'Vendedores', href: '/sellers', icon: Users },
+  { name: 'Sucursales', href: '/branches', icon: Building2 },
   { name: 'Recomendaciones', href: '/recommendations', icon: Lightbulb },
 ];
 
@@ -49,11 +48,9 @@ export default function Layout({ children }) {
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0, phase: '' });
 
-  // Get user from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
 
-  // Load metrics for header on mount
   useEffect(() => {
     if (!dashboardMetrics) {
       fetchDashboardMetrics();
@@ -128,7 +125,7 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
-  // Calcular meta (objetivo 40% conversión)
+  // Meta (objetivo 40% conversión)
   const conversionRate = dashboardMetrics?.conversionRate || 0;
   const metaPercent = Math.min(100, Math.round((conversionRate / 40) * 100));
 
@@ -147,7 +144,7 @@ export default function Layout({ children }) {
               <span className="text-xl font-light text-emerald-400"> Admin</span>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mt-2">Panel de Análisis de Ventas</p>
+          <p className="text-xs text-slate-400 mt-2">Panel de Administración</p>
         </div>
 
         {/* Navigation */}
@@ -174,7 +171,6 @@ export default function Layout({ children }) {
               );
             })}
             
-            {/* Navegación solo para ADMIN */}
             {isAdmin && (
               <>
                 <div className="border-t border-slate-700 my-4"></div>
@@ -256,7 +252,7 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-slate-900">
-        {/* Header - Dark Theme */}
+        {/* Header */}
         {(() => {
           const currentPage = pageConfig[location.pathname] || { name: 'Panel', subtitle: '', icon: LayoutDashboard };
           const PageIcon = currentPage.icon;
