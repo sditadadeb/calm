@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import Filters from '../components/Filters';
@@ -13,9 +13,83 @@ export default function Transcriptions() {
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
+
+  // Función para ordenar
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Datos ordenados
+  const sortedTranscriptions = useMemo(() => {
+    if (!transcriptions) return [];
+    
+    return [...transcriptions].sort((a, b) => {
+      const { key, direction } = sortConfig;
+      let aVal = a[key];
+      let bVal = b[key];
+      
+      // Manejar nulls
+      if (aVal === null || aVal === undefined) aVal = '';
+      if (bVal === null || bVal === undefined) bVal = '';
+      
+      // Comparar fechas
+      if (key === 'recordingDate') {
+        aVal = aVal ? new Date(aVal).getTime() : 0;
+        bVal = bVal ? new Date(bVal).getTime() : 0;
+      }
+      
+      // Comparar números
+      if (key === 'sellerScore') {
+        aVal = aVal || 0;
+        bVal = bVal || 0;
+      }
+      
+      // Comparar booleanos
+      if (key === 'saleCompleted' || key === 'analyzed') {
+        aVal = aVal === true ? 1 : aVal === false ? 0 : -1;
+        bVal = bVal === true ? 1 : bVal === false ? 0 : -1;
+      }
+      
+      // Comparar strings
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [transcriptions, sortConfig]);
+
+  // Componente para header ordenable
+  const SortableHeader = ({ label, sortKey, className = '' }) => {
+    const isActive = sortConfig.key === sortKey;
+    return (
+      <th 
+        className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none hover:bg-opacity-80 transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} ${className}`}
+        onClick={() => handleSort(sortKey)}
+      >
+        <div className="flex items-center gap-1">
+          {label}
+          {isActive ? (
+            sortConfig.direction === 'asc' ? 
+              <ChevronUp className="w-4 h-4 text-[#F5A623]" /> : 
+              <ChevronDown className="w-4 h-4 text-[#F5A623]" />
+          ) : (
+            <ChevronsUpDown className="w-3 h-3 opacity-40" />
+          )}
+        </div>
+      </th>
+    );
+  };
 
   useEffect(() => {
     const urlFilters = {};
@@ -140,18 +214,18 @@ export default function Transcriptions() {
             <table className="w-full">
               <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                 <tr>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>ID</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Vendedor</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursal</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Fecha</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Resultado</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Puntuación</th>
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Estado</th>
+                  <SortableHeader label="ID" sortKey="recordingId" />
+                  <SortableHeader label="Vendedor" sortKey="userName" />
+                  <SortableHeader label="Sucursal" sortKey="branchName" />
+                  <SortableHeader label="Fecha" sortKey="recordingDate" />
+                  <SortableHeader label="Resultado" sortKey="saleCompleted" />
+                  <SortableHeader label="Puntuación" sortKey="sellerScore" />
+                  <SortableHeader label="Estado" sortKey="analyzed" />
                   <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                {transcriptions.map((t, index) => (
+                {sortedTranscriptions.map((t, index) => (
                   <tr 
                     key={t.recordingId}
                     className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
