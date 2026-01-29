@@ -18,6 +18,7 @@ const useStore = create((set, get) => ({
     maxScore: null,
   },
   loading: false,
+  recalculating: false,
   error: null,
 
   // Actions
@@ -121,6 +122,29 @@ const useStore = create((set, get) => ({
 
   clearSelectedTranscription: () => {
     set({ selectedTranscription: null });
+  },
+
+  deleteTranscription: async (recordingId) => {
+    try {
+      await api.deleteTranscription(recordingId);
+      
+      // Mostrar barra de recalculando
+      set({ recalculating: true });
+      
+      // Recalcular todas las métricas
+      await Promise.all([
+        get().fetchDashboardMetrics(),
+        get().fetchTranscriptions(),
+        get().fetchSellers(),
+        get().fetchBranches(),
+      ]);
+      
+      set({ recalculating: false });
+      return { success: true };
+    } catch (error) {
+      set({ recalculating: false });
+      throw error;
+    }
   },
 }));
 

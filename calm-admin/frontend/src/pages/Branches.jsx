@@ -10,9 +10,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import useStore from '../store/useStore';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Branches() {
   const { dashboardMetrics, loading, fetchDashboardMetrics } = useStore();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     fetchDashboardMetrics();
@@ -22,8 +24,8 @@ export default function Branches() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1a1a2e] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-gray-500">Cargando sucursales...</p>
+          <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando sucursales...</p>
         </div>
       </div>
     );
@@ -38,82 +40,81 @@ export default function Branches() {
     score: b.averageScore || 0
   }));
 
+  const tooltipStyle = {
+    background: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
+    borderRadius: '12px',
+    color: isDark ? '#fff' : '#374151'
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#1a1a2e]">Sucursales</h1>
-        <p className="text-gray-500 mt-1">Rendimiento por ubicación</p>
-      </div>
-
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-          <div className="w-12 h-12 bg-[#1a1a2e] rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-6 h-6 text-white" />
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursales activas</p>
+              <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{branches.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-[#F5A623]/20 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-[#F5A623]" />
+            </div>
           </div>
-          <p className="text-3xl font-bold text-[#1a1a2e]">{branches.length}</p>
-          <p className="text-gray-500 text-sm mt-1">Sucursales activas</p>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-          <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <TrendingUp className="w-6 h-6 text-white" />
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Mejor conversión</p>
+              <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {branches.length > 0 ? Math.max(...branches.map(b => b.conversionRate)).toFixed(1) : 0}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-green-400" />
+            </div>
           </div>
-          <p className="text-3xl font-bold text-[#1a1a2e]">
-            {branches.length > 0 ? Math.max(...branches.map(b => b.conversionRate)).toFixed(1) : 0}%
-          </p>
-          <p className="text-gray-500 text-sm mt-1">Mejor conversión</p>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Users className="w-6 h-6 text-white" />
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-blue-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Total atenciones</p>
+              <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {branches.reduce((acc, b) => acc + b.totalInteractions, 0)}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-blue-400" />
+            </div>
           </div>
-          <p className="text-3xl font-bold text-[#1a1a2e]">
-            {branches.reduce((acc, b) => acc + b.totalInteractions, 0)}
-          </p>
-          <p className="text-gray-500 text-sm mt-1">Total atenciones</p>
         </div>
       </div>
 
       {/* Charts */}
       {branches.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-[#1a1a2e] mb-2">Conversión por Sucursal</h3>
-            <p className="text-sm text-gray-400 mb-6">Tasa de cierre de ventas</p>
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Conversión por Sucursal</h3>
+            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Tasa de cierre de ventas</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} angle={-45} textAnchor="end" height={60} />
-                <YAxis stroke="#9ca3af" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'white', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px'
-                  }}
-                  formatter={(value) => [`${value}%`, 'Conversión']}
-                />
-                <Bar dataKey="conversion" fill="#1a1a2e" radius={[4, 4, 0, 0]} />
+                <XAxis dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={11} angle={-45} textAnchor="end" height={60} />
+                <YAxis stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, 'Conversión']} />
+                <Bar dataKey="conversion" fill={isDark ? '#334155' : '#F5A623'} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold text-[#1a1a2e] mb-2">Score por Sucursal</h3>
-            <p className="text-sm text-gray-400 mb-6">Puntuación promedio de vendedores</p>
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Score por Sucursal</h3>
+            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Puntuación promedio de vendedores</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} angle={-45} textAnchor="end" height={60} />
-                <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 10]} />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'white', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '12px'
-                  }}
-                  formatter={(value) => [value.toFixed(1), 'Score']}
-                />
-                <Bar dataKey="score" fill="#28a745" radius={[4, 4, 0, 0]} />
+                <XAxis dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={11} angle={-45} textAnchor="end" height={60} />
+                <YAxis stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} domain={[0, 10]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value.toFixed(1), 'Score']} />
+                <Bar dataKey="score" fill="#22c55e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -122,67 +123,67 @@ export default function Branches() {
 
       {/* Branches Table */}
       {branches.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-gray-400" />
+        <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <Building2 className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay sucursales</h3>
-          <p className="text-gray-400">Sincroniza datos desde S3</p>
+          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No hay sucursales</h3>
+          <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Sincroniza datos desde S3</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="data-table">
-            <thead>
+        <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <table className="w-full">
+            <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
               <tr>
-                <th>Posición</th>
-                <th>Sucursal</th>
-                <th>Atenciones</th>
-                <th>Ventas</th>
-                <th>Sin Venta</th>
-                <th>Conversión</th>
-                <th>Score</th>
-                <th>Acciones</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Posición</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursal</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Atenciones</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Ventas</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sin Venta</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Conversión</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Score</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
               {branches.map((branch, index) => (
-                <tr key={branch.branchId}>
-                  <td>
+                <tr key={branch.branchId} className={`transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}>
+                  <td className="px-6 py-4">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                      index === 1 ? 'bg-gray-300 text-gray-700' :
-                      index === 2 ? 'bg-orange-300 text-orange-800' :
-                      'bg-gray-100 text-gray-500'
+                      index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
+                      index === 1 ? 'bg-slate-400 text-slate-800' :
+                      index === 2 ? 'bg-amber-700 text-amber-100' :
+                      isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {index + 1}
                     </div>
                   </td>
-                  <td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#1a1a2e] flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-white" />
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+                        <MapPin className="w-5 h-5 text-[#F5A623]" />
                       </div>
-                      <span className="font-medium text-[#1a1a2e] capitalize">{branch.branchName}</span>
+                      <span className={`font-medium capitalize ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</span>
                     </div>
                   </td>
-                  <td>
-                    <span className="font-semibold text-[#1a1a2e]">{branch.totalInteractions}</span>
+                  <td className="px-6 py-4">
+                    <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.totalInteractions}</span>
                   </td>
-                  <td>
-                    <span className="font-semibold text-green-600">{branch.sales}</span>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-green-400">{branch.sales}</span>
                   </td>
-                  <td>
-                    <span className="font-semibold text-red-600">{branch.noSales}</span>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-red-400">{branch.noSales}</span>
                   </td>
-                  <td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <span className={`font-bold ${
-                        branch.conversionRate >= 50 ? 'text-green-600' :
-                        branch.conversionRate >= 30 ? 'text-yellow-600' : 'text-red-600'
+                        branch.conversionRate >= 50 ? 'text-green-400' :
+                        branch.conversionRate >= 30 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                         {branch.conversionRate}%
                       </span>
-                      <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`w-16 h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                         <div 
                           className={`h-full rounded-full ${
                             branch.conversionRate >= 50 ? 'bg-green-500' :
@@ -193,18 +194,18 @@ export default function Branches() {
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td className="px-6 py-4">
                     <span className={`font-bold ${
-                      branch.averageScore >= 7 ? 'text-green-600' :
-                      branch.averageScore >= 5 ? 'text-yellow-600' : 'text-red-600'
+                      branch.averageScore >= 7 ? 'text-green-400' :
+                      branch.averageScore >= 5 ? 'text-yellow-400' : 'text-red-400'
                     }`}>
                       {branch.averageScore?.toFixed(1) || '-'}
                     </span>
                   </td>
-                  <td>
+                  <td className="px-6 py-4">
                     <Link
                       to={`/transcriptions?branchId=${branch.branchId}`}
-                      className="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-1"
+                      className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
                     >
                       <Eye className="w-3 h-3" /> Ver atenciones
                     </Link>

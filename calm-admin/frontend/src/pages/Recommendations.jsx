@@ -19,6 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useTheme } from '../context/ThemeContext';
 import { getRecommendationsMetrics, getRecommendationsByVendor, clearRecommendationsAnalyses } from '../api';
 import {
   RadarChart,
@@ -51,9 +52,9 @@ const sections = [
 const InfoTooltip = ({ text, children }) => (
   <div className="group relative inline-flex items-center">
     {children}
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line z-50 w-64 text-left pointer-events-none">
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line z-50 w-64 text-left pointer-events-none border border-gray-700">
       {text}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
     </div>
   </div>
 );
@@ -79,6 +80,7 @@ const FLOW_COLORS = {
 export default function Recommendations() {
   const [activeSection, setActiveSection] = useState(1);
   const { dashboardMetrics, fetchDashboardMetrics } = useStore();
+  const { isDark } = useTheme();
   
   // Estado para datos del análisis avanzado
   const [advancedMetrics, setAdvancedMetrics] = useState(null);
@@ -604,12 +606,12 @@ export default function Recommendations() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-gray-800">Conversation Flow Analysis</h3>
+                <h3 className="text-lg font-bold text-white">Conversation Flow Analysis</h3>
                 <InfoTooltip text={`Análisis de las fases de cada conversación de venta:\n\n• Apertura: Saludo, presentación inicial\n• Descubrimiento: Preguntas para entender necesidades (objetivo: >${THRESHOLDS.descubrimiento.min}%)\n• Objeción: Cliente expresa dudas\n• Argumento: Explicar beneficios\n• Cierre: Intento de cerrar (objetivo: >${THRESHOLDS.cierre.min}%)\n• Silencio: Pausas\n\nUn buen vendedor dedica más tiempo a Descubrimiento que a Argumento.`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-indigo-500 cursor-help" />
                 </InfoTooltip>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-slate-500 mb-4">
                 Distribución del tiempo de cada conversación por fase del proceso de venta.
               </p>
             </div>
@@ -618,12 +620,12 @@ export default function Recommendations() {
               {Object.entries(FLOW_COLORS).map(([key, color]) => (
                 <div key={key} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded" style={{ backgroundColor: color }}></div>
-                  <span className="text-xs text-gray-600 capitalize">{key}</span>
+                  <span className="text-xs text-slate-400 capitalize">{key}</span>
                 </div>
               ))}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-slate-700/50 rounded-xl p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={conversationFlowData} layout="vertical">
                   <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
@@ -640,17 +642,17 @@ export default function Recommendations() {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mt-4">
-              <div className="bg-white border rounded-xl p-4 text-center">
+              <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-green-600">25%</p>
-                <p className="text-xs text-gray-500">Descubrimiento promedio</p>
+                <p className="text-xs text-slate-500">Descubrimiento promedio</p>
               </div>
-              <div className="bg-white border rounded-xl p-4 text-center">
+              <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-purple-600">28%</p>
-                <p className="text-xs text-gray-500">Argumentación promedio</p>
+                <p className="text-xs text-slate-500">Argumentación promedio</p>
               </div>
-              <div className="bg-white border rounded-xl p-4 text-center">
+              <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-pink-600">16%</p>
-                <p className="text-xs text-gray-500">Cierre promedio</p>
+                <p className="text-xs text-slate-500">Cierre promedio</p>
               </div>
             </div>
           </div>
@@ -661,18 +663,18 @@ export default function Recommendations() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-gray-800">Customer Confidence Score</h3>
+                <h3 className="text-lg font-bold text-white">Customer Confidence Score</h3>
                 <InfoTooltip text={`Mide el nivel de confianza/interés del cliente durante la conversación (0-100).\n\nSe calcula analizando:\n• Tono y lenguaje del cliente\n• Preguntas que hace\n• Respuestas positivas/negativas\n• Nivel de engagement\n\n🎯 Umbral: >${THRESHOLDS.confidence.min} = Bueno\n⚠️ <${THRESHOLDS.confidence.min} = Necesita mejorar rapport\n\nLas ventas exitosas tienen en promedio 20-30 puntos más de confidence.`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-pink-500 cursor-help" />
                 </InfoTooltip>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-slate-500 mb-4">
                 Nivel de confianza del cliente detectado mediante análisis semántico.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-slate-700/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <h4 className="font-semibold text-gray-700">Por Vendedor (Venta vs No Venta)</h4>
                   <InfoTooltip text={`Compara el confidence score promedio de cada vendedor:\n\n🟢 Con Venta: Score en conversaciones que terminaron en venta\n🔴 Sin Venta: Score en conversaciones sin venta\n\nLa diferencia entre ambos indica cuánto impacta la confianza en el cierre.`}>
@@ -691,7 +693,7 @@ export default function Recommendations() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-slate-700/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <h4 className="font-semibold text-gray-700">Por Sucursal</h4>
                   <InfoTooltip text={`Confidence Score promedio por sucursal.\n\n🎯 Objetivo: >${THRESHOLDS.confidence.min}\n\nColores:\n🟢 Verde (>70): Excelente rapport\n🟠 Naranja (50-70): Aceptable\n🔴 Rojo (<50): Requiere atención\n\nSucursales con bajo confidence necesitan trabajar la primera impresión y conexión inicial.`}>
@@ -717,7 +719,7 @@ export default function Recommendations() {
               <div className="flex justify-between items-center">
                 <div className="text-center flex-1">
                   <p className="text-3xl font-bold text-green-600">78</p>
-                  <p className="text-xs text-gray-500">Score promedio en ventas</p>
+                  <p className="text-xs text-slate-500">Score promedio en ventas</p>
                 </div>
                 <div className="text-center px-8">
                   <p className="text-2xl font-bold text-gray-400">vs</p>
@@ -725,7 +727,7 @@ export default function Recommendations() {
                 </div>
                 <div className="text-center flex-1">
                   <p className="text-3xl font-bold text-red-500">42</p>
-                  <p className="text-xs text-gray-500">Score promedio sin venta</p>
+                  <p className="text-xs text-slate-500">Score promedio sin venta</p>
                 </div>
               </div>
             </div>
@@ -736,15 +738,15 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Clasificación de Objeciones</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-bold text-white mb-2">Clasificación de Objeciones</h3>
+              <p className="text-sm text-slate-500 mb-4">
                 Análisis detallado de cómo se manejan las objeciones del cliente.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {objectionTypes.map((obj, idx) => (
-                <div key={idx} className="bg-white border rounded-xl p-4 hover:shadow-md transition-shadow group relative">
+                <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 hover:shadow-md transition-shadow group relative">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-gray-700">{obj.type}</span>
                     <span 
@@ -754,7 +756,7 @@ export default function Recommendations() {
                       {obj.count}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
                       className="h-2 rounded-full transition-all"
                       style={{ width: `${(obj.count / maxObjectionCount) * 100}%`, backgroundColor: obj.color }}
@@ -787,25 +789,25 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Loss Moments</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-bold text-white mb-2">Loss Moments</h3>
+              <p className="text-sm text-slate-500 mb-4">
                 Patrones comunes detectados en conversaciones que no terminaron en venta.
               </p>
             </div>
 
             <div className="space-y-3">
               {lossMoments.map((moment, idx) => (
-                <div key={idx} className="bg-white border rounded-xl p-4 flex items-center gap-4">
+                <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
                     {idx + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800 italic">"{moment.phrase}"</p>
-                    <p className="text-xs text-gray-500">Aparece en {moment.frequency} conversaciones sin venta</p>
+                    <p className="font-medium text-white italic">"{moment.phrase}"</p>
+                    <p className="text-xs text-slate-500">Aparece en {moment.frequency} conversaciones sin venta</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-600">Min {moment.avgMinute}</p>
-                    <p className="text-xs text-gray-500">Momento promedio</p>
+                    <p className="text-xs text-slate-500">Momento promedio</p>
                   </div>
                 </div>
               ))}
@@ -819,7 +821,7 @@ export default function Recommendations() {
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-red-600">7-9 min</p>
-                  <p className="text-xs text-gray-500">Zona de mayor riesgo</p>
+                  <p className="text-xs text-slate-500">Zona de mayor riesgo</p>
                 </div>
               </div>
             </div>
@@ -830,8 +832,8 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Perfil de Vendedor</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-bold text-white mb-2">Perfil de Vendedor</h3>
+              <p className="text-sm text-slate-500 mb-4">
                 Análisis multidimensional de habilidades de venta.
                 {hasAdvancedData 
                   ? <span className="ml-2 text-purple-600 font-medium">(Promedio general)</span>
@@ -841,7 +843,7 @@ export default function Recommendations() {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-slate-700/50 rounded-xl p-4">
                 <h4 className="font-semibold text-gray-700 mb-3 text-center">
                   Radar de Habilidades {hasAdvancedData ? '- Promedio' : ''}
                 </h4>
@@ -857,16 +859,16 @@ export default function Recommendations() {
 
               <div className="space-y-3">
                 {Object.entries(vendorProfile).map(([key, value]) => (
-                  <div key={key} className="bg-white border rounded-lg p-3">
+                  <div key={key} className="bg-slate-700/50 border border-slate-600 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-gray-600 capitalize">
+                      <span className="text-sm text-slate-400 capitalize">
                         {key.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
                       <span className={`font-bold ${value > 70 ? 'text-green-600' : value > 50 ? 'text-amber-600' : 'text-red-600'}`}>
                         {value}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="w-full bg-slate-700 rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full ${value > 70 ? 'bg-green-500' : value > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
                         style={{ width: `${value}%` }}
@@ -883,8 +885,8 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">AI Insights</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-bold text-white mb-2">AI Insights</h3>
+              <p className="text-sm text-slate-500 mb-4">
                 Conclusiones automáticas basadas en el análisis de datos.
               </p>
             </div>
@@ -923,8 +925,8 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Comparador: Venta vs No Venta</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="text-lg font-bold text-white mb-2">Comparador: Venta vs No Venta</h3>
+              <p className="text-sm text-slate-500 mb-4">
                 Diferencias clave entre conversaciones exitosas y no exitosas.
               </p>
             </div>
@@ -937,19 +939,19 @@ export default function Recommendations() {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duración promedio</span>
+                    <span className="text-slate-400">Duración promedio</span>
                     <span className="font-bold text-green-700">{comparisonData.conVenta.duracion} min</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">% Tiempo vendedor</span>
+                    <span className="text-slate-400">% Tiempo vendedor</span>
                     <span className="font-bold text-green-700">{comparisonData.conVenta.ratioVendedor}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Objeciones promedio</span>
+                    <span className="text-slate-400">Objeciones promedio</span>
                     <span className="font-bold text-green-700">{comparisonData.conVenta.objeciones}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Confidence Score</span>
+                    <span className="text-slate-400">Confidence Score</span>
                     <span className="font-bold text-green-700">{comparisonData.conVenta.confianza}</span>
                   </div>
                 </div>
@@ -962,19 +964,19 @@ export default function Recommendations() {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duración promedio</span>
+                    <span className="text-slate-400">Duración promedio</span>
                     <span className="font-bold text-red-700">{comparisonData.sinVenta.duracion} min</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">% Tiempo vendedor</span>
+                    <span className="text-slate-400">% Tiempo vendedor</span>
                     <span className="font-bold text-red-700">{comparisonData.sinVenta.ratioVendedor}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Objeciones promedio</span>
+                    <span className="text-slate-400">Objeciones promedio</span>
                     <span className="font-bold text-red-700">{comparisonData.sinVenta.objeciones}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Confidence Score</span>
+                    <span className="text-slate-400">Confidence Score</span>
                     <span className="font-bold text-red-700">{comparisonData.sinVenta.confianza}</span>
                   </div>
                 </div>
@@ -996,12 +998,12 @@ export default function Recommendations() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-gray-800">Recomendaciones Accionables</h3>
+                <h3 className="text-lg font-bold text-white">Recomendaciones Accionables</h3>
                 <InfoTooltip text={`Recomendaciones automáticas basadas en el análisis de datos.\n\nUmbrales utilizados:\n• Confidence < ${THRESHOLDS.confidence.min}: Problema de rapport\n• Conversión < ${THRESHOLDS.conversion.min}%: Problema de cierre\n• Score vendedor < ${THRESHOLDS.sellerScore.min}: Problema general\n\nPrioridades:\n🔴 Alta: Requiere acción inmediata\n🟠 Media: Mejorar en próximas semanas\n🟢 Baja: Optimización opcional`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-orange-500 cursor-help" />
                 </InfoTooltip>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-slate-500 mb-4">
                 Acciones específicas basadas en los puntos de fuga detectados.
               </p>
             </div>
@@ -1011,14 +1013,14 @@ export default function Recommendations() {
                 <User className="w-4 h-4" /> Por Vendedor
               </h4>
               {actionableRecommendations.vendors.map((item, idx) => (
-                <div key={idx} className="bg-white border rounded-xl p-4 flex items-start gap-4">
+                <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 flex items-start gap-4">
                   <div className={`w-2 h-full rounded-full ${
                     item.priority === 'alta' ? 'bg-red-500' : 
                     item.priority === 'media' ? 'bg-amber-500' : 'bg-green-500'
                   }`}></div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">{item.recommendation}</p>
+                    <p className="font-medium text-white">{item.name}</p>
+                    <p className="text-sm text-slate-400 mt-1">{item.recommendation}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     item.priority === 'alta' ? 'bg-red-100 text-red-700' :
@@ -1039,14 +1041,14 @@ export default function Recommendations() {
                 </InfoTooltip>
               </h4>
               {actionableRecommendations.branches.map((item, idx) => (
-                <div key={idx} className="bg-white border rounded-xl p-4 flex items-start gap-4">
+                <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 flex items-start gap-4">
                   <div className={`w-2 h-full rounded-full ${
                     item.priority === 'alta' ? 'bg-red-500' : 
                     item.priority === 'media' ? 'bg-amber-500' : 'bg-green-500'
                   }`}></div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-800 capitalize">{item.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">{item.recommendation}</p>
+                    <p className="font-medium text-white capitalize">{item.name}</p>
+                    <p className="text-sm text-slate-400 mt-1">{item.recommendation}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     item.priority === 'alta' ? 'bg-red-100 text-red-700' :
@@ -1078,19 +1080,19 @@ export default function Recommendations() {
       {!loading && (
         <div className={`rounded-xl p-4 border flex items-center justify-between ${
           hasAdvancedData 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-amber-50 border-amber-200'
+            ? 'bg-green-500/10 border-green-500/30' 
+            : 'bg-amber-500/10 border-amber-500/30'
         }`}>
           <div className="flex items-center gap-3">
-            <Database className={`w-5 h-5 ${hasAdvancedData ? 'text-green-600' : 'text-amber-600'}`} />
+            <Database className={`w-5 h-5 ${hasAdvancedData ? 'text-green-400' : 'text-amber-400'}`} />
             <div>
-              <p className={`font-semibold ${hasAdvancedData ? 'text-green-800' : 'text-amber-800'}`}>
+              <p className={`font-semibold ${hasAdvancedData ? 'text-green-400' : 'text-amber-400'}`}>
                 {hasAdvancedData 
                   ? `Análisis avanzado disponible: ${advancedMetrics?.analyzedCount || 0} de ${advancedMetrics?.totalCount || 0} transcripciones`
                   : 'Sin análisis avanzado - Los datos mostrados son estimaciones'
                 }
               </p>
-              <p className={`text-sm ${hasAdvancedData ? 'text-green-600' : 'text-amber-600'}`}>
+              <p className={`text-sm ${hasAdvancedData ? 'text-green-500/70' : 'text-amber-500/70'}`}>
                 {hasAdvancedData 
                   ? 'Datos reales extraídos con GPT-4'
                   : 'Ejecutá el análisis avanzado para obtener datos reales de GPT'
@@ -1133,7 +1135,7 @@ export default function Recommendations() {
                   disabled={analyzing}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
                     analyzing 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
                       : 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300'
                   }`}
                   title={`Hay ${missingCount} transcripciones sin analizar`}
@@ -1150,7 +1152,7 @@ export default function Recommendations() {
                   disabled={analyzing}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
                     analyzing 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
                       : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
                   }`}
                   title="Borrar todos los análisis para re-ejecutar"
@@ -1166,14 +1168,14 @@ export default function Recommendations() {
 
       {/* Progress bar when analyzing */}
       {analyzing && analysisProgress.total > 0 && (
-        <div className="bg-white rounded-xl border p-4">
+        <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600">{analysisProgress.message}</span>
-            <span className="font-medium text-purple-600">{analysisProgress.percent}%</span>
+            <span className={isDark ? 'text-slate-300' : 'text-gray-600'}>{analysisProgress.message}</span>
+            <span className="font-medium text-[#F5A623]">{analysisProgress.percent}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className={`w-full rounded-full h-2 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
             <div 
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] h-2 rounded-full transition-all duration-300"
               style={{ width: `${analysisProgress.percent}%` }}
             />
           </div>
@@ -1181,13 +1183,13 @@ export default function Recommendations() {
       )}
 
       {/* Section Navigator */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+      <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <button 
             onClick={prevSection}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
           >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
           </button>
           
           <div className="flex items-center gap-2 overflow-x-auto px-4 scrollbar-hide">
@@ -1198,7 +1200,7 @@ export default function Recommendations() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                   activeSection === section.id
                     ? 'text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : isDark ? 'text-slate-400 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 style={activeSection === section.id ? { backgroundColor: section.color } : {}}
               >
@@ -1210,14 +1212,14 @@ export default function Recommendations() {
           
           <button 
             onClick={nextSection}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
           </button>
         </div>
 
         {/* Progress indicator */}
-        <div className="flex gap-1 px-4 py-2 bg-gray-50">
+        <div className={`flex gap-1 px-4 py-2 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
           {sections.map((section) => (
             <div
               key={section.id}
@@ -1231,27 +1233,27 @@ export default function Recommendations() {
       </div>
 
       {/* Content Area */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         {renderSection()}
       </div>
 
       {/* Quick Stats Footer */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-bold text-indigo-600">{dashboardMetrics?.totalTranscriptions || 0}</p>
-          <p className="text-xs text-gray-500">Conversaciones analizadas</p>
+        <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <p className="text-2xl font-bold text-indigo-400">{dashboardMetrics?.totalTranscriptions || 0}</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Conversaciones analizadas</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-bold text-green-600">{dashboardMetrics?.conversionRate || 0}%</p>
-          <p className="text-xs text-gray-500">Tasa de conversión</p>
+        <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <p className="text-2xl font-bold text-green-400">{dashboardMetrics?.conversionRate || 0}%</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Tasa de conversión</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-bold text-amber-600">{dashboardMetrics?.averageSellerScore?.toFixed(1) || '-'}</p>
-          <p className="text-xs text-gray-500">Score promedio</p>
+        <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <p className="text-2xl font-bold text-amber-400">{dashboardMetrics?.averageSellerScore?.toFixed(1) || '-'}</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Score promedio</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-bold text-purple-600">{dashboardMetrics?.sellerMetrics?.length || 0}</p>
-          <p className="text-xs text-gray-500">Vendedores activos</p>
+        <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <p className="text-2xl font-bold text-purple-400">{dashboardMetrics?.sellerMetrics?.length || 0}</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Vendedores activos</p>
         </div>
       </div>
     </div>

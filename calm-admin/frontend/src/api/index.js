@@ -67,6 +67,8 @@ export const getTranscription = (recordingId) => api.get(`/transcriptions/${reco
 
 export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${recordingId}/analyze`);
 
+export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);
+
 // Sync
 export const syncTranscriptions = () => api.post('/sync');
 

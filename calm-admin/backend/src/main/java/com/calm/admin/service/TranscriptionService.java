@@ -5,6 +5,7 @@ import com.calm.admin.dto.FilterDTO;
 import com.calm.admin.dto.TranscriptionDTO;
 import com.calm.admin.model.AnalysisResult;
 import com.calm.admin.model.Transcription;
+import com.calm.admin.repository.AdvancedAnalysisRepository;
 import com.calm.admin.repository.TranscriptionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +26,16 @@ public class TranscriptionService {
     private static final Logger log = LoggerFactory.getLogger(TranscriptionService.class);
 
     private final TranscriptionRepository repository;
+    private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final S3Service s3Service;
     private final ChatGPTAnalyzerService analyzerService;
 
-    public TranscriptionService(TranscriptionRepository repository, S3Service s3Service, ChatGPTAnalyzerService analyzerService) {
+    public TranscriptionService(TranscriptionRepository repository, 
+                                AdvancedAnalysisRepository advancedAnalysisRepository,
+                                S3Service s3Service, 
+                                ChatGPTAnalyzerService analyzerService) {
         this.repository = repository;
+        this.advancedAnalysisRepository = advancedAnalysisRepository;
         this.s3Service = s3Service;
         this.analyzerService = analyzerService;
     }
@@ -67,6 +73,12 @@ public class TranscriptionService {
             return null;
         }
         
+        // Obtener la fecha del archivo en S3 (cuando se creó la grabación)
+        java.time.Instant s3Date = s3Service.getTranscriptionDate(recordingId);
+        LocalDateTime recordingDate = s3Date != null 
+            ? LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault())
+            : LocalDateTime.now();
+        
         Transcription transcription = new Transcription();
         transcription.setRecordingId(recordingId);
         transcription.setUserId(metadata.get("userId") != null ? (Long) metadata.get("userId") : null);
@@ -74,7 +86,7 @@ public class TranscriptionService {
         transcription.setBranchId(metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null);
         transcription.setBranchName(metadata.get("branchName") != null ? (String) metadata.get("branchName") : "Desconocida");
         transcription.setTranscriptionText(transcriptionText);
-        transcription.setRecordingDate(LocalDateTime.now());
+        transcription.setRecordingDate(recordingDate);
         transcription.setAnalyzed(false);
         
         return repository.save(transcription);
@@ -446,5 +458,23 @@ public class TranscriptionService {
         dto.setAnalyzedAt(t.getAnalyzedAt());
         dto.setAnalyzed(t.getAnalyzed());
         return dto;
+    }
+    
+    /**
+     * Elimina una transcripción y su análisis avanzado asociado.
+     */
+    @Transactional
+    public void deleteTranscription(String recordingId) {
+        Transcription transcription = repository.findById(recordingId)
+                .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
+        
+        // Eliminar análisis avanzado si existe
+        advancedAnalysisRepository.findByRecordingId(recordingId)
+                .ifPresent(advancedAnalysisRepository::delete);
+        
+        // Eliminar la transcripción
+        repository.delete(transcription);
+        
+        log.info("Transcripción eliminada: {}", recordingId);
     }
 }

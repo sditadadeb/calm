@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -115,6 +116,22 @@ public class TranscriptionController {
     @PostMapping("/reanalyze-no-sales")
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
         return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
+    }
+    
+    /**
+     * Elimina una transcripción y sus análisis asociados.
+     * Solo para administradores.
+     */
+    @DeleteMapping("/transcriptions/{recordingId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deleteTranscription(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        transcriptionService.deleteTranscription(recordingId);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Transcripción eliminada correctamente",
+            "recordingId", recordingId
+        ));
     }
     
     /**

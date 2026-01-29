@@ -3,12 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --calm-yellow: #F5A623;
-  --calm-yellow-light: #FFBB54;
-  --calm-yellow-dark: #D4911F;
-  --calm-slate-900: #0f172a;
-  --calm-slate-800: #1e293b;
-  --calm-slate-700: #334155;
+  --calm-primary: #F5A623;
+  --calm-secondary: #FFBB54;
+  --calm-dark: #D4911F;
 }
 
 * {
@@ -19,132 +16,48 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0f172a;
   min-height: 100vh;
+}
+
+/* Light mode body */
+body:not(.dark) {
+  background: #f9fafb;
+  color: #374151;
+}
+
+/* Dark mode body */
+.dark body,
+body.dark {
+  background: #0f172a;
   color: #f1f5f9;
 }
 
-/* Custom scrollbar - CALM colors */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #e5e7eb;
   border-radius: 4px;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #9ca3af;
   border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #F5A623;
-}
-
-/* Card styles - Dark theme */
-.card {
-  background: #1e293b;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 1px solid #334155;
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
-  transform: translateY(-2px);
-}
-
-/* Metric cards */
-.metric-card {
-  background: #1e293b;
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid #334155;
-  border-left: 4px solid #F5A623;
-  transition: all 0.3s ease;
-}
-
-.metric-card:hover {
-  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.2);
-  transform: translateY(-2px);
-}
-
-.metric-card.success {
-  border-left-color: #22c55e;
-}
-
-.metric-card.danger {
-  border-left-color: #ef4444;
-}
-
-.metric-card.warning {
-  border-left-color: #f59e0b;
-}
-
-/* Sale status badges */
-.badge-sale {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-  font-weight: 600;
-}
-
-.badge-no-sale {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  font-weight: 600;
-}
-
-.badge-pending {
-  background: rgba(255, 107, 53, 0.2);
-  color: #F5A623;
-  font-weight: 600;
-}
-
-/* Score indicator */
-.score-excellent { color: #22c55e; }
-.score-good { color: #4ade80; }
-.score-average { color: #f59e0b; }
-.score-poor { color: #f97316; }
-.score-bad { color: #ef4444; }
-
-/* Table styles */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table thead {
-  background: #334155;
-}
-
-.data-table thead th {
-  padding: 16px 20px;
-  text-align: left;
-  font-weight: 600;
-  color: #f1f5f9;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid #F5A623;
-}
-
-.data-table tbody tr {
-  border-bottom: 1px solid #334155;
-  transition: all 0.2s ease;
-}
-
-.data-table tbody tr:hover {
-  background: #334155;
-}
-
-.data-table tbody td {
-  padding: 16px 20px;
-  vertical-align: middle;
-  color: #e2e8f0;
 }
 
 /* Animations */
@@ -166,7 +79,7 @@ body {
   animation: slideUp 0.4s ease-out;
 }
 
-/* Button styles - CALM orange */
+/* Button styles */
 .btn-primary {
   background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
   color: white;
@@ -177,12 +90,12 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+  box-shadow: 0 6px 20px rgba(245, 166, 35, 0.5);
 }
 
 .btn-primary:disabled {
@@ -191,60 +104,97 @@ body {
   transform: none;
 }
 
-.btn-secondary {
-  background: #334155;
-  border: 1px solid #475569;
-  color: #f1f5f9;
+/* Table styles - Light mode */
+.data-table thead {
+  background: #f9fafb;
+}
+
+.data-table thead th {
+  padding: 16px 20px;
+  text-align: left;
   font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #F5A623;
 }
 
-.btn-secondary:hover {
-  border-color: #F5A623;
-  color: #F5A623;
-  background: rgba(255, 107, 53, 0.1);
+.data-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
 
-/* Input styles */
-.input-field {
-  background: #1e293b;
-  border: 1px solid #475569;
-  border-radius: 12px;
-  padding: 12px 16px;
-  color: #f1f5f9;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  width: 100%;
+.data-table tbody tr:hover {
+  background: #f9fafb;
 }
 
-.input-field:focus {
-  outline: none;
-  border-color: #F5A623;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+.data-table tbody td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  color: #374151;
 }
 
-.input-field::placeholder {
-  color: #64748b;
+/* Table styles - Dark mode */
+.dark .data-table thead {
+  background: #334155;
 }
 
-/* Select styles */
-select.input-field {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF6B35' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 44px;
+.dark .data-table thead th {
+  color: #94a3b8;
+  border-bottom: 2px solid #F5A623;
 }
 
-select.input-field option {
-  background: #1e293b;
-  color: #f1f5f9;
+.dark .data-table tbody tr {
+  border-bottom: 1px solid #334155;
 }
+
+.dark .data-table tbody tr:hover {
+  background: #334155;
+}
+
+.dark .data-table tbody td {
+  color: #e2e8f0;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dark .progress-bar {
+  background: #334155;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #F5A623, #FFBB54);
+}
+
+/* Sale status badges */
+.badge-sale {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.badge-no-sale {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* Score indicator */
+.score-excellent { color: #22c55e; }
+.score-good { color: #4ade80; }
+.score-average { color: #f59e0b; }
+.score-poor { color: #f97316; }
+.score-bad { color: #ef4444; }
 
 /* Tags */
 .tag {
@@ -257,7 +207,7 @@ select.input-field option {
 }
 
 .tag-primary {
-  background: rgba(255, 107, 53, 0.2);
+  background: rgba(245, 166, 35, 0.2);
   color: #F5A623;
 }
 
@@ -276,22 +226,7 @@ select.input-field option {
   color: #fbbf24;
 }
 
-/* Progress bar */
-.progress-bar {
-  height: 8px;
-  background: #334155;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
-  background: linear-gradient(90deg, #F5A623, #FFBB54);
-}
-
-/* Ranking badges - CALM colors */
+/* Ranking badges */
 .rank-badge-1 {
   background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
   color: white;
@@ -307,26 +242,12 @@ select.input-field option {
   color: #fef3c7;
 }
 
-/* Sidebar nav items */
-.sidebar-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  border-radius: 12px;
-  color: #94a3b8;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  margin: 4px 0;
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.sidebar-nav-item:hover {
-  background: #334155;
-  color: #f1f5f9;
-}
-
-.sidebar-nav-item.active {
-  background: linear-gradient(135deg, #F5A623 0%, #FFBB54 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

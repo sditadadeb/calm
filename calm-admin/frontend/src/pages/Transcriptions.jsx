@@ -1,18 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useTheme } from '../context/ThemeContext';
 import Filters from '../components/Filters';
 import ScoreBadge from '../components/ScoreBadge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Transcriptions() {
-  const { transcriptions, loading, fetchTranscriptions, analyzeTranscription, setFilters } = useStore();
+  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters } = useStore();
+  const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
+  const [deleting, setDeleting] = useState(null);
+  
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.role === 'ADMIN';
 
   useEffect(() => {
-    // Read URL params and set filters
     const urlFilters = {};
     
     const userId = searchParams.get('userId');
@@ -33,7 +38,6 @@ export default function Transcriptions() {
     if (minScore) urlFilters.minScore = parseInt(minScore);
     if (maxScore) urlFilters.maxScore = parseInt(maxScore);
 
-    // Set filters from URL if any exist
     if (Object.keys(urlFilters).length > 0) {
       setFilters(urlFilters);
     }
@@ -51,6 +55,28 @@ export default function Transcriptions() {
     }
   };
 
+  const handleDelete = async (recordingId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const confirmed = window.confirm(
+      '¿Estás seguro de eliminar esta transcripción?\n\n' +
+      '⚠️ Esta acción no se puede deshacer.\n' +
+      '📊 Las métricas del dashboard cambiarán al eliminar esta transcripción.'
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      setDeleting(recordingId);
+      await deleteTranscription(recordingId);
+    } catch (error) {
+      alert('Error al eliminar: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -62,122 +88,155 @@ export default function Transcriptions() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1a1a2e]">Transcripciones</h1>
-          <p className="text-gray-500 mt-1">Listado completo de atenciones</p>
+      {/* Barra de recalculando métricas */}
+      {recalculating && (
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-3">
+            <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
+            <div className="flex-1">
+              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                Recalculando métricas...
+              </p>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                Actualizando dashboard, vendedores y sucursales
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-[#F5A623] to-[#FFBB54] rounded-full animate-pulse"
+              style={{ width: '100%' }}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <FileText className="w-4 h-4" />
-          <span>{transcriptions.length} registros</span>
-        </div>
+      )}
+
+      {/* Info */}
+      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <FileText className="w-4 h-4" />
+        <span>{transcriptions.length} registros</span>
       </div>
 
       {/* Filters */}
       <Filters onApply={fetchTranscriptions} />
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-10 h-10 border-4 border-[#1a1a2e] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="mt-4 text-gray-500">Cargando transcripciones...</p>
+            <div className="w-10 h-10 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripciones...</p>
           </div>
         ) : transcriptions.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-gray-400" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+              <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontraron transcripciones</h3>
-            <p className="text-gray-400">Intenta ajustar los filtros o sincronizar desde S3</p>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No se encontraron transcripciones</h3>
+            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Intenta ajustar los filtros o sincronizar desde S3</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
+            <table className="w-full">
+              <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                 <tr>
-                  <th>ID</th>
-                  <th>Vendedor</th>
-                  <th>Sucursal</th>
-                  <th>Fecha</th>
-                  <th>Resultado</th>
-                  <th>Puntuación</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>ID</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Vendedor</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursal</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Fecha</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Resultado</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Puntuación</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Estado</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
                 {transcriptions.map((t, index) => (
                   <tr 
                     key={t.recordingId}
-                    className="animate-fade-in"
+                    className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
-                    <td>
-                      <span className="font-mono text-sm font-medium text-[#1a1a2e]">#{t.recordingId}</span>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-sm font-medium text-[#F5A623]">#{t.recordingId}</span>
                     </td>
-                    <td>
+                    <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium text-[#1a1a2e]">{t.userName || 'Desconocido'}</p>
-                        <p className="text-xs text-gray-400">ID: {t.userId}</p>
+                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{t.userName || 'Desconocido'}</p>
+                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {t.userId}</p>
                       </div>
                     </td>
-                    <td>
-                      <span className="capitalize text-gray-600">{t.branchName || '-'}</span>
+                    <td className="px-6 py-4">
+                      <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t.branchName || '-'}</span>
                     </td>
-                    <td>
-                      <div className="flex items-center gap-2 text-gray-500">
+                    <td className="px-6 py-4">
+                      <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                         <Clock className="w-4 h-4" />
                         <span className="text-sm">{formatDate(t.recordingDate)}</span>
                       </div>
                     </td>
-                    <td>
+                    <td className="px-6 py-4">
                       {t.saleCompleted === true && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
                           <CheckCircle className="w-3 h-3" /> Venta
                         </span>
                       )}
                       {t.saleCompleted === false && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
                           <XCircle className="w-3 h-3" /> Sin venta
                         </span>
                       )}
                       {t.saleCompleted === null && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>
                           Pendiente
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td className="px-6 py-4">
                       <ScoreBadge score={t.sellerScore} size="small" />
                     </td>
-                    <td>
+                    <td className="px-6 py-4">
                       {t.analyzed ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
                           <CheckCircle className="w-3 h-3" /> Analizado
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-yellow-600 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-yellow-400 text-xs font-medium">
                           <Sparkles className="w-3 h-3" /> Pendiente
                         </span>
                       )}
                     </td>
-                    <td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${t.recordingId}`}
-                          className="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-1"
+                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
                         >
                           <Eye className="w-3 h-3" /> Ver
                         </Link>
                         {!t.analyzed && (
                           <button
                             onClick={(e) => handleAnalyze(t.recordingId, e)}
-                            className="btn-primary text-xs py-2 px-3 inline-flex items-center gap-1"
+                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
                             disabled={loading}
                           >
                             <Sparkles className="w-3 h-3" /> Analizar
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => handleDelete(t.recordingId, e)}
+                            className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${
+                              deleting === t.recordingId 
+                                ? 'bg-red-500/50 text-white cursor-not-allowed' 
+                                : isDark 
+                                  ? 'bg-slate-700 text-red-400 hover:bg-red-500 hover:text-white' 
+                                  : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
+                            }`}
+                            disabled={deleting === t.recordingId}
+                            title="Eliminar transcripción"
+                          >
+                            <Trash2 className={`w-3 h-3 ${deleting === t.recordingId ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                       </div>

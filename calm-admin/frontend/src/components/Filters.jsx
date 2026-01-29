@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Filter, X, Search } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Filters({ onApply }) {
+  const { isDark } = useTheme();
   const { 
     filters, 
     setFilters, 
@@ -31,21 +33,27 @@ export default function Filters({ onApply }) {
     if (onApply) onApply();
   };
 
+  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
+    isDark 
+      ? 'bg-slate-700 border border-slate-600 text-white' 
+      : 'bg-white border border-gray-300 text-gray-800'
+  }`;
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+    <div className={`rounded-2xl border p-6 mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-lg">
-            <Filter className="w-5 h-5 text-gray-600" />
+          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <Filter className="w-5 h-5 text-[#F5A623]" />
           </div>
           <div>
-            <h3 className="font-semibold text-[#1a1a2e]">Filtros</h3>
-            <p className="text-xs text-gray-400">Refina tu búsqueda</p>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Filtros</h3>
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Refina tu búsqueda</p>
           </div>
         </div>
         <button
           onClick={handleClear}
-          className="text-gray-400 hover:text-red-500 text-sm flex items-center gap-1 transition-colors"
+          className={`text-sm flex items-center gap-1 transition-colors ${isDark ? 'text-slate-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'}`}
         >
           <X className="w-4 h-4" />
           Limpiar filtros
@@ -55,11 +63,11 @@ export default function Filters({ onApply }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Vendedor */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Vendedor</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Vendedor</label>
           <select
             value={filters.userId || ''}
             onChange={(e) => handleFilterChange('userId', e.target.value)}
-            className="input-field"
+            className={inputClasses}
           >
             <option value="">Todos los vendedores</option>
             {sellers.map((seller) => (
@@ -72,11 +80,11 @@ export default function Filters({ onApply }) {
 
         {/* Sucursal */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Sucursal</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Sucursal</label>
           <select
             value={filters.branchId || ''}
             onChange={(e) => handleFilterChange('branchId', e.target.value)}
-            className="input-field"
+            className={inputClasses}
           >
             <option value="">Todas las sucursales</option>
             {branches.map((branch) => (
@@ -89,11 +97,11 @@ export default function Filters({ onApply }) {
 
         {/* Resultado */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Resultado</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Resultado</label>
           <select
             value={filters.saleCompleted === null ? '' : filters.saleCompleted}
             onChange={(e) => handleFilterChange('saleCompleted', e.target.value === '' ? null : e.target.value === 'true')}
-            className="input-field"
+            className={inputClasses}
           >
             <option value="">Todos los resultados</option>
             <option value="true">✓ Venta realizada</option>
@@ -103,33 +111,33 @@ export default function Filters({ onApply }) {
 
         {/* Fecha desde */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Desde</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Desde</label>
           <input
             type="date"
             value={filters.dateFrom || ''}
             onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-            className="input-field"
+            className={inputClasses}
           />
         </div>
 
         {/* Fecha hasta */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Hasta</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Hasta</label>
           <input
             type="date"
             value={filters.dateTo || ''}
             onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-            className="input-field"
+            className={inputClasses}
           />
         </div>
 
         {/* Puntuación mínima */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Puntuación mín.</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Puntuación mín.</label>
           <select
             value={filters.minScore || ''}
             onChange={(e) => handleFilterChange('minScore', e.target.value)}
-            className="input-field"
+            className={inputClasses}
           >
             <option value="">Sin mínimo</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
@@ -140,10 +148,16 @@ export default function Filters({ onApply }) {
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <button onClick={handleClear} className="btn-secondary">
+        <button 
+          onClick={handleClear} 
+          className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
           Limpiar
         </button>
-        <button onClick={handleApply} className="btn-primary flex items-center gap-2">
+        <button 
+          onClick={handleApply} 
+          className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+        >
           <Search className="w-4 h-4" />
           Aplicar filtros
         </button>
