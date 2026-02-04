@@ -79,12 +79,20 @@ public class TranscriptionService {
             ? LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault())
             : LocalDateTime.now();
         
+        // Obtener valores de metadata
+        String userName = metadata.get("userName") != null ? (String) metadata.get("userName") : "Desconocido";
+        String branchName = metadata.get("branchName") != null ? (String) metadata.get("branchName") : "Desconocida";
+        
+        // Mapeo de nombres (hardcoded)
+        userName = mapUserName(userName);
+        branchName = mapBranchName(branchName);
+        
         Transcription transcription = new Transcription();
         transcription.setRecordingId(recordingId);
         transcription.setUserId(metadata.get("userId") != null ? (Long) metadata.get("userId") : null);
-        transcription.setUserName(metadata.get("userName") != null ? (String) metadata.get("userName") : "Desconocido");
+        transcription.setUserName(userName);
         transcription.setBranchId(metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null);
-        transcription.setBranchName(metadata.get("branchName") != null ? (String) metadata.get("branchName") : "Desconocida");
+        transcription.setBranchName(branchName);
         transcription.setTranscriptionText(transcriptionText);
         transcription.setRecordingDate(recordingDate);
         transcription.setAnalyzed(false);
@@ -480,5 +488,34 @@ public class TranscriptionService {
         repository.delete(transcription);
         
         log.info("Transcripción eliminada: {}", recordingId);
+    }
+    
+    /**
+     * Mapea nombres de usuario a nombres reales.
+     * Agregar más mapeos según sea necesario.
+     */
+    private String mapUserName(String originalName) {
+        if (originalName == null) return "Desconocido";
+        
+        // Mapeos hardcodeados
+        return switch (originalName.toLowerCase().trim()) {
+            case "calm administrator" -> "Matías Vergara";
+            case "admin" -> "Matías Vergara";
+            default -> originalName;
+        };
+    }
+    
+    /**
+     * Mapea nombres de sucursal a nombres reales.
+     * Agregar más mapeos según sea necesario.
+     */
+    private String mapBranchName(String originalName) {
+        if (originalName == null) return "Desconocida";
+        
+        // Mapeos hardcodeados
+        return switch (originalName.toLowerCase().trim()) {
+            case "central" -> "Godoy Cruz";
+            default -> originalName;
+        };
     }
 }
