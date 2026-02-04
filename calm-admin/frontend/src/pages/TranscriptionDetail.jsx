@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import ScoreBadge from '../components/ScoreBadge';
 import { useTheme } from '../context/ThemeContext';
-import api from '../api';
+import { getTranscription } from '../api';
 
 // Mapeo de saleStatus a labels y colores
 const SALE_STATUS_CONFIG = {
@@ -74,7 +74,7 @@ export default function TranscriptionDetail() {
     const fetchTranscription = async () => {
       try {
         setLoading(true);
-        const response = await api.getTranscription(id);
+        const response = await getTranscription(id);
         setTranscription(response.data);
       } catch (err) {
         console.error('Error fetching transcription:', err);
