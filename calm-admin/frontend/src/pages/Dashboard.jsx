@@ -44,9 +44,10 @@ export default function Dashboard() {
   const { isDark } = useTheme();
 
   useEffect(() => {
+    // Siempre cargar datos al entrar al Dashboard
     fetchDashboardMetrics();
     fetchTranscriptions();
-  }, []);
+  }, [fetchDashboardMetrics, fetchTranscriptions]);
 
   if (loading && !dashboardMetrics) {
     return (
@@ -102,15 +103,17 @@ export default function Dashboard() {
         matrix[day][hour] = 0;
       }
     }
-    // Contar transcripciones
-    transcriptions?.forEach(t => {
-      if (t.recordingDate) {
-        const date = new Date(t.recordingDate);
-        const day = date.getDay(); // 0-6
-        const hour = date.getHours(); // 0-23
-        matrix[day][hour]++;
-      }
-    });
+    // Contar transcripciones (solo si hay datos)
+    if (transcriptions && transcriptions.length > 0) {
+      transcriptions.forEach(t => {
+        if (t.recordingDate) {
+          const date = new Date(t.recordingDate);
+          const day = date.getDay(); // 0-6
+          const hour = date.getHours(); // 0-23
+          matrix[day][hour]++;
+        }
+      });
+    }
     return matrix;
   })();
 
@@ -122,12 +125,17 @@ export default function Dashboard() {
 
   // Procesar datos para Scatter plot temporal (X = fecha, Y = hora)
   const scatterData = (() => {
-    const branches = [...new Set(transcriptions?.map(t => t.branchName).filter(Boolean))];
+    // Verificar que hay datos antes de procesar
+    if (!transcriptions || transcriptions.length === 0) {
+      return { branches: [], dates: [], dateToX: {} };
+    }
+    
+    const branches = [...new Set(transcriptions.map(t => t.branchName).filter(Boolean))];
     
     // Obtener todas las fechas únicas para el eje X
     const allDates = [...new Set(
       transcriptions
-        ?.filter(t => t.recordingDate)
+        .filter(t => t.recordingDate)
         .map(t => new Date(t.recordingDate).toDateString())
     )].sort((a, b) => new Date(a) - new Date(b));
     
@@ -139,7 +147,7 @@ export default function Dashboard() {
         branch,
         color: BRANCH_COLORS[idx % BRANCH_COLORS.length],
         data: transcriptions
-          ?.filter(t => t.branchName === branch && t.recordingDate)
+          .filter(t => t.branchName === branch && t.recordingDate)
           .map(t => {
             const date = new Date(t.recordingDate);
             const dateStr = date.toDateString();

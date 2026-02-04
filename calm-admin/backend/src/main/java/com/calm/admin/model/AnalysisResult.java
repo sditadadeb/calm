@@ -5,6 +5,8 @@ import java.util.List;
 public class AnalysisResult {
     
     private boolean saleCompleted;
+    private String saleStatus; // SALE_CONFIRMED, SALE_LIKELY, ADVANCE_NO_CLOSE, NO_SALE, UNINTERPRETABLE
+    private int analysisConfidence; // 0-100
     private String saleEvidence; // Evidencia que confirma/descarta la venta
     private String noSaleReason;
     private List<String> productsDiscussed;
@@ -20,6 +22,12 @@ public class AnalysisResult {
 
     public boolean isSaleCompleted() { return saleCompleted; }
     public void setSaleCompleted(boolean saleCompleted) { this.saleCompleted = saleCompleted; }
+
+    public String getSaleStatus() { return saleStatus; }
+    public void setSaleStatus(String saleStatus) { this.saleStatus = saleStatus; }
+
+    public int getAnalysisConfidence() { return analysisConfidence; }
+    public void setAnalysisConfidence(int analysisConfidence) { this.analysisConfidence = analysisConfidence; }
 
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }

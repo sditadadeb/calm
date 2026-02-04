@@ -38,63 +38,89 @@ Tu tarea es analizar transcripciones de interacciones entre vendedores y cliente
 Debes interpretar el contexto general de la conversación.
 
 ═══════════════════════════════════════════════════════════════════
-🔴 CRITERIOS PARA DETERMINAR SI HUBO VENTA (saleCompleted = true):
+📊 CLASIFICACIÓN DE ESTADO DE VENTA (saleStatus):
 ═══════════════════════════════════════════════════════════════════
 
-⚠️ REGLA CRÍTICA: Si aparece CUALQUIERA de estas frases, ES VENTA (saleCompleted=true):
+Debes clasificar cada conversación en UNO de estos estados:
+
+🟢 SALE_CONFIRMED - Venta confirmada con evidencia explícita:
+   - El cliente dice "lo llevo", "lo compro", "me lo quedo"
+   - Se coordinan datos de entrega (dirección, nombre, horario)
+   - Se procesa pago (tarjeta, transferencia, efectivo)
+   - Se genera factura o comprobante
+
+🟡 SALE_LIKELY - Alta probabilidad de venta pero sin confirmación explícita:
+   - El cliente muestra fuerte intención pero no hay cierre grabado
+   - Se discuten detalles finales sin confirmación audible
+   - La conversación se corta antes del cierre pero hay señales claras
+
+🟠 ADVANCE_NO_CLOSE - Avance comercial sin cierre:
+   - El cliente está interesado pero dice "lo pienso", "vuelvo"
+   - Se piden datos de contacto para seguimiento
+   - Hay interés real pero no se concreta
+
+🔴 NO_SALE - No hubo venta:
+   - El cliente rechaza o no muestra interés
+   - Solo consulta de precios sin avance
+   - Objeciones no resueltas que terminan la conversación
+
+⚫ UNINTERPRETABLE - Transcripción no interpretable:
+   - Texto muy corto o sin contexto comercial
+   - Demasiados errores de transcripción
+   - No se puede determinar si hubo interacción comercial
+
+═══════════════════════════════════════════════════════════════════
+🎯 SEÑALES CLAVE PARA DETECTAR VENTA CONFIRMADA:
+═══════════════════════════════════════════════════════════════════
+
+⚠️ REGLA CRÍTICA: Si aparece CUALQUIERA de estas frases → SALE_CONFIRMED:
 - "dirección de entrega" o "direccion de entrega" 
-- "nombre y apellido"
+- "nombre y apellido" (para facturación/entrega)
 - "te llega mañana" / "llegando mañana" / "entregado para mañana"
 - "rango horario" / "horario de entrega"
 - "sale del depósito" / "envío a domicilio"
-
-Estas frases SOLO se dicen cuando YA SE CONCRETÓ la compra. No importa si después dice "chau" o "gracias".
-
-📦 SEÑALES DE PROCESO DE COMPRA (indica venta aunque no diga "lo compro"):
-- El vendedor pide DIRECCIÓN DE ENTREGA o datos de envío → ES VENTA
-- El vendedor pide NOMBRE Y APELLIDO del cliente → ES VENTA  
-- Se menciona una FECHA DE ENTREGA específica → ES VENTA
-- Se coordina un HORARIO DE ENTREGA → ES VENTA
-- El vendedor menciona que sale del DEPÓSITO para envío → ES VENTA
-
-💰 SEÑALES DE PAGO/TRANSACCIÓN:
-- Se menciona pasar tarjeta, transferencia, efectivo como pago actual
-- Se habla de cuotas o financiación COMO FORMA DE PAGO acordada
-- Se aplican descuentos específicos ("te queda en X pesos")
-- Se menciona seña o depósito para reservar
-
-✅ CONFIRMACIONES EXPLÍCITAS:
-- "lo llevo", "lo compro", "me lo quedo", "dale", "listo", "cerramos"
-- El cliente acepta una propuesta de precio final
-- Se genera factura o comprobante
+- "paso la tarjeta" / "genero la factura"
 
 ═══════════════════════════════════════════════════════════════════
-🟢 NO ES VENTA (saleCompleted = false) si:
+📝 REGLAS DE CALIDAD DE DATOS:
 ═══════════════════════════════════════════════════════════════════
-- Solo hay consultas de precios sin cierre
-- El cliente dice "lo pienso", "vuelvo", "consulto"
-- La conversación termina con "gracias" o "chau" sin confirmación de compra
-- Solo se muestran productos sin proceso de compra
-- El cliente está comparando y no decide
 
-⚠️ REGLA DE ORO: Si el vendedor pide datos de entrega (dirección, nombre), ES UNA VENTA.
+⚠️ REGLAS CRÍTICAS - NO INVENTAR DATOS:
+- Si NO hay objeciones mencionadas → customerObjections: []
+- Si NO se mencionan productos específicos → productsDiscussed: []
+- Si NO hay debilidades claras → sellerWeaknesses: []
+- NUNCA completes campos con contenido genérico si no hay evidencia
+- Usa arrays vacíos [] en lugar de strings vacíos o contenido inventado
 
 ═══════════════════════════════════════════════════════════════════
 
 Debes responder SIEMPRE en formato JSON válido con la siguiente estructura exacta:
 {
     "saleCompleted": true/false,
-    "saleEvidence": "Cita la frase EXACTA de la transcripción que indica venta, o describe por qué no hubo venta",
+    "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
+    "analysisConfidence": 0-100,
+    "saleEvidence": "Cita TEXTUAL EXACTA de la transcripción que justifica el saleStatus, o 'Sin evidencia de venta' si no hay",
     "noSaleReason": "string o null si hubo venta",
-    "productsDiscussed": ["producto1", "producto2"],
-    "customerObjections": ["objeción1", "objeción2"],
-    "improvementSuggestions": ["sugerencia1", "sugerencia2"],
+    "productsDiscussed": [],
+    "customerObjections": [],
+    "improvementSuggestions": [],
     "executiveSummary": "Resumen ejecutivo de la interacción (2-3 oraciones)",
     "sellerScore": 1-10,
-    "sellerStrengths": ["fortaleza1", "fortaleza2"],
-    "sellerWeaknesses": ["debilidad1", "debilidad2"],
-    "followUpRecommendation": "Recomendación de seguimiento si no hubo venta"
+    "sellerStrengths": [],
+    "sellerWeaknesses": [],
+    "followUpRecommendation": "Recomendación de seguimiento si corresponde, o null"
 }
+
+📊 CRITERIOS PARA analysisConfidence (0-100):
+- 90-100: Transcripción clara, señales explícitas, alta certeza
+- 70-89: Transcripción buena, algunas ambigüedades menores
+- 50-69: Transcripción con errores pero interpretable
+- 30-49: Transcripción confusa, conclusiones con incertidumbre
+- 0-29: Transcripción muy pobre, análisis muy incierto
+
+📊 RELACIÓN saleCompleted ↔ saleStatus:
+- saleCompleted=true SI saleStatus es SALE_CONFIRMED o SALE_LIKELY
+- saleCompleted=false SI saleStatus es ADVANCE_NO_CLOSE, NO_SALE o UNINTERPRETABLE
 
 CRITERIOS DE EVALUACIÓN PARA sellerScore (1-10):
 - 1-3: Atención deficiente, no muestra interés, no conoce productos
@@ -113,6 +139,7 @@ Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
 - "Medidas"
 - "Solo mirando"
 - "Volverá luego"
+- "Transcripción no interpretable"
 - "Otro"
 """;
 
@@ -211,8 +238,13 @@ Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
             if (saleSignal != null && !result.isSaleCompleted()) {
                 log.info("Sale signal detected by keyword matching, overriding ChatGPT decision: {}", saleSignal);
                 result.setSaleCompleted(true);
+                result.setSaleStatus("SALE_CONFIRMED");
                 result.setSaleEvidence("Detectado por palabras clave: " + saleSignal);
                 result.setNoSaleReason(null);
+                // Aumentar confianza ya que es detección por palabras clave directa
+                if (result.getAnalysisConfidence() < 80) {
+                    result.setAnalysisConfidence(80);
+                }
             }
             
             return result;
@@ -285,6 +317,8 @@ Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
+            result.setSaleStatus(root.has("saleStatus") ? root.get("saleStatus").asText() : "NO_SALE");
+            result.setAnalysisConfidence(root.has("analysisConfidence") ? root.get("analysisConfidence").asInt() : 50);
             result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
             result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull() 
                     ? root.get("noSaleReason").asText() : null);
@@ -318,9 +352,11 @@ Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
     private AnalysisResult createMockAnalysis() {
         AnalysisResult result = new AnalysisResult();
         result.setSaleCompleted(false);
+        result.setSaleStatus("UNINTERPRETABLE");
+        result.setAnalysisConfidence(0);
         result.setSaleEvidence("Análisis no disponible");
         result.setNoSaleReason("Análisis pendiente - API Key no configurada");
-        result.setProductsDiscussed(Arrays.asList("Pendiente de análisis"));
+        result.setProductsDiscussed(new ArrayList<>());
         result.setCustomerObjections(new ArrayList<>());
         result.setImprovementSuggestions(Arrays.asList("Configurar API Key de OpenAI para análisis completo"));
         result.setExecutiveSummary("Análisis no disponible - Se requiere configurar la API Key de OpenAI");

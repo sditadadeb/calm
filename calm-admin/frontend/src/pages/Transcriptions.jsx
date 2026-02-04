@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import Filters from '../components/Filters';
@@ -46,7 +46,7 @@ export default function Transcriptions() {
       }
       
       // Comparar números
-      if (key === 'sellerScore') {
+      if (key === 'sellerScore' || key === 'analysisConfidence') {
         aVal = aVal || 0;
         bVal = bVal || 0;
       }
@@ -250,21 +250,67 @@ export default function Transcriptions() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {t.saleCompleted === true && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-                          <CheckCircle className="w-3 h-3" /> Venta
-                        </span>
-                      )}
-                      {t.saleCompleted === false && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
-                          <XCircle className="w-3 h-3" /> Sin venta
-                        </span>
-                      )}
-                      {t.saleCompleted === null && (
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>
-                          Pendiente
-                        </span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {/* Sale Status Badge */}
+                        {t.saleStatus === 'SALE_CONFIRMED' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400" title="Venta confirmada con evidencia">
+                            <CheckCircle className="w-3 h-3" /> Venta
+                          </span>
+                        )}
+                        {t.saleStatus === 'SALE_LIKELY' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" title="Alta probabilidad de venta">
+                            <TrendingUp className="w-3 h-3" /> Probable
+                          </span>
+                        )}
+                        {t.saleStatus === 'ADVANCE_NO_CLOSE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400" title="Avance comercial sin cierre">
+                            <AlertTriangle className="w-3 h-3" /> Avance
+                          </span>
+                        )}
+                        {t.saleStatus === 'NO_SALE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400" title="No hubo venta">
+                            <XCircle className="w-3 h-3" /> Sin venta
+                          </span>
+                        )}
+                        {t.saleStatus === 'UNINTERPRETABLE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/20 text-slate-400" title="Transcripción no interpretable">
+                            <HelpCircle className="w-3 h-3" /> No interp.
+                          </span>
+                        )}
+                        {/* Fallback para transcripciones sin saleStatus */}
+                        {!t.saleStatus && t.saleCompleted === true && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
+                            <CheckCircle className="w-3 h-3" /> Venta
+                          </span>
+                        )}
+                        {!t.saleStatus && t.saleCompleted === false && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
+                            <XCircle className="w-3 h-3" /> Sin venta
+                          </span>
+                        )}
+                        {!t.saleStatus && t.saleCompleted === null && (
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>
+                            Pendiente
+                          </span>
+                        )}
+                        {/* Confidence indicator */}
+                        {t.analysisConfidence !== null && t.analysisConfidence !== undefined && (
+                          <div className="flex items-center gap-1" title={`Confianza: ${t.analysisConfidence}%`}>
+                            <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                              <div 
+                                className={`h-full rounded-full ${
+                                  t.analysisConfidence >= 70 ? 'bg-green-500' : 
+                                  t.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${t.analysisConfidence}%` }}
+                              />
+                            </div>
+                            <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                              {t.analysisConfidence}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <ScoreBadge score={t.sellerScore} size="small" />

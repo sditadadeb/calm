@@ -122,6 +122,8 @@ public class TranscriptionService {
         );
         
         transcription.setSaleCompleted(analysis.isSaleCompleted());
+        transcription.setSaleStatus(analysis.getSaleStatus());
+        transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());
         transcription.setSaleEvidence(analysis.getSaleEvidence());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
         transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
@@ -440,6 +442,8 @@ public class TranscriptionService {
         dto.setBranchName(t.getBranchName());
         dto.setTranscriptionText(t.getTranscriptionText());
         dto.setSaleCompleted(t.getSaleCompleted());
+        dto.setSaleStatus(t.getSaleStatus());
+        dto.setAnalysisConfidence(t.getAnalysisConfidence());
         dto.setSaleEvidence(t.getSaleEvidence());
         dto.setNoSaleReason(t.getNoSaleReason());
         dto.setProductsDiscussed(t.getProductsDiscussed() != null 

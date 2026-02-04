@@ -19,6 +19,13 @@ public class Transcription {
 
     private Boolean saleCompleted;
     
+    // Nuevo: Estado detallado de la venta
+    // SALE_CONFIRMED, SALE_LIKELY, ADVANCE_NO_CLOSE, NO_SALE, UNINTERPRETABLE
+    private String saleStatus;
+    
+    // Nuevo: Confianza del análisis (0-100)
+    private Integer analysisConfidence;
+    
     @Column(columnDefinition = "TEXT")
     private String saleEvidence; // Evidencia que confirma/descarta la venta
     
@@ -86,6 +93,12 @@ public class Transcription {
     
     public Boolean getSaleCompleted() { return saleCompleted; }
     public void setSaleCompleted(Boolean saleCompleted) { this.saleCompleted = saleCompleted; }
+    
+    public String getSaleStatus() { return saleStatus; }
+    public void setSaleStatus(String saleStatus) { this.saleStatus = saleStatus; }
+    
+    public Integer getAnalysisConfidence() { return analysisConfidence; }
+    public void setAnalysisConfidence(Integer analysisConfidence) { this.analysisConfidence = analysisConfidence; }
     
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
