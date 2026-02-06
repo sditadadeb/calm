@@ -425,6 +425,89 @@ public class TranscriptionService {
         
         return result;
     }
+    
+    /**
+     * Re-analiza TODAS las transcripciones con el prompt actual.
+     * Usa SSE para mostrar progreso en tiempo real.
+     */
+    public SseEmitter reanalyzeAllWithProgress() {
+        SseEmitter emitter = new SseEmitter(600000L); // 10 minutos timeout
+        ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        
+        executor.execute(() -> {
+            try {
+                List<Transcription> all = repository.findAll();
+                int total = all.size();
+                int current = 0;
+                int success = 0;
+                int errors = 0;
+                
+                // Enviar inicio
+                emitter.send(SseEmitter.event()
+                        .name("start")
+                        .data(Map.of(
+                                "message", "Iniciando re-análisis de " + total + " transcripciones",
+                                "total", total
+                        )));
+                
+                for (Transcription transcription : all) {
+                    current++;
+                    
+                    try {
+                        // Enviar progreso
+                        emitter.send(SseEmitter.event()
+                                .name("progress")
+                                .data(Map.of(
+                                        "current", current,
+                                        "total", total,
+                                        "recordingId", transcription.getRecordingId(),
+                                        "userName", transcription.getUserName() != null ? transcription.getUserName() : "Desconocido",
+                                        "message", "Analizando: " + transcription.getRecordingId()
+                                )));
+                        
+                        // Re-analizar
+                        analyzeTranscription(transcription.getRecordingId());
+                        success++;
+                        
+                        // Pequeña pausa para no saturar la API
+                        Thread.sleep(300);
+                        
+                    } catch (Exception e) {
+                        errors++;
+                        log.error("Error re-analizando {}: {}", transcription.getRecordingId(), e.getMessage());
+                    }
+                }
+                
+                // Enviar completado
+                emitter.send(SseEmitter.event()
+                        .name("complete")
+                        .data(Map.of(
+                                "message", "Re-análisis completado",
+                                "total", total,
+                                "success", success,
+                                "errors", errors
+                        )));
+                
+                emitter.complete();
+                
+            } catch (Exception e) {
+                log.error("Error en re-análisis: {}", e.getMessage());
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Map.of("message", e.getMessage())));
+                    emitter.completeWithError(e);
+                } catch (java.io.IOException ignored) {}
+            } finally {
+                executor.shutdown();
+            }
+        });
+        
+        emitter.onCompletion(executor::shutdown);
+        emitter.onTimeout(executor::shutdown);
+        
+        return emitter;
+    }
 
     private boolean hasAnyFilter(FilterDTO filter) {
         return filter.getUserId() != null ||

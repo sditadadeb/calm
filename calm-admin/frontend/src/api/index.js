@@ -81,6 +81,12 @@ export const getPromptConfig = () => api.get('/config/prompt');
 export const updatePromptConfig = (config) => api.put('/config/prompt', config);
 export const resetPromptConfig = () => api.post('/config/prompt/reset');
 
+// Re-analyze all (returns SSE stream URL)
+export const getReanalyzeAllStreamUrl = () => {
+  const token = localStorage.getItem('token');
+  return `${API_URL}/reanalyze-all/stream?token=${token}`;
+};
+
 // Recommendations (Advanced Analysis)
 export const getRecommendationsMetrics = () => api.get('/recommendations/metrics');
 export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');

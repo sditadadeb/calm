@@ -119,6 +119,17 @@ public class TranscriptionController {
     }
     
     /**
+     * Re-analiza TODAS las transcripciones con el prompt actual.
+     * Usa SSE para mostrar progreso en tiempo real.
+     * Solo para administradores.
+     */
+    @GetMapping(value = "/reanalyze-all/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public SseEmitter reanalyzeAllWithProgress() {
+        return transcriptionService.reanalyzeAllWithProgress();
+    }
+    
+    /**
      * Elimina una transcripción y sus análisis asociados.
      * Solo para administradores.
      */
