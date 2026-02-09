@@ -67,6 +67,11 @@ export const getTranscription = (recordingId) => api.get(`/transcriptions/${reco
 
 export const getAudioUrl = (recordingId) => api.get(`/transcriptions/${recordingId}/audio`);
 
+export const getAudioStreamUrl = (recordingId) => {
+  const token = localStorage.getItem('token');
+  return `${API_URL}/transcriptions/${recordingId}/audio/stream?token=${token}`;
+};
+
 export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${recordingId}/analyze`);
 
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);

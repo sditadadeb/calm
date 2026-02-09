@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -19,11 +19,121 @@ import {
   Shield,
   Quote,
   Volume2,
-  VolumeX
+  VolumeX,
+  Loader2,
+  Play,
+  Pause
 } from 'lucide-react';
+
+// Reproductor de audio personalizado con duración fija
+function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(initialDuration || 0);
+
+  useEffect(() => {
+    if (initialDuration) {
+      setDuration(initialDuration);
+    }
+  }, [initialDuration]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => { setIsPlaying(false); setCurrentTime(0); };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('durationchange', handleDurationChange);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('durationchange', handleDurationChange);
+    };
+  }, [src]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+  };
+
+  const handleSeek = (e) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = percent * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (secs) => {
+    if (!secs || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-4">
+      <audio ref={audioRef} src={src} preload="auto" />
+      
+      <button
+        onClick={togglePlay}
+        className="p-3 rounded-full bg-[#F5A623] hover:bg-[#D4911F] text-white transition-colors"
+      >
+        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+      </button>
+
+      <span className={`text-sm font-mono w-12 text-right ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+        {formatTime(currentTime)}
+      </span>
+
+      <div 
+        className={`flex-1 h-2 rounded-full cursor-pointer relative ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}
+        onClick={handleSeek}
+      >
+        <div 
+          className="h-full bg-[#F5A623] rounded-full"
+          style={{ width: `${progress}%` }}
+        />
+        <div 
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#F5A623]"
+          style={{ left: `calc(${progress}% - 8px)` }}
+        />
+      </div>
+
+      <span className={`text-sm font-mono w-12 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+        {formatTime(duration)}
+      </span>
+    </div>
+  );
+}
 import ScoreBadge from '../components/ScoreBadge';
 import { useTheme } from '../context/ThemeContext';
-import { getTranscription, getAudioUrl } from '../api';
+import { getTranscription, getAudioUrl, getAudioStreamUrl } from '../api';
+
 
 // Mapeo de saleStatus a labels y colores
 const SALE_STATUS_CONFIG = {
@@ -74,6 +184,9 @@ export default function TranscriptionDetail() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioAvailable, setAudioAvailable] = useState(false);
   const [audioLoading, setAudioLoading] = useState(true);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -92,23 +205,96 @@ export default function TranscriptionDetail() {
     const fetchAudioUrl = async () => {
       try {
         setAudioLoading(true);
+        setAudioProgress(0);
         const response = await getAudioUrl(id);
+        
         if (response.data.available) {
-          setAudioUrl(response.data.url);
-          setAudioAvailable(true);
+          // Descargar audio completo como blob para permitir seeking
+          const streamUrl = getAudioStreamUrl(id);
+          
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', streamUrl, true);
+          xhr.responseType = 'blob';
+          
+          xhr.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              setAudioProgress(percent);
+            }
+          };
+          
+          xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 206) {
+              const blob = xhr.response;
+              const blobUrl = URL.createObjectURL(blob);
+              
+              // Truco para obtener duración de webm: crear audio temporal y forzar seek
+              const tempAudio = new Audio();
+              tempAudio.preload = 'metadata';
+              
+              tempAudio.onloadedmetadata = () => {
+                if (tempAudio.duration && isFinite(tempAudio.duration)) {
+                  setAudioDuration(tempAudio.duration);
+                  setAudioUrl(blobUrl);
+                  setAudioAvailable(true);
+                  setAudioLoading(false);
+                } else {
+                  // Si no hay duración, forzar seek al final
+                  tempAudio.currentTime = Number.MAX_SAFE_INTEGER;
+                }
+              };
+              
+              tempAudio.ontimeupdate = () => {
+                if (tempAudio.duration && isFinite(tempAudio.duration)) {
+                  setAudioDuration(tempAudio.duration);
+                  setAudioUrl(blobUrl);
+                  setAudioAvailable(true);
+                  setAudioLoading(false);
+                  tempAudio.ontimeupdate = null;
+                }
+              };
+              
+              tempAudio.onerror = () => {
+                // Aún sin duración, mostrar el reproductor
+                setAudioUrl(blobUrl);
+                setAudioAvailable(true);
+                setAudioLoading(false);
+              };
+              
+              tempAudio.src = blobUrl;
+            } else {
+              setAudioAvailable(false);
+              setAudioLoading(false);
+            }
+          };
+          
+          xhr.onerror = () => {
+            console.error('Error downloading audio');
+            setAudioAvailable(false);
+            setAudioLoading(false);
+          };
+          
+          xhr.send();
         } else {
           setAudioAvailable(false);
+          setAudioLoading(false);
         }
       } catch (err) {
         console.error('Error fetching audio URL:', err);
         setAudioAvailable(false);
-      } finally {
         setAudioLoading(false);
       }
     };
     
     fetchTranscription();
     fetchAudioUrl();
+    
+    // Cleanup blob URL on unmount
+    return () => {
+      if (audioUrl && audioUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
   }, [id]);
 
   const formatDate = (dateString) => {
@@ -238,39 +424,31 @@ export default function TranscriptionDetail() {
 
       {/* Audio Player */}
       <div className={`rounded-2xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-        <div className="flex items-center gap-4">
-          <div className={`p-2 rounded-lg ${audioAvailable ? 'bg-[#F5A623]' : (isDark ? 'bg-slate-600' : 'bg-gray-300')}`}>
-            {audioAvailable ? (
-              <Volume2 className="w-5 h-5 text-white" />
-            ) : (
-              <VolumeX className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-            )}
+        {audioLoading ? (
+          <div className="space-y-2">
+            <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Descargando audio... {audioProgress}%</span>
+            </div>
+            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+              <div 
+                className="h-full bg-[#F5A623] transition-all duration-300"
+                style={{ width: `${audioProgress}%` }}
+              />
+            </div>
           </div>
-          
-          <div className="flex-1">
-            {audioLoading ? (
-              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Cargando audio...
-              </div>
-            ) : audioAvailable ? (
-              <audio 
-                controls 
-                className="w-full h-10"
-                style={{ 
-                  filter: isDark ? 'invert(1) hue-rotate(180deg)' : 'none',
-                  opacity: isDark ? 0.9 : 1
-                }}
-              >
-                <source src={audioUrl} type="audio/webm" />
-                Tu navegador no soporta el reproductor de audio.
-              </audio>
-            ) : (
-              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Audio no disponible para esta transcripción
-              </div>
-            )}
+        ) : audioAvailable ? (
+          <AudioPlayerCustom 
+            src={audioUrl} 
+            duration={audioDuration} 
+            isDark={isDark} 
+          />
+        ) : (
+          <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <VolumeX className="w-5 h-5" />
+            <span className="text-sm">Audio no disponible para esta transcripción</span>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Analysis Grid */}

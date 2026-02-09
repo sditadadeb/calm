@@ -31,7 +31,7 @@ public class S3Service {
 
     private final S3Client metadataS3Client;
     private final S3Client transcriptionsS3Client;
-    private final S3Presigner transcriptionsS3Presigner;
+    private final S3Presigner metadataS3Presigner;
     private final ObjectMapper objectMapper;
 
     @Value("${aws.s3.metadata.bucket}")
@@ -50,11 +50,11 @@ public class S3Service {
     public S3Service(
             @Qualifier("metadataS3Client") @Nullable S3Client metadataS3Client,
             @Qualifier("transcriptionsS3Client") @Nullable S3Client transcriptionsS3Client,
-            @Qualifier("transcriptionsS3Presigner") @Nullable S3Presigner transcriptionsS3Presigner,
+            @Qualifier("metadataS3Presigner") @Nullable S3Presigner metadataS3Presigner,
             ObjectMapper objectMapper) {
         this.metadataS3Client = metadataS3Client;
         this.transcriptionsS3Client = transcriptionsS3Client;
-        this.transcriptionsS3Presigner = transcriptionsS3Presigner;
+        this.metadataS3Presigner = metadataS3Presigner;
         this.objectMapper = objectMapper;
     }
 
@@ -362,53 +362,103 @@ public class S3Service {
     }
     
     /**
-     * Genera una URL pre-firmada para streaming del audio desde S3.
-     * La URL expira en 60 minutos.
+     * Verifica si existe el archivo de audio para una grabación.
      * @param recordingId ID de la grabación
-     * @return URL pre-firmada para streaming, o null si no está disponible
+     * @return true si el audio existe, false en caso contrario
      */
-    public String getAudioStreamUrl(String recordingId) {
-        if (transcriptionsS3Presigner == null) {
-            log.warn("S3 Presigner not configured. Audio streaming not available.");
+    public boolean audioExists(String recordingId) {
+        if (metadataS3Client == null) {
+            return false;
+        }
+        
+        try {
+            String key = metadataPrefix + recordingId + ".webm";
+            
+            HeadObjectRequest headRequest = HeadObjectRequest.builder()
+                    .bucket(metadataBucket)
+                    .key(key)
+                    .build();
+            
+            metadataS3Client.headObject(headRequest);
+            return true;
+            
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.error("Error checking audio existence for {}: {}", recordingId, e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Obtiene el stream de audio desde S3 para proxy.
+     * @param recordingId ID de la grabación
+     * @return InputStream del audio o null si no existe
+     */
+    public ResponseInputStream<GetObjectResponse> getAudioStream(String recordingId) {
+        return getAudioStream(recordingId, null);
+    }
+    
+    /**
+     * Obtiene el stream de audio desde S3 con soporte para Range requests.
+     * @param recordingId ID de la grabación
+     * @param range Rango de bytes a solicitar (formato: "bytes=start-end")
+     * @return InputStream del audio o null si no existe
+     */
+    public ResponseInputStream<GetObjectResponse> getAudioStream(String recordingId, String range) {
+        if (metadataS3Client == null) {
+            log.warn("S3 metadata client not configured. Audio streaming not available.");
             return null;
         }
         
         try {
-            // El audio está en el mismo bucket que las transcripciones
-            // Formato: {prefix}{recordingId}.webm (ej: in-person-recording/26087464.webm)
-            String key = transcriptionsPrefix + recordingId + ".webm";
+            String key = metadataPrefix + recordingId + ".webm";
             
-            // Primero verificar que el archivo existe
-            HeadObjectRequest headRequest = HeadObjectRequest.builder()
-                    .bucket(transcriptionsBucket)
-                    .key(key)
-                    .build();
+            log.info("Streaming audio from S3: bucket={}, key={}, range={}", metadataBucket, key, range);
             
-            transcriptionsS3Client.headObject(headRequest);
+            GetObjectRequest.Builder requestBuilder = GetObjectRequest.builder()
+                    .bucket(metadataBucket)
+                    .key(key);
             
-            // Generar URL pre-firmada válida por 60 minutos
-            GetObjectRequest getRequest = GetObjectRequest.builder()
-                    .bucket(transcriptionsBucket)
-                    .key(key)
-                    .build();
+            // Si hay un rango, agregarlo a la solicitud
+            if (range != null && !range.isEmpty()) {
+                requestBuilder.range(range);
+            }
             
-            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(60))
-                    .getObjectRequest(getRequest)
-                    .build();
-            
-            PresignedGetObjectRequest presignedRequest = transcriptionsS3Presigner.presignGetObject(presignRequest);
-            String url = presignedRequest.url().toString();
-            
-            log.info("Generated presigned URL for audio {}", recordingId);
-            return url;
+            return metadataS3Client.getObject(requestBuilder.build());
             
         } catch (NoSuchKeyException e) {
-            log.warn("Audio file not found for recording {}", recordingId);
+            log.warn("Audio file not found for recording {} in bucket {}", recordingId, metadataBucket);
             return null;
         } catch (Exception e) {
-            log.error("Error generating presigned URL for audio {}: {}", recordingId, e.getMessage());
+            log.error("Error streaming audio for {}: {}", recordingId, e.getMessage());
             return null;
+        }
+    }
+    
+    /**
+     * Obtiene el tamaño del archivo de audio.
+     * @param recordingId ID de la grabación
+     * @return tamaño en bytes o -1 si no existe
+     */
+    public long getAudioSize(String recordingId) {
+        if (metadataS3Client == null) {
+            return -1;
+        }
+        
+        try {
+            String key = metadataPrefix + recordingId + ".webm";
+            
+            HeadObjectRequest headRequest = HeadObjectRequest.builder()
+                    .bucket(metadataBucket)
+                    .key(key)
+                    .build();
+            
+            HeadObjectResponse response = metadataS3Client.headObject(headRequest);
+            return response.contentLength();
+            
+        } catch (Exception e) {
+            return -1;
         }
     }
 }

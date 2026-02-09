@@ -173,27 +173,101 @@ public class TranscriptionController {
     }
     
     /**
-     * Obtiene una URL pre-firmada para streaming del audio de una transcripción.
-     * La URL es temporal (expira en 60 minutos) y permite reproducir el audio sin descargarlo.
+     * Verifica si el audio está disponible para una transcripción.
      */
     @GetMapping("/transcriptions/{recordingId}/audio")
-    public ResponseEntity<Map<String, Object>> getAudioUrl(@PathVariable String recordingId) {
+    public ResponseEntity<Map<String, Object>> getAudioInfo(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         
-        String audioUrl = s3Service.getAudioStreamUrl(recordingId);
+        boolean exists = s3Service.audioExists(recordingId);
         
-        if (audioUrl == null) {
+        if (!exists) {
             return ResponseEntity.ok(Map.of(
                 "available", false,
                 "message", "Audio no disponible para esta transcripción"
             ));
         }
         
+        long size = s3Service.getAudioSize(recordingId);
+        
         return ResponseEntity.ok(Map.of(
             "available", true,
-            "url", audioUrl,
-            "expiresIn", 3600 // 60 minutos en segundos
+            "url", "/api/transcriptions/" + recordingId + "/audio/stream",
+            "size", size
         ));
+    }
+    
+    /**
+     * Sirve el audio como proxy desde S3 (evita problemas de CORS).
+     * Soporta Range requests para permitir seeking en el reproductor.
+     */
+    @GetMapping("/transcriptions/{recordingId}/audio/stream")
+    public ResponseEntity<org.springframework.core.io.InputStreamResource> streamAudio(
+            @PathVariable String recordingId,
+            @RequestHeader(value = "Range", required = false) String rangeHeader
+    ) {
+        validateRecordingId(recordingId);
+        
+        // Primero obtener el tamaño total del archivo
+        long totalSize = s3Service.getAudioSize(recordingId);
+        if (totalSize <= 0) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        var headers = new org.springframework.http.HttpHeaders();
+        headers.set("Content-Type", "audio/webm");
+        headers.set("Accept-Ranges", "bytes");
+        
+        // Si hay Range header, procesar la solicitud parcial
+        if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+            try {
+                String rangeValue = rangeHeader.substring(6); // quitar "bytes="
+                String[] parts = rangeValue.split("-");
+                
+                long start = Long.parseLong(parts[0]);
+                long end = parts.length > 1 && !parts[1].isEmpty() 
+                    ? Long.parseLong(parts[1]) 
+                    : totalSize - 1;
+                
+                // Validar rango
+                if (start >= totalSize) {
+                    return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                            .header("Content-Range", "bytes */" + totalSize)
+                            .build();
+                }
+                
+                end = Math.min(end, totalSize - 1);
+                long contentLength = end - start + 1;
+                
+                // Obtener stream con rango
+                var audioStream = s3Service.getAudioStream(recordingId, rangeHeader);
+                if (audioStream == null) {
+                    return ResponseEntity.notFound().build();
+                }
+                
+                headers.set("Content-Length", String.valueOf(contentLength));
+                headers.set("Content-Range", String.format("bytes %d-%d/%d", start, end, totalSize));
+                
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                        .headers(headers)
+                        .body(new org.springframework.core.io.InputStreamResource(audioStream));
+                        
+            } catch (NumberFormatException e) {
+                // Si el rango es inválido, devolver el archivo completo
+            }
+        }
+        
+        // Sin Range header o Range inválido: devolver archivo completo
+        var audioStream = s3Service.getAudioStream(recordingId);
+        if (audioStream == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        headers.set("Content-Length", String.valueOf(totalSize));
+        
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(new org.springframework.core.io.InputStreamResource(audioStream));
     }
     
     /**
