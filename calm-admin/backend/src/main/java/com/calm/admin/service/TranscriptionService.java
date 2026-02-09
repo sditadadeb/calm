@@ -2,6 +2,7 @@ package com.calm.admin.service;
 
 import com.calm.admin.dto.DashboardMetricsDTO;
 import com.calm.admin.dto.FilterDTO;
+import com.calm.admin.dto.SearchResultDTO;
 import com.calm.admin.dto.TranscriptionDTO;
 import com.calm.admin.model.AnalysisResult;
 import com.calm.admin.model.Transcription;
@@ -600,5 +601,106 @@ public class TranscriptionService {
             case "central" -> "Godoy Cruz";
             default -> originalName;
         };
+    }
+    
+    /**
+     * Busca texto en las transcripciones y devuelve resultados con snippets.
+     */
+    public Map<String, Object> searchTranscriptions(String searchTerm, Long userId, Long branchId, Boolean saleCompleted) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return Map.of("results", new ArrayList<>(), "totalResults", 0, "totalMatches", 0);
+        }
+        
+        String term = searchTerm.trim().toLowerCase();
+        List<Transcription> transcriptions = repository.searchByText(term, userId, branchId, saleCompleted);
+        
+        List<SearchResultDTO> results = new ArrayList<>();
+        int totalMatches = 0;
+        
+        for (Transcription t : transcriptions) {
+            SearchResultDTO dto = new SearchResultDTO();
+            dto.setRecordingId(t.getRecordingId());
+            dto.setUserName(t.getUserName());
+            dto.setBranchName(t.getBranchName());
+            dto.setRecordingDate(t.getRecordingDate());
+            dto.setSaleCompleted(t.getSaleCompleted());
+            dto.setSaleStatus(t.getSaleStatus());
+            dto.setSellerScore(t.getSellerScore());
+            
+            // Generar snippets
+            List<String> snippets = generateSnippets(t.getTranscriptionText(), term, 3);
+            dto.setSnippets(snippets);
+            
+            // Contar coincidencias
+            int count = countOccurrences(t.getTranscriptionText(), term);
+            dto.setMatchCount(count);
+            totalMatches += count;
+            
+            results.add(dto);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("results", results);
+        response.put("totalResults", results.size());
+        response.put("totalMatches", totalMatches);
+        response.put("searchTerm", searchTerm);
+        
+        return response;
+    }
+    
+    /**
+     * Genera snippets del texto alrededor de las coincidencias.
+     */
+    private List<String> generateSnippets(String text, String searchTerm, int maxSnippets) {
+        List<String> snippets = new ArrayList<>();
+        if (text == null || searchTerm == null) return snippets;
+        
+        String lowerText = text.toLowerCase();
+        String lowerTerm = searchTerm.toLowerCase();
+        int contextLength = 60; // caracteres antes y después
+        
+        int index = 0;
+        while ((index = lowerText.indexOf(lowerTerm, index)) != -1 && snippets.size() < maxSnippets) {
+            int start = Math.max(0, index - contextLength);
+            int end = Math.min(text.length(), index + lowerTerm.length() + contextLength);
+            
+            StringBuilder snippet = new StringBuilder();
+            if (start > 0) snippet.append("...");
+            
+            // Extraer el snippet y marcar la palabra con **
+            String before = text.substring(start, index);
+            String match = text.substring(index, index + lowerTerm.length());
+            String after = text.substring(index + lowerTerm.length(), end);
+            
+            snippet.append(before).append("**").append(match).append("**").append(after);
+            
+            if (end < text.length()) snippet.append("...");
+            
+            // Limpiar saltos de línea
+            String cleanSnippet = snippet.toString().replaceAll("\\s+", " ").trim();
+            snippets.add(cleanSnippet);
+            
+            index += lowerTerm.length();
+        }
+        
+        return snippets;
+    }
+    
+    /**
+     * Cuenta las ocurrencias de un término en el texto.
+     */
+    private int countOccurrences(String text, String searchTerm) {
+        if (text == null || searchTerm == null) return 0;
+        
+        String lowerText = text.toLowerCase();
+        String lowerTerm = searchTerm.toLowerCase();
+        
+        int count = 0;
+        int index = 0;
+        while ((index = lowerText.indexOf(lowerTerm, index)) != -1) {
+            count++;
+            index += lowerTerm.length();
+        }
+        return count;
     }
 }

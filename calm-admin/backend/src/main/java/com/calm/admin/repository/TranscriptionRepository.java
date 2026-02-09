@@ -90,5 +90,19 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     // Transcripciones analizadas marcadas como "no venta" - para re-análisis
     @Query("SELECT t FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false")
     List<Transcription> findAnalyzedNoSales();
+    
+    // Búsqueda de texto en transcripciones
+    @Query("SELECT t FROM Transcription t WHERE " +
+           "LOWER(t.transcriptionText) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
+           "(:userId IS NULL OR t.userId = :userId) AND " +
+           "(:branchId IS NULL OR t.branchId = :branchId) AND " +
+           "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) " +
+           "ORDER BY t.recordingDate DESC")
+    List<Transcription> searchByText(
+            @Param("searchTerm") String searchTerm,
+            @Param("userId") Long userId,
+            @Param("branchId") Long branchId,
+            @Param("saleCompleted") Boolean saleCompleted
+    );
 }
 

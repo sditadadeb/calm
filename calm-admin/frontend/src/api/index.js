@@ -69,6 +69,20 @@ export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/$
 
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);
 
+// Search
+export const searchTranscriptions = (query, filters = {}) => {
+  const params = new URLSearchParams();
+  params.append('q', query);
+  
+  if (filters.userId) params.append('userId', filters.userId);
+  if (filters.branchId) params.append('branchId', filters.branchId);
+  if (filters.saleCompleted !== null && filters.saleCompleted !== undefined) {
+    params.append('saleCompleted', filters.saleCompleted);
+  }
+  
+  return api.get(`/transcriptions/search?${params.toString()}`);
+};
+
 // Sync
 export const syncTranscriptions = () => api.post('/sync');
 

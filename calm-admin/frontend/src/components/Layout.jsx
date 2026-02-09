@@ -11,7 +11,8 @@ import {
   UserPlus,
   Lightbulb,
   Sun,
-  Moon
+  Moon,
+  Search
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
@@ -21,6 +22,7 @@ import { useState, useEffect } from 'react';
 const pageConfig = {
   '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
   '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
+  '/search': { name: 'Buscar', subtitle: 'Buscar en todas las conversaciones', icon: Search },
   '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
   '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
   '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
@@ -32,6 +34,7 @@ const pageConfig = {
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
+  { name: 'Buscar', href: '/search', icon: Search },
   { name: 'Vendedores', href: '/sellers', icon: Users },
   { name: 'Sucursales', href: '/branches', icon: Building2 },
   { name: 'Recomendaciones', href: '/recommendations', icon: Lightbulb },

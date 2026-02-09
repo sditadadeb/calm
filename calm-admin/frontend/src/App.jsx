@@ -11,6 +11,7 @@ import Branches from './pages/Branches';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Recommendations from './pages/Recommendations';
+import Search from './pages/Search';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/transcriptions" element={<Transcriptions />} />
                   <Route path="/transcriptions/:id" element={<TranscriptionDetail />} />
+                  <Route path="/search" element={<Search />} />
                   <Route path="/sellers" element={<Sellers />} />
                   <Route path="/branches" element={<Branches />} />
                   <Route path="/recommendations" element={<Recommendations />} />

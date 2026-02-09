@@ -146,6 +146,30 @@ public class TranscriptionController {
     }
     
     /**
+     * Busca texto en las transcripciones.
+     * Devuelve resultados con snippets del contexto donde se encontró la palabra.
+     */
+    @GetMapping("/transcriptions/search")
+    public ResponseEntity<Map<String, Object>> searchTranscriptions(
+            @RequestParam String q,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) Boolean saleCompleted
+    ) {
+        if (q == null || q.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda es requerido");
+        }
+        if (q.length() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda debe tener al menos 2 caracteres");
+        }
+        if (q.length() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda no puede exceder 100 caracteres");
+        }
+        
+        return ResponseEntity.ok(transcriptionService.searchTranscriptions(q, userId, branchId, saleCompleted));
+    }
+    
+    /**
      * Validates recording ID to prevent path traversal and injection attacks.
      */
     private void validateRecordingId(String recordingId) {
