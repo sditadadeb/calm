@@ -375,8 +375,8 @@ public class S3Service {
         
         try {
             // El audio está en el mismo bucket que las transcripciones
-            // Formato: in-person-recording-{recordingId}.webm
-            String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm";
+            // Formato: {prefix}{recordingId}.webm (ej: in-person-recording/26087464.webm)
+            String key = transcriptionsPrefix + recordingId + ".webm";
             
             // Primero verificar que el archivo existe
             HeadObjectRequest headRequest = HeadObjectRequest.builder()
