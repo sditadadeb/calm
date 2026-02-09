@@ -3,6 +3,7 @@ package com.calm.admin.controller;
 import com.calm.admin.dto.DashboardMetricsDTO;
 import com.calm.admin.dto.FilterDTO;
 import com.calm.admin.dto.TranscriptionDTO;
+import com.calm.admin.service.S3Service;
 import com.calm.admin.service.TranscriptionService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,12 +24,14 @@ import java.util.regex.Pattern;
 public class TranscriptionController {
 
     private final TranscriptionService transcriptionService;
+    private final S3Service s3Service;
     
     // Only allow alphanumeric recording IDs (prevent path traversal)
     private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
 
-    public TranscriptionController(TranscriptionService transcriptionService) {
+    public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service) {
         this.transcriptionService = transcriptionService;
+        this.s3Service = s3Service;
     }
 
     @GetMapping("/dashboard")
@@ -167,6 +170,30 @@ public class TranscriptionController {
         }
         
         return ResponseEntity.ok(transcriptionService.searchTranscriptions(q, userId, branchId, saleCompleted));
+    }
+    
+    /**
+     * Obtiene una URL pre-firmada para streaming del audio de una transcripción.
+     * La URL es temporal (expira en 60 minutos) y permite reproducir el audio sin descargarlo.
+     */
+    @GetMapping("/transcriptions/{recordingId}/audio")
+    public ResponseEntity<Map<String, Object>> getAudioUrl(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        
+        String audioUrl = s3Service.getAudioStreamUrl(recordingId);
+        
+        if (audioUrl == null) {
+            return ResponseEntity.ok(Map.of(
+                "available", false,
+                "message", "Audio no disponible para esta transcripción"
+            ));
+        }
+        
+        return ResponseEntity.ok(Map.of(
+            "available", true,
+            "url", audioUrl,
+            "expiresIn", 3600 // 60 minutos en segundos
+        ));
     }
     
     /**

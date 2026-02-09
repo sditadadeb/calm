@@ -65,6 +65,8 @@ export const getTranscriptions = (filters = {}) => {
 
 export const getTranscription = (recordingId) => api.get(`/transcriptions/${recordingId}`);
 
+export const getAudioUrl = (recordingId) => api.get(`/transcriptions/${recordingId}/audio`);
+
 export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${recordingId}/analyze`);
 
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);

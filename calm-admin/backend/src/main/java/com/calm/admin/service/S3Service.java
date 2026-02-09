@@ -4,12 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+
+import java.time.Duration;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -24,6 +31,7 @@ public class S3Service {
 
     private final S3Client metadataS3Client;
     private final S3Client transcriptionsS3Client;
+    private final S3Presigner transcriptionsS3Presigner;
     private final ObjectMapper objectMapper;
 
     @Value("${aws.s3.metadata.bucket}")
@@ -38,17 +46,29 @@ public class S3Service {
     @Value("${aws.s3.transcriptions.prefix}")
     private String transcriptionsPrefix;
 
+    @Autowired
     public S3Service(
-            @Qualifier("metadataS3Client") S3Client metadataS3Client,
-            @Qualifier("transcriptionsS3Client") S3Client transcriptionsS3Client,
+            @Qualifier("metadataS3Client") @Nullable S3Client metadataS3Client,
+            @Qualifier("transcriptionsS3Client") @Nullable S3Client transcriptionsS3Client,
+            @Qualifier("transcriptionsS3Presigner") @Nullable S3Presigner transcriptionsS3Presigner,
             ObjectMapper objectMapper) {
         this.metadataS3Client = metadataS3Client;
         this.transcriptionsS3Client = transcriptionsS3Client;
+        this.transcriptionsS3Presigner = transcriptionsS3Presigner;
         this.objectMapper = objectMapper;
+    }
+
+    public boolean isConfigured() {
+        return metadataS3Client != null && transcriptionsS3Client != null;
     }
 
     public List<String> listAllRecordingIds() {
         List<String> recordingIds = new ArrayList<>();
+        
+        if (metadataS3Client == null) {
+            log.warn("S3 metadata client not configured. Returning empty list.");
+            return recordingIds;
+        }
         
         try {
             ListObjectsV2Request request = ListObjectsV2Request.builder()
@@ -77,6 +97,11 @@ public class S3Service {
 
     public Map<String, Object> getMetadata(String recordingId) {
         Map<String, Object> metadata = new HashMap<>();
+        
+        if (metadataS3Client == null) {
+            log.warn("S3 metadata client not configured.");
+            return metadata;
+        }
         
         try {
             String key = metadataPrefix + recordingId + ".json";
@@ -116,6 +141,11 @@ public class S3Service {
     }
 
     public String getTranscription(String recordingId) {
+        if (transcriptionsS3Client == null) {
+            log.warn("S3 transcriptions client not configured.");
+            return null;
+        }
+        
         try {
             String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
             
@@ -281,6 +311,10 @@ public class S3Service {
     }
 
     public boolean transcriptionExists(String recordingId) {
+        if (transcriptionsS3Client == null) {
+            return false;
+        }
+        
         try {
             String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
             
@@ -304,6 +338,10 @@ public class S3Service {
      * Esta fecha representa cuándo se creó la grabación/atención.
      */
     public java.time.Instant getTranscriptionDate(String recordingId) {
+        if (transcriptionsS3Client == null) {
+            return null;
+        }
+        
         try {
             String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
             
@@ -319,6 +357,57 @@ public class S3Service {
             return null;
         } catch (Exception e) {
             log.error("Error getting transcription date for {}: {}", recordingId, e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Genera una URL pre-firmada para streaming del audio desde S3.
+     * La URL expira en 60 minutos.
+     * @param recordingId ID de la grabación
+     * @return URL pre-firmada para streaming, o null si no está disponible
+     */
+    public String getAudioStreamUrl(String recordingId) {
+        if (transcriptionsS3Presigner == null) {
+            log.warn("S3 Presigner not configured. Audio streaming not available.");
+            return null;
+        }
+        
+        try {
+            // El audio está en el mismo bucket que las transcripciones
+            // Formato: in-person-recording-{recordingId}.webm
+            String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm";
+            
+            // Primero verificar que el archivo existe
+            HeadObjectRequest headRequest = HeadObjectRequest.builder()
+                    .bucket(transcriptionsBucket)
+                    .key(key)
+                    .build();
+            
+            transcriptionsS3Client.headObject(headRequest);
+            
+            // Generar URL pre-firmada válida por 60 minutos
+            GetObjectRequest getRequest = GetObjectRequest.builder()
+                    .bucket(transcriptionsBucket)
+                    .key(key)
+                    .build();
+            
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(60))
+                    .getObjectRequest(getRequest)
+                    .build();
+            
+            PresignedGetObjectRequest presignedRequest = transcriptionsS3Presigner.presignGetObject(presignRequest);
+            String url = presignedRequest.url().toString();
+            
+            log.info("Generated presigned URL for audio {}", recordingId);
+            return url;
+            
+        } catch (NoSuchKeyException e) {
+            log.warn("Audio file not found for recording {}", recordingId);
+            return null;
+        } catch (Exception e) {
+            log.error("Error generating presigned URL for audio {}: {}", recordingId, e.getMessage());
             return null;
         }
     }

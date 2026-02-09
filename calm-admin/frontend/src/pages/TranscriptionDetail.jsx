@@ -17,11 +17,13 @@ import {
   TrendingUp,
   HelpCircle,
   Shield,
-  Quote
+  Quote,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import ScoreBadge from '../components/ScoreBadge';
 import { useTheme } from '../context/ThemeContext';
-import { getTranscription } from '../api';
+import { getTranscription, getAudioUrl } from '../api';
 
 // Mapeo de saleStatus a labels y colores
 const SALE_STATUS_CONFIG = {
@@ -69,6 +71,9 @@ export default function TranscriptionDetail() {
   const [loading, setLoading] = useState(true);
   const [transcription, setTranscription] = useState(null);
   const [error, setError] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioAvailable, setAudioAvailable] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(true);
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -84,7 +89,26 @@ export default function TranscriptionDetail() {
       }
     };
     
+    const fetchAudioUrl = async () => {
+      try {
+        setAudioLoading(true);
+        const response = await getAudioUrl(id);
+        if (response.data.available) {
+          setAudioUrl(response.data.url);
+          setAudioAvailable(true);
+        } else {
+          setAudioAvailable(false);
+        }
+      } catch (err) {
+        console.error('Error fetching audio URL:', err);
+        setAudioAvailable(false);
+      } finally {
+        setAudioLoading(false);
+      }
+    };
+    
     fetchTranscription();
+    fetchAudioUrl();
   }, [id]);
 
   const formatDate = (dateString) => {
@@ -206,6 +230,43 @@ export default function TranscriptionDetail() {
                 }`}>
                   {t.analysisConfidence}%
                 </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Audio Player */}
+      <div className={`rounded-2xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex items-center gap-4">
+          <div className={`p-2 rounded-lg ${audioAvailable ? 'bg-[#F5A623]' : (isDark ? 'bg-slate-600' : 'bg-gray-300')}`}>
+            {audioAvailable ? (
+              <Volume2 className="w-5 h-5 text-white" />
+            ) : (
+              <VolumeX className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
+            )}
+          </div>
+          
+          <div className="flex-1">
+            {audioLoading ? (
+              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                Cargando audio...
+              </div>
+            ) : audioAvailable ? (
+              <audio 
+                controls 
+                className="w-full h-10"
+                style={{ 
+                  filter: isDark ? 'invert(1) hue-rotate(180deg)' : 'none',
+                  opacity: isDark ? 0.9 : 1
+                }}
+              >
+                <source src={audioUrl} type="audio/webm" />
+                Tu navegador no soporta el reproductor de audio.
+              </audio>
+            ) : (
+              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                Audio no disponible para esta transcripción
               </div>
             )}
           </div>
