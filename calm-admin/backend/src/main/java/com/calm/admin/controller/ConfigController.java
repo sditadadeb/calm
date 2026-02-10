@@ -54,13 +54,14 @@ Debes clasificar cada interacción en UNO solo de los siguientes estados:
 Venta confirmada con evidencia textual explícita de cierre operativo.
 Ejemplos válidos:
 "lo llevo", "lo compro", "me lo quedo"
-coordinación de entrega (dirección, horario)
-confirmación de pago o medio de pago como parte del cierre
-generación de factura o comprobante
+coordinación de entrega (dirección, horario, día)
+confirmación de pago o medio de pago COMO PARTE del cierre
+generación de factura/comprobante
+toma de datos personales PARA EJECUTAR la compra (no solo para seguimiento)
 
 🟡 SALE_LIKELY
 Alta probabilidad de venta, pero SIN confirmación explícita audible.
-Este estado NO se considera venta confirmada.
+NO cuenta como venta concretada.
 
 🟠 ADVANCE_NO_CLOSE
 Avance comercial sin cierre.
@@ -77,20 +78,23 @@ La transcripción no permite análisis comercial confiable
 (texto muy corto, frases inconexas, errores graves).
 
 ═══════════════════════════════════════════════════════════════════
-🚨 REGLA CRÍTICA DE VENTA CONFIRMADA
+🚨 REGLA CRÍTICA DE VENTA CONFIRMADA (SEÑALES DURAS)
 ═══════════════════════════════════════════════════════════════════
 
 Si aparece CUALQUIERA de estas señales textuales,
-la interacción DEBE clasificarse como SALE_CONFIRMED:
+la interacción DEBE clasificarse como SALE_CONFIRMED
+(salvo que el texto muestre explícitamente que NO se concretó):
 
-"dirección de entrega"
-"nombre y apellido"
-"te llega mañana" / "entrega mañana"
-"rango horario" / "horario de entrega"
-"sale del depósito"
-"envío a domicilio"
-"paso la tarjeta"
-"genero la factura"
+Señales duras (cierre operativo):
+dirección de entrega / envío a domicilio
+día de entrega ("te llega mañana", "entrega el…", "sale del depósito")
+rango horario / horario de entrega
+"paso la tarjeta" / "pago con…" / "lo pago ahora"
+"genero la factura" / "te hago la factura" / "emitimos comprobante"
+solicitud de datos para concretar (mail + DNI + dirección o similares) en contexto de cierre
+"te traigo / te lo doy / lo retirás ahora" + confirmación de llevarlo
+
+OJO: hablar de cuotas/precio sin una acción de cierre NO confirma venta.
 
 ═══════════════════════════════════════════════════════════════════
 🧠 PRINCIPIOS OBLIGATORIOS DE ANÁLISIS
@@ -101,34 +105,55 @@ la interacción DEBE clasificarse como SALE_CONFIRMED:
 3) Sé conservador: ante duda, prioriza no concluir.
 4) Nunca completes listas con contenido genérico.
 5) Usa arrays vacíos [] cuando no haya evidencia concluyente.
+6) Si hay conflicto entre señales (ej. toma de datos pero luego "vuelvo"), prima lo explícito más fuerte.
 
 ═══════════════════════════════════════════════════════════════════
-📊 EVALUACIÓN METÓDICA DE analysisConfidence (0–100)
+📊 CÁLCULO EXPLÍCITO DE analysisConfidence (0–100)
 ═══════════════════════════════════════════════════════════════════
 
-analysisConfidence debe reflejar la CONFIABILIDAD DEL INPUT,
-no la seguridad subjetiva del modelo.
+analysisConfidence mide CONFIABILIDAD DEL INPUT (calidad del texto),
+NO "certeza" del modelo ni "probabilidad de venta".
 
-Guía orientativa:
+Debes calcularlo determinísticamente con esta fórmula:
+
+analysisConfidence =
+ROUND(
+  textIntegrity * 0.35 +
+  conversationalCoherence * 0.25 +
+  commercialSignalClarity * 0.25 +
+  analyticsUsability * 0.15
+)
+
+Reglas:
+Cada subscore es 0–100.
+Si el resultado > 100, usar 100. Si < 0, usar 0.
+Si saleStatus = UNINTERPRETABLE, analysisConfidence NO puede ser > 35.
+Si wordCount < 40 o turnCount < 4, analyticsUsability NO puede ser > 40.
+"commercialSignalClarity" mide CLARIDAD de señales comerciales en el texto,
+  aunque NO haya venta (por ejemplo, precios claros puede dar score medio).
+"textIntegrity" penaliza fuerte frases rotas, incoherencia, ASR malo.
+"conversationalCoherence" evalúa continuidad (roles/turnos entendibles).
+"analyticsUsability" evalúa si se puede extraer data útil (productos, objeciones, cierre).
+
+Guía orientativa (no reemplaza la fórmula):
 90–100: texto claro, coherente, altamente usable
 70–89: texto bueno con ambigüedades menores
-50–69: texto interpretable pero ruidoso
-30–49: texto confuso, conclusiones inciertas
-0–29: texto muy pobre o no interpretable
+50–69: interpretable pero ruidoso
+30–49: confuso, conclusiones inciertas
+0–29: muy pobre / no interpretable
 
 ═══════════════════════════════════════════════════════════════════
-📦 FORMATO DE SALIDA (JSON ESTRICTO, CON TRAZABILIDAD OBLIGATORIA)
+📦 FORMATO DE SALIDA (JSON ESTRICTO, TRAZABILIDAD OBLIGATORIA)
 ═══════════════════════════════════════════════════════════════════
 
-Responde SIEMPRE en JSON válido con esta estructura exacta
-(incluyendo confidenceTrace como objeto obligatorio):
+Responde SIEMPRE en JSON válido con esta estructura exacta:
 
 {
   "saleCompleted": true/false,
   "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
   "analysisConfidence": 0-100,
   "confidenceTrace": {
-    "methodVersion": "confidence_v2_2026-02",
+    "methodVersion": "confidence_v3_2026-02",
     "subscores": {
       "textIntegrity": 0-100,
       "conversationalCoherence": 0-100,
@@ -148,14 +173,14 @@ Responde SIEMPRE en JSON válido con esta estructura exacta
       "explicitCloseSignal": true/false
     },
     "flags": [],
-    "rationale": "1-2 frases explicando el score"
+    "rationale": "1-2 frases SOLO sobre por qué el confidence score es el que es (calidad/claridad del input). NO resumir la conversación. NO repetir el executiveSummary."
   },
   "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de venta'",
   "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
   "productsDiscussed": [],
   "customerObjections": [],
   "improvementSuggestions": [],
-  "executiveSummary": "Resumen factual y breve (2–3 oraciones) basado solo en el texto",
+  "executiveSummary": "Resumen factual (2–3 oraciones) de la interacción: qué buscó, qué se ofreció, qué se acordó. NO hablar del confidence score.",
   "sellerScore": 1-10,
   "sellerStrengths": [],
   "sellerWeaknesses": [],
@@ -163,20 +188,33 @@ Responde SIEMPRE en JSON válido con esta estructura exacta
 }
 
 ═══════════════════════════════════════════════════════════════════
-📌 REGLAS DE CONSISTENCIA
+📌 REGLAS DE CONSISTENCIA (OBLIGATORIAS)
 ═══════════════════════════════════════════════════════════════════
 
-saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED
-SALE_LIKELY NO cuenta como venta concretada
-sellerScore > 7 SOLO si hay evidencia textual clara
-Ante transcripción fragmentada o incoherente, usa UNINTERPRETABLE
+1) saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED.
+2) SALE_LIKELY NO cuenta como venta concretada.
+3) Si saleStatus = SALE_CONFIRMED:
+   - saleEvidence NO puede ser null, vacío "" ni genérico.
+   - saleEvidence DEBE incluir una cita textual exacta del transcript (copy/paste).
+4) Si saleStatus ≠ SALE_CONFIRMED:
+   - saleEvidence = "Sin evidencia de venta" (o cita textual de "lo pienso / vuelvo" si aplica).
+5) explicitCloseSignal:
+   - true SOLO si hay una "señal dura" de cierre operativo (ver sección crítica).
+   - false si solo hay charla de precios, cuotas, medidas o interés.
+6) confidenceTrace.rationale y executiveSummary deben ser claramente diferentes:
+   - rationale: habla SOLO de calidad del texto, ruido, coherencia, claridad.
+   - executiveSummary: habla SOLO de hechos comerciales y resultado de la interacción.
+   - Prohibido que contengan frases equivalentes o el mismo contenido con sinónimos.
+7) No completar listas con strings vacíos: usar [] si no hay evidencia.
+8) sellerScore > 7 SOLO si hay evidencia clara de buena gestión + cierre o manejo sólido.
+9) En UNINTERPRETABLE, noSaleReason debe ser "Transcripción no interpretable".
 
 ═══════════════════════════════════════════════════════════════════
 ⚠️ IMPORTANTE FINAL
 ═══════════════════════════════════════════════════════════════════
 
-Prioriza confiabilidad, explicabilidad y usabilidad
-por sobre completitud o métricas optimistas.
+Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
+Si no hay evidencia, dilo y deja arrays vacíos.
 """;
 
     public ConfigController(SystemConfigRepository configRepository) {
