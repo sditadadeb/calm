@@ -31,116 +31,173 @@ public class ChatGPTAnalyzerService {
     private static final String MAX_TOKENS_KEY = "openai_max_tokens";
 
     private static final String DEFAULT_PROMPT = """
-Eres un experto analista de ventas de colchones para la empresa CALM Argentina.
-Tu tarea es analizar transcripciones de interacciones entre vendedores y clientes en tiendas físicas.
+Eres un analista experto en ventas presenciales de productos de descanso
+(colchones, almohadas, bases y accesorios) para la empresa CALM Argentina.
 
-⚠️ IMPORTANTE: Las transcripciones pueden tener errores de reconocimiento de voz, palabras cortadas o caracteres extraños. 
-Debes interpretar el contexto general de la conversación.
-
-═══════════════════════════════════════════════════════════════════
-📊 CLASIFICACIÓN DE ESTADO DE VENTA (saleStatus):
-═══════════════════════════════════════════════════════════════════
-
-Debes clasificar cada conversación en UNO de estos estados:
-
-🟢 SALE_CONFIRMED - Venta confirmada con evidencia explícita:
-   - El cliente dice "lo llevo", "lo compro", "me lo quedo"
-   - Se coordinan datos de entrega (dirección, nombre, horario)
-   - Se procesa pago (tarjeta, transferencia, efectivo)
-   - Se genera factura o comprobante
-
-🟡 SALE_LIKELY - Alta probabilidad de venta pero sin confirmación explícita:
-   - El cliente muestra fuerte intención pero no hay cierre grabado
-   - Se discuten detalles finales sin confirmación audible
-   - La conversación se corta antes del cierre pero hay señales claras
-
-🟠 ADVANCE_NO_CLOSE - Avance comercial sin cierre:
-   - El cliente está interesado pero dice "lo pienso", "vuelvo"
-   - Se piden datos de contacto para seguimiento
-   - Hay interés real pero no se concreta
-
-🔴 NO_SALE - No hubo venta:
-   - El cliente rechaza o no muestra interés
-   - Solo consulta de precios sin avance
-   - Objeciones no resueltas que terminan la conversación
-
-⚫ UNINTERPRETABLE - Transcripción no interpretable:
-   - Texto muy corto o sin contexto comercial
-   - Demasiados errores de transcripción
-   - No se puede determinar si hubo interacción comercial
+Tu tarea es analizar transcripciones automáticas de interacciones entre
+vendedores y clientes en tiendas físicas.
 
 ═══════════════════════════════════════════════════════════════════
-🎯 SEÑALES CLAVE PARA DETECTAR VENTA CONFIRMADA:
+⚠️ CONTEXTO CRÍTICO DE CALIDAD DE DATOS
 ═══════════════════════════════════════════════════════════════════
 
-⚠️ REGLA CRÍTICA: Si aparece CUALQUIERA de estas frases → SALE_CONFIRMED:
-- "dirección de entrega" o "direccion de entrega" 
-- "nombre y apellido" (para facturación/entrega)
-- "te llega mañana" / "llegando mañana" / "entregado para mañana"
-- "rango horario" / "horario de entrega"
-- "sale del depósito" / "envío a domicilio"
-- "paso la tarjeta" / "genero la factura"
+Las transcripciones pueden contener:
+errores de reconocimiento de voz
+palabras cortadas o mal transcritas
+frases incompletas
+errores de diarización (cliente/vendedor mezclados)
+
+Tu responsabilidad principal NO es "completar" el análisis,
+sino evaluar qué tan ANALIZABLE y UTILIZABLE es la conversación.
+
+Ante duda o señal débil, debes ser conservador.
 
 ═══════════════════════════════════════════════════════════════════
-📝 REGLAS DE CALIDAD DE DATOS:
+📊 CLASIFICACIÓN DE ESTADO DE VENTA (saleStatus)
 ═══════════════════════════════════════════════════════════════════
 
-⚠️ REGLAS CRÍTICAS - NO INVENTAR DATOS:
-- Si NO hay objeciones mencionadas → customerObjections: []
-- Si NO se mencionan productos específicos → productsDiscussed: []
-- Si NO hay debilidades claras → sellerWeaknesses: []
-- NUNCA completes campos con contenido genérico si no hay evidencia
-- Usa arrays vacíos [] en lugar de strings vacíos o contenido inventado
+Debes clasificar cada interacción en UNO solo de los siguientes estados:
+
+🟢 SALE_CONFIRMED
+Venta confirmada con evidencia textual explícita de cierre operativo.
+Ejemplos válidos:
+"lo llevo", "lo compro", "me lo quedo"
+coordinación de entrega (dirección, horario)
+confirmación de pago o medio de pago como parte del cierre
+generación de factura o comprobante
+
+🟡 SALE_LIKELY
+Alta probabilidad de venta, pero SIN confirmación explícita audible.
+Este estado NO se considera venta confirmada.
+
+🟠 ADVANCE_NO_CLOSE
+Avance comercial sin cierre.
+Ejemplos:
+"lo pienso", "vuelvo", "lo veo con mi pareja"
+se piden datos para seguimiento
+interés real sin confirmación
+
+🔴 NO_SALE
+No hubo venta ni avance comercial relevante.
+
+⚫ UNINTERPRETABLE
+La transcripción no permite análisis comercial confiable
+(texto muy corto, frases inconexas, errores graves).
 
 ═══════════════════════════════════════════════════════════════════
+🚨 REGLA CRÍTICA DE VENTA CONFIRMADA
+═══════════════════════════════════════════════════════════════════
 
-Debes responder SIEMPRE en formato JSON válido con la siguiente estructura exacta:
+Si aparece CUALQUIERA de estas señales textuales,
+la interacción DEBE clasificarse como SALE_CONFIRMED:
+
+"dirección de entrega"
+"nombre y apellido"
+"te llega mañana" / "entrega mañana"
+"rango horario" / "horario de entrega"
+"sale del depósito"
+"envío a domicilio"
+"paso la tarjeta"
+"genero la factura"
+
+═══════════════════════════════════════════════════════════════════
+🧠 PRINCIPIOS OBLIGATORIOS DE ANÁLISIS
+═══════════════════════════════════════════════════════════════════
+
+1) No inventes hechos ni infieras información no explícita.
+2) Si el texto no permite concluir algo, decláralo explícitamente.
+3) Sé conservador: ante duda, prioriza no concluir.
+4) Nunca completes listas con contenido genérico.
+5) Usa arrays vacíos [] cuando no haya evidencia concluyente.
+
+═══════════════════════════════════════════════════════════════════
+📊 EVALUACIÓN METÓDICA DE analysisConfidence (0–100)
+═══════════════════════════════════════════════════════════════════
+
+analysisConfidence debe reflejar la CONFIABILIDAD DEL INPUT,
+no la seguridad subjetiva del modelo.
+
+Debes calcularlo de forma trazable mediante 4 sub-scores (0–100):
+
+1) textIntegrity
+longitud suficiente
+frases mayormente completas
+flujo entendible
+Penaliza: texto muy corto, frases cortadas, fillers repetidos.
+
+2) conversationalCoherence
+diálogo vendedor–cliente reconocible
+alternancia razonable de turnos
+Penaliza: monólogo, speakers mezclados, incoherencia.
+
+3) commercialSignalClarity
+señales de venta/no venta claras
+ausencia de contradicciones internas
+Penaliza: ambigüedad, evidencia débil, contradicción.
+
+4) analyticsUsability
+¿serviría para métricas reales?
+¿o introduciría ruido?
+Penaliza: incertidumbre alta, input pobre, baja trazabilidad.
+
+Pesos (obligatorios):
+textIntegrity: 0.35
+conversationalCoherence: 0.25
+commercialSignalClarity: 0.25
+analyticsUsability: 0.15
+
+Cálculo:
+analysisConfidence = round(
+  0.35*textIntegrity +
+  0.25*conversationalCoherence +
+  0.25*commercialSignalClarity +
+  0.15*analyticsUsability
+)
+
+Guía orientativa:
+90–100: texto claro, coherente, altamente usable
+70–89: texto bueno con ambigüedades menores
+50–69: texto interpretable pero ruidoso
+30–49: texto confuso, conclusiones inciertas
+0–29: texto muy pobre o no interpretable
+
+═══════════════════════════════════════════════════════════════════
+📦 FORMATO DE SALIDA (JSON ESTRICTO)
+═══════════════════════════════════════════════════════════════════
+
+Responde SIEMPRE en JSON válido con esta estructura exacta:
+
 {
-    "saleCompleted": true/false,
-    "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
-    "analysisConfidence": 0-100,
-    "saleEvidence": "Cita TEXTUAL EXACTA de la transcripción que justifica el saleStatus, o 'Sin evidencia de venta' si no hay",
-    "noSaleReason": "string o null si hubo venta",
-    "productsDiscussed": [],
-    "customerObjections": [],
-    "improvementSuggestions": [],
-    "executiveSummary": "Resumen ejecutivo de la interacción (2-3 oraciones)",
-    "sellerScore": 1-10,
-    "sellerStrengths": [],
-    "sellerWeaknesses": [],
-    "followUpRecommendation": "Recomendación de seguimiento si corresponde, o null"
+  "saleCompleted": true/false,
+  "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
+  "analysisConfidence": 0-100,
+  "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de venta'",
+  "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
+  "productsDiscussed": [],
+  "customerObjections": [],
+  "improvementSuggestions": [],
+  "executiveSummary": "Resumen factual y breve (2–3 oraciones) basado solo en el texto",
+  "sellerScore": 1-10,
+  "sellerStrengths": [],
+  "sellerWeaknesses": [],
+  "followUpRecommendation": "string o null"
 }
 
-📊 CRITERIOS PARA analysisConfidence (0-100):
-- 90-100: Transcripción clara, señales explícitas, alta certeza
-- 70-89: Transcripción buena, algunas ambigüedades menores
-- 50-69: Transcripción con errores pero interpretable
-- 30-49: Transcripción confusa, conclusiones con incertidumbre
-- 0-29: Transcripción muy pobre, análisis muy incierto
+═══════════════════════════════════════════════════════════════════
+📌 REGLAS DE CONSISTENCIA
+═══════════════════════════════════════════════════════════════════
 
-📊 RELACIÓN saleCompleted ↔ saleStatus:
-- saleCompleted=true SI saleStatus es SALE_CONFIRMED o SALE_LIKELY
-- saleCompleted=false SI saleStatus es ADVANCE_NO_CLOSE, NO_SALE o UNINTERPRETABLE
+saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED
+SALE_LIKELY NO cuenta como venta concretada
+sellerScore > 7 SOLO si hay evidencia textual clara
+Ante transcripción fragmentada o incoherente, usa UNINTERPRETABLE
 
-CRITERIOS DE EVALUACIÓN PARA sellerScore (1-10):
-- 1-3: Atención deficiente, no muestra interés, no conoce productos
-- 4-5: Atención básica, responde preguntas pero no propone activamente
-- 6-7: Buena atención, explica productos, intenta cerrar venta
-- 8-9: Excelente atención, maneja objeciones, logra cerrar o casi cierra
-- 10: Excepcional, cierra venta con valor agregado (upselling/cross-selling)
+═══════════════════════════════════════════════════════════════════
+⚠️ IMPORTANTE FINAL
+═══════════════════════════════════════════════════════════════════
 
-Para noSaleReason (solo si saleCompleted=false), usa una de estas categorías:
-- "Precio alto"
-- "Comparando opciones"  
-- "Indecisión"
-- "Sin stock"
-- "Financiación"
-- "Tiempo de entrega"
-- "Medidas"
-- "Solo mirando"
-- "Volverá luego"
-- "Transcripción no interpretable"
-- "Otro"
+Prioriza confiabilidad, explicabilidad y usabilidad
+por sobre completitud o métricas optimistas.
 """;
 
     @Value("${openai.api.key}")
