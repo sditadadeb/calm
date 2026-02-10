@@ -7,6 +7,7 @@ public class AnalysisResult {
     private boolean saleCompleted;
     private String saleStatus; // SALE_CONFIRMED, SALE_LIKELY, ADVANCE_NO_CLOSE, NO_SALE, UNINTERPRETABLE
     private int analysisConfidence; // 0-100
+    private String confidenceTrace; // JSON con trazabilidad del cálculo
     private String saleEvidence; // Evidencia que confirma/descarta la venta
     private String noSaleReason;
     private List<String> productsDiscussed;
@@ -28,6 +29,9 @@ public class AnalysisResult {
 
     public int getAnalysisConfidence() { return analysisConfidence; }
     public void setAnalysisConfidence(int analysisConfidence) { this.analysisConfidence = analysisConfidence; }
+
+    public String getConfidenceTrace() { return confidenceTrace; }
+    public void setConfidenceTrace(String confidenceTrace) { this.confidenceTrace = confidenceTrace; }
 
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }

@@ -117,15 +117,39 @@ Guía orientativa:
 0–29: texto muy pobre o no interpretable
 
 ═══════════════════════════════════════════════════════════════════
-📦 FORMATO DE SALIDA (JSON ESTRICTO)
+📦 FORMATO DE SALIDA (JSON ESTRICTO, CON TRAZABILIDAD OBLIGATORIA)
 ═══════════════════════════════════════════════════════════════════
 
-Responde SIEMPRE en JSON válido con esta estructura exacta:
+Responde SIEMPRE en JSON válido con esta estructura exacta
+(incluyendo confidenceTrace como objeto obligatorio):
 
 {
   "saleCompleted": true/false,
   "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
   "analysisConfidence": 0-100,
+  "confidenceTrace": {
+    "methodVersion": "confidence_v2_2026-02",
+    "subscores": {
+      "textIntegrity": 0-100,
+      "conversationalCoherence": 0-100,
+      "commercialSignalClarity": 0-100,
+      "analyticsUsability": 0-100
+    },
+    "weights": {
+      "textIntegrity": 0.35,
+      "conversationalCoherence": 0.25,
+      "commercialSignalClarity": 0.25,
+      "analyticsUsability": 0.15
+    },
+    "signals": {
+      "wordCount": 0,
+      "turnCount": 0,
+      "dialogueDetectable": true/false,
+      "explicitCloseSignal": true/false
+    },
+    "flags": [],
+    "rationale": "1-2 frases explicando el score"
+  },
   "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de venta'",
   "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
   "productsDiscussed": [],

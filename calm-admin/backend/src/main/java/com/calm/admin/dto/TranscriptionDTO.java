@@ -14,6 +14,7 @@ public class TranscriptionDTO {
     private Boolean saleCompleted;
     private String saleStatus;
     private Integer analysisConfidence;
+    private String confidenceTrace;
     private String saleEvidence;
     private String noSaleReason;
     private List<String> productsDiscussed;
@@ -55,6 +56,9 @@ public class TranscriptionDTO {
 
     public Integer getAnalysisConfidence() { return analysisConfidence; }
     public void setAnalysisConfidence(Integer analysisConfidence) { this.analysisConfidence = analysisConfidence; }
+
+    public String getConfidenceTrace() { return confidenceTrace; }
+    public void setConfidenceTrace(String confidenceTrace) { this.confidenceTrace = confidenceTrace; }
 
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }

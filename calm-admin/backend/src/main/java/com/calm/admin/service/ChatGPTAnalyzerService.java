@@ -162,15 +162,39 @@ Guía orientativa:
 0–29: texto muy pobre o no interpretable
 
 ═══════════════════════════════════════════════════════════════════
-📦 FORMATO DE SALIDA (JSON ESTRICTO)
+📦 FORMATO DE SALIDA (JSON ESTRICTO, CON TRAZABILIDAD OBLIGATORIA)
 ═══════════════════════════════════════════════════════════════════
 
-Responde SIEMPRE en JSON válido con esta estructura exacta:
+Responde SIEMPRE en JSON válido con esta estructura exacta
+(incluyendo confidenceTrace como objeto obligatorio):
 
 {
   "saleCompleted": true/false,
   "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
   "analysisConfidence": 0-100,
+  "confidenceTrace": {
+    "methodVersion": "confidence_v2_2026-02",
+    "subscores": {
+      "textIntegrity": 0-100,
+      "conversationalCoherence": 0-100,
+      "commercialSignalClarity": 0-100,
+      "analyticsUsability": 0-100
+    },
+    "weights": {
+      "textIntegrity": 0.35,
+      "conversationalCoherence": 0.25,
+      "commercialSignalClarity": 0.25,
+      "analyticsUsability": 0.15
+    },
+    "signals": {
+      "wordCount": 0,
+      "turnCount": 0,
+      "dialogueDetectable": true/false,
+      "explicitCloseSignal": true/false
+    },
+    "flags": [],
+    "rationale": "1-2 frases explicando el score"
+  },
   "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de venta'",
   "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
   "productsDiscussed": [],
@@ -191,6 +215,7 @@ saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED
 SALE_LIKELY NO cuenta como venta concretada
 sellerScore > 7 SOLO si hay evidencia textual clara
 Ante transcripción fragmentada o incoherente, usa UNINTERPRETABLE
+flags debe incluir al menos 1 etiqueta cuando analysisConfidence < 50 (ej. "LOW_TEXT_INTEGRITY")
 
 ═══════════════════════════════════════════════════════════════════
 ⚠️ IMPORTANTE FINAL
@@ -376,6 +401,12 @@ por sobre completitud o métricas optimistas.
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
             result.setSaleStatus(root.has("saleStatus") ? root.get("saleStatus").asText() : "NO_SALE");
             result.setAnalysisConfidence(root.has("analysisConfidence") ? root.get("analysisConfidence").asInt() : 50);
+            
+            // Guardar confidenceTrace como JSON string
+            if (root.has("confidenceTrace") && !root.get("confidenceTrace").isNull()) {
+                result.setConfidenceTrace(root.get("confidenceTrace").toString());
+            }
+            
             result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
             result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull() 
                     ? root.get("noSaleReason").asText() : null);

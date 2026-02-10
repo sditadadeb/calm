@@ -26,6 +26,10 @@ public class Transcription {
     // Nuevo: Confianza del análisis (0-100)
     private Integer analysisConfidence;
     
+    // Nuevo: Trazabilidad del cálculo de confianza (JSON)
+    @Column(columnDefinition = "TEXT")
+    private String confidenceTrace;
+    
     @Column(columnDefinition = "TEXT")
     private String saleEvidence; // Evidencia que confirma/descarta la venta
     
@@ -99,6 +103,9 @@ public class Transcription {
     
     public Integer getAnalysisConfidence() { return analysisConfidence; }
     public void setAnalysisConfidence(Integer analysisConfidence) { this.analysisConfidence = analysisConfidence; }
+    
+    public String getConfidenceTrace() { return confidenceTrace; }
+    public void setConfidenceTrace(String confidenceTrace) { this.confidenceTrace = confidenceTrace; }
     
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
