@@ -22,8 +22,11 @@ import {
   VolumeX,
   Loader2,
   Play,
-  Pause
+  Pause,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import { getTranscriptions } from '../api';
 
 // Reproductor de audio personalizado con duración fija
 function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
@@ -184,6 +187,10 @@ export default function TranscriptionDetail() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioAvailable, setAudioAvailable] = useState(false);
   const [audioLoading, setAudioLoading] = useState(true);
+  
+  // Navegación entre transcripciones
+  const [allIds, setAllIds] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(null);
   const audioRef = useRef(null);
@@ -297,6 +304,38 @@ export default function TranscriptionDetail() {
     };
   }, [id]);
 
+  // Cargar lista de IDs para navegación
+  useEffect(() => {
+    const fetchAllIds = async () => {
+      try {
+        const response = await getTranscriptions({});
+        const ids = response.data.map(t => t.recordingId);
+        setAllIds(ids);
+        const idx = ids.indexOf(id);
+        setCurrentIndex(idx);
+      } catch (err) {
+        console.error('Error fetching transcription IDs:', err);
+      }
+    };
+    fetchAllIds();
+  }, [id]);
+
+  // Navegación
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      navigate(`/transcriptions/${allIds[currentIndex - 1]}`);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentIndex < allIds.length - 1) {
+      navigate(`/transcriptions/${allIds[currentIndex + 1]}`);
+    }
+  };
+
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < allIds.length - 1 && currentIndex >= 0;
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -352,14 +391,59 @@ export default function TranscriptionDetail() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate('/transcriptions')}
-        className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623]' : 'text-gray-500 hover:text-[#F5A623]'}`}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Volver al listado
-      </button>
+      {/* Navigation Bar */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/transcriptions')}
+          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623]' : 'text-gray-500 hover:text-[#F5A623]'}`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver al listado
+        </button>
+        
+        {/* Flechas de navegación */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevious}
+            disabled={!hasPrevious}
+            className={`p-2 rounded-lg transition-colors ${
+              hasPrevious 
+                ? isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                : isDark
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+            title="Anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          {allIds.length > 0 && (
+            <span className={`text-sm px-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              {currentIndex + 1} / {allIds.length}
+            </span>
+          )}
+          
+          <button
+            onClick={goToNext}
+            disabled={!hasNext}
+            className={`p-2 rounded-lg transition-colors ${
+              hasNext 
+                ? isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                : isDark
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+            title="Siguiente"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
       {/* Header Card */}
       <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>

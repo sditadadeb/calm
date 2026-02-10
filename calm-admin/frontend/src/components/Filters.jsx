@@ -99,7 +99,7 @@ export default function Filters({ onApply }) {
         <div>
           <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Resultado</label>
           <select
-            value={filters.saleCompleted === null ? '' : filters.saleCompleted}
+            value={filters.saleCompleted === null || filters.saleCompleted === undefined ? '' : String(filters.saleCompleted)}
             onChange={(e) => handleFilterChange('saleCompleted', e.target.value === '' ? null : e.target.value === 'true')}
             className={inputClasses}
           >
