@@ -286,7 +286,7 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     public AnalysisResult analyzeTranscription(String transcriptionText, String sellerName, String branchName) {
         if (openAiService == null) {
             log.warn("OpenAI service not initialized, returning mock analysis");
-            return createMockAnalysis();
+            return createErrorAnalysis("API Key de OpenAI no configurada");
         }
 
         try {
@@ -332,7 +332,6 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                 result.setSaleStatus("SALE_CONFIRMED");
                 result.setSaleEvidence("Detectado por palabras clave: " + saleSignal);
                 result.setNoSaleReason(null);
-                // Aumentar confianza ya que es detección por palabras clave directa
                 if (result.getAnalysisConfidence() < 80) {
                     result.setAnalysisConfidence(80);
                 }
@@ -341,8 +340,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             return result;
 
         } catch (Exception e) {
-            log.error("Error analyzing transcription with ChatGPT: {}", e.getMessage());
-            return createMockAnalysis();
+            log.error("Error analyzing transcription with ChatGPT: {}", e.getMessage(), e);
+            return createErrorAnalysis("Error en análisis GPT: " + e.getMessage());
         }
     }
     
@@ -452,21 +451,21 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return list;
     }
 
-    private AnalysisResult createMockAnalysis() {
+    private AnalysisResult createErrorAnalysis(String reason) {
         AnalysisResult result = new AnalysisResult();
         result.setSaleCompleted(false);
         result.setSaleStatus("UNINTERPRETABLE");
         result.setAnalysisConfidence(0);
         result.setSaleEvidence("Análisis no disponible");
-        result.setNoSaleReason("Análisis pendiente - API Key no configurada");
+        result.setNoSaleReason(reason);
         result.setProductsDiscussed(new ArrayList<>());
         result.setCustomerObjections(new ArrayList<>());
-        result.setImprovementSuggestions(Arrays.asList("Configurar API Key de OpenAI para análisis completo"));
-        result.setExecutiveSummary("Análisis no disponible - Se requiere configurar la API Key de OpenAI");
-        result.setSellerScore(5);
+        result.setImprovementSuggestions(new ArrayList<>());
+        result.setExecutiveSummary("Análisis no disponible - " + reason);
+        result.setSellerScore(0);
         result.setSellerStrengths(new ArrayList<>());
         result.setSellerWeaknesses(new ArrayList<>());
-        result.setFollowUpRecommendation("Pendiente de análisis");
+        result.setFollowUpRecommendation(null);
         return result;
     }
 }
