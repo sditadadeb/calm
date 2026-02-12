@@ -437,7 +437,7 @@ Si no hay evidencia, dilo y deja arrays vacíos.
 
         } catch (Exception e) {
             log.error("Error parsing analysis response: {}", e.getMessage());
-            return createMockAnalysis();
+            return createErrorAnalysis("Error parseando respuesta de GPT: " + e.getMessage());
         }
     }
 
