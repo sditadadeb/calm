@@ -9,6 +9,7 @@ public class AnalysisResult {
     private int analysisConfidence; // 0-100
     private String confidenceTrace; // JSON con trazabilidad del cálculo
     private String saleEvidence; // Evidencia que confirma/descarta la venta
+    private String saleEvidenceMeta; // JSON con metadata de evidencia de venta
     private String noSaleReason;
     private List<String> productsDiscussed;
     private List<String> customerObjections;
@@ -35,6 +36,9 @@ public class AnalysisResult {
 
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
+
+    public String getSaleEvidenceMeta() { return saleEvidenceMeta; }
+    public void setSaleEvidenceMeta(String saleEvidenceMeta) { this.saleEvidenceMeta = saleEvidenceMeta; }
 
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }

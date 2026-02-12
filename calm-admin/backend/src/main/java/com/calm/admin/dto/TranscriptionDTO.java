@@ -16,6 +16,7 @@ public class TranscriptionDTO {
     private Integer analysisConfidence;
     private String confidenceTrace;
     private String saleEvidence;
+    private String saleEvidenceMeta;
     private String noSaleReason;
     private List<String> productsDiscussed;
     private List<String> customerObjections;
@@ -62,6 +63,9 @@ public class TranscriptionDTO {
 
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
+
+    public String getSaleEvidenceMeta() { return saleEvidenceMeta; }
+    public void setSaleEvidenceMeta(String saleEvidenceMeta) { this.saleEvidenceMeta = saleEvidenceMeta; }
 
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }

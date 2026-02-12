@@ -135,6 +135,7 @@ public class TranscriptionService {
         transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());
         transcription.setConfidenceTrace(analysis.getConfidenceTrace());
         transcription.setSaleEvidence(analysis.getSaleEvidence());
+        transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
         transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
         transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
@@ -431,10 +432,27 @@ public class TranscriptionService {
     /**
      * Re-analiza TODAS las transcripciones con el prompt actual.
      * Usa SSE para mostrar progreso en tiempo real.
+     * Resiliente a desconexiones del cliente - sigue procesando aunque el frontend se desconecte.
      */
     public SseEmitter reanalyzeAllWithProgress() {
-        SseEmitter emitter = new SseEmitter(600000L); // 10 minutos timeout
+        SseEmitter emitter = new SseEmitter(900000L); // 15 minutos timeout
         ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        
+        // Track if emitter is still connected
+        final boolean[] emitterAlive = {true};
+        
+        emitter.onCompletion(() -> {
+            emitterAlive[0] = false;
+            executor.shutdown();
+        });
+        emitter.onTimeout(() -> {
+            emitterAlive[0] = false;
+            executor.shutdown();
+        });
+        emitter.onError((ex) -> {
+            emitterAlive[0] = false;
+            log.warn("SSE emitter error (client disconnected?): {}", ex.getMessage());
+        });
         
         executor.execute(() -> {
             try {
@@ -445,7 +463,7 @@ public class TranscriptionService {
                 int errors = 0;
                 
                 // Enviar inicio
-                emitter.send(SseEmitter.event()
+                safeSend(emitter, emitterAlive, SseEmitter.event()
                         .name("start")
                         .data(Map.of(
                                 "message", "Iniciando re-análisis de " + total + " transcripciones",
@@ -457,7 +475,7 @@ public class TranscriptionService {
                     
                     try {
                         // Enviar progreso
-                        emitter.send(SseEmitter.event()
+                        safeSend(emitter, emitterAlive, SseEmitter.event()
                                 .name("progress")
                                 .data(Map.of(
                                         "current", current,
@@ -467,21 +485,36 @@ public class TranscriptionService {
                                         "message", "Analizando: " + transcription.getRecordingId()
                                 )));
                         
-                        // Re-analizar
-                        analyzeTranscription(transcription.getRecordingId());
+                        // Re-analizar directamente (sin pasar por @Transactional proxy)
+                        doAnalyzeTranscription(transcription.getRecordingId());
                         success++;
                         
-                        // Pequeña pausa para no saturar la API
-                        Thread.sleep(300);
+                        log.info("Re-análisis {}/{} OK: {}", current, total, transcription.getRecordingId());
+                        
+                        // Pequeña pausa para no saturar la API de OpenAI
+                        Thread.sleep(500);
                         
                     } catch (Exception e) {
                         errors++;
-                        log.error("Error re-analizando {}: {}", transcription.getRecordingId(), e.getMessage());
+                        log.error("Error re-analizando {}: {}", transcription.getRecordingId(), e.getMessage(), e);
+                        
+                        // Enviar progreso con error para esta transcripción
+                        safeSend(emitter, emitterAlive, SseEmitter.event()
+                                .name("progress")
+                                .data(Map.of(
+                                        "current", current,
+                                        "total", total,
+                                        "recordingId", transcription.getRecordingId(),
+                                        "userName", transcription.getUserName() != null ? transcription.getUserName() : "Desconocido",
+                                        "message", "Error: " + transcription.getRecordingId() + " - " + e.getMessage()
+                                )));
                     }
                 }
                 
+                log.info("Re-análisis completado: {} total, {} exitosos, {} errores", total, success, errors);
+                
                 // Enviar completado
-                emitter.send(SseEmitter.event()
+                safeSend(emitter, emitterAlive, SseEmitter.event()
                         .name("complete")
                         .data(Map.of(
                                 "message", "Re-análisis completado",
@@ -490,25 +523,76 @@ public class TranscriptionService {
                                 "errors", errors
                         )));
                 
-                emitter.complete();
+                if (emitterAlive[0]) {
+                    try { emitter.complete(); } catch (Exception ignored) {}
+                }
                 
             } catch (Exception e) {
-                log.error("Error en re-análisis: {}", e.getMessage());
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("error")
-                            .data(Map.of("message", e.getMessage())));
-                    emitter.completeWithError(e);
-                } catch (java.io.IOException ignored) {}
+                log.error("Error fatal en re-análisis: {}", e.getMessage(), e);
+                if (emitterAlive[0]) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("error")
+                                .data(Map.of("message", "Error: " + e.getMessage())));
+                        emitter.completeWithError(e);
+                    } catch (Exception ignored) {}
+                }
             } finally {
                 executor.shutdown();
             }
         });
         
-        emitter.onCompletion(executor::shutdown);
-        emitter.onTimeout(executor::shutdown);
-        
         return emitter;
+    }
+    
+    /**
+     * Safely send SSE event, catching IOException if client disconnected.
+     */
+    private void safeSend(SseEmitter emitter, boolean[] alive, SseEmitter.SseEventBuilder event) {
+        if (!alive[0]) return;
+        try {
+            emitter.send(event);
+        } catch (Exception e) {
+            alive[0] = false;
+            log.debug("SSE client disconnected, continuing re-analysis in background");
+        }
+    }
+    
+    /**
+     * Internal method for analyzing a transcription - not @Transactional so it works from background threads.
+     */
+    private void doAnalyzeTranscription(String recordingId) {
+        Transcription transcription = repository.findById(recordingId)
+                .orElseThrow(() -> new RuntimeException("Transcription not found: " + recordingId));
+        
+        if (transcription.getTranscriptionText() == null || transcription.getTranscriptionText().isEmpty()) {
+            throw new RuntimeException("No transcription text available for analysis");
+        }
+        
+        AnalysisResult analysis = analyzerService.analyzeTranscription(
+                transcription.getTranscriptionText(),
+                transcription.getUserName(),
+                transcription.getBranchName()
+        );
+        
+        transcription.setSaleCompleted(analysis.isSaleCompleted());
+        transcription.setSaleStatus(analysis.getSaleStatus());
+        transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());
+        transcription.setConfidenceTrace(analysis.getConfidenceTrace());
+        transcription.setSaleEvidence(analysis.getSaleEvidence());
+        transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
+        transcription.setNoSaleReason(analysis.getNoSaleReason());
+        transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
+        transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
+        transcription.setImprovementSuggestions(String.join(", ", analysis.getImprovementSuggestions()));
+        transcription.setExecutiveSummary(analysis.getExecutiveSummary());
+        transcription.setSellerScore(analysis.getSellerScore());
+        transcription.setSellerStrengths(String.join(", ", analysis.getSellerStrengths()));
+        transcription.setSellerWeaknesses(String.join(", ", analysis.getSellerWeaknesses()));
+        transcription.setAnalyzed(true);
+        transcription.setAnalyzedAt(LocalDateTime.now());
+        
+        repository.save(transcription);
     }
 
     private boolean hasAnyFilter(FilterDTO filter) {
@@ -539,6 +623,7 @@ public class TranscriptionService {
         dto.setAnalysisConfidence(t.getAnalysisConfidence());
         dto.setConfidenceTrace(t.getConfidenceTrace());
         dto.setSaleEvidence(t.getSaleEvidence());
+        dto.setSaleEvidenceMeta(t.getSaleEvidenceMeta());
         dto.setNoSaleReason(t.getNoSaleReason());
         dto.setProductsDiscussed(t.getProductsDiscussed() != null 
                 ? Arrays.asList(t.getProductsDiscussed().split(", ")) : new ArrayList<>());

@@ -49,8 +49,7 @@ errores de diarización (cliente/vendedor mezclados)
 
 Tu responsabilidad principal NO es "completar" el análisis,
 sino evaluar qué tan ANALIZABLE y UTILIZABLE es la conversación.
-
-Ante duda o señal débil, debes ser conservador.
+Ante duda, debes ser conservador.
 
 ═══════════════════════════════════════════════════════════════════
 📊 CLASIFICACIÓN DE ESTADO DE VENTA (saleStatus)
@@ -63,9 +62,9 @@ Venta confirmada con evidencia textual explícita de cierre operativo.
 Ejemplos válidos:
 "lo llevo", "lo compro", "me lo quedo"
 coordinación de entrega (dirección, horario, día)
-confirmación de pago o medio de pago COMO PARTE del cierre
+confirmación de pago como parte del cierre
 generación de factura/comprobante
-toma de datos personales PARA EJECUTAR la compra (no solo para seguimiento)
+toma de datos personales PARA EJECUTAR la compra (no solo seguimiento)
 
 🟡 SALE_LIKELY
 Alta probabilidad de venta, pero SIN confirmación explícita audible.
@@ -73,17 +72,13 @@ NO cuenta como venta concretada.
 
 🟠 ADVANCE_NO_CLOSE
 Avance comercial sin cierre.
-Ejemplos:
-"lo pienso", "vuelvo", "lo veo con mi pareja"
-se piden datos para seguimiento
-interés real sin confirmación
+Ejemplos: "lo pienso", "vuelvo", "lo veo con mi pareja", se piden datos para seguimiento.
 
 🔴 NO_SALE
 No hubo venta ni avance comercial relevante.
 
 ⚫ UNINTERPRETABLE
-La transcripción no permite análisis comercial confiable
-(texto muy corto, frases inconexas, errores graves).
+La transcripción no permite análisis comercial confiable.
 
 ═══════════════════════════════════════════════════════════════════
 🚨 REGLA CRÍTICA DE VENTA CONFIRMADA (SEÑALES DURAS)
@@ -91,21 +86,20 @@ La transcripción no permite análisis comercial confiable
 
 Si aparece CUALQUIERA de estas señales textuales,
 la interacción DEBE clasificarse como SALE_CONFIRMED
-(salvo que el texto muestre explícitamente que NO se concretó):
+(salvo que el texto indique explícitamente que NO se concretó):
 
-Señales duras (cierre operativo):
 dirección de entrega / envío a domicilio
 día de entrega ("te llega mañana", "entrega el…", "sale del depósito")
 rango horario / horario de entrega
 "paso la tarjeta" / "pago con…" / "lo pago ahora"
 "genero la factura" / "te hago la factura" / "emitimos comprobante"
-solicitud de datos para concretar (mail + DNI + dirección o similares) en contexto de cierre
-"te traigo / te lo doy / lo retirás ahora" + confirmación de llevarlo
+solicitud de datos operativos para concretar (mail + DNI + dirección o similares) en contexto de compra
+"te lo doy / lo retirás ahora" + confirmación de llevarlo
 
-OJO: hablar de cuotas/precio sin una acción de cierre NO confirma venta.
+OJO: hablar de cuotas/precio/medidas sin acción de cierre NO confirma venta.
 
 ═══════════════════════════════════════════════════════════════════
-🧠 PRINCIPIOS OBLIGATORIOS DE ANÁLISIS
+🧠 PRINCIPIOS OBLIGATORIOS
 ═══════════════════════════════════════════════════════════════════
 
 1) No inventes hechos ni infieras información no explícita.
@@ -113,45 +107,42 @@ OJO: hablar de cuotas/precio sin una acción de cierre NO confirma venta.
 3) Sé conservador: ante duda, prioriza no concluir.
 4) Nunca completes listas con contenido genérico.
 5) Usa arrays vacíos [] cuando no haya evidencia concluyente.
-6) Si hay conflicto entre señales (ej. toma de datos pero luego "vuelvo"), prima lo explícito más fuerte.
+6) Si hay conflicto entre señales, prima lo explícito más fuerte.
 
 ═══════════════════════════════════════════════════════════════════
-📊 CÁLCULO EXPLÍCITO DE analysisConfidence (0–100)
+📊 CÁLCULO EXPLÍCITO DE analysisConfidence (0–100) — V4
 ═══════════════════════════════════════════════════════════════════
 
-analysisConfidence mide CONFIABILIDAD DEL INPUT (calidad del texto),
-NO "certeza" del modelo ni "probabilidad de venta".
+analysisConfidence mide SOLO la CALIDAD DEL INPUT (transcripción y diálogo),
+y debe ser INDEPENDIENTE de si hubo o no venta.
 
-Debes calcularlo determinísticamente con esta fórmula:
+PROHIBIDO:
+Subir analysisConfidence por señales de cierre (pago/envío/datos/factura).
+Bajar analysisConfidence por ausencia de cierre.
+
+Debes calcularlo determinísticamente:
 
 analysisConfidence =
 ROUND(
-  textIntegrity * 0.35 +
-  conversationalCoherence * 0.25 +
-  commercialSignalClarity * 0.25 +
+  textIntegrity * 0.50 +
+  conversationalCoherence * 0.35 +
   analyticsUsability * 0.15
 )
 
 Reglas:
 Cada subscore es 0–100.
-Si el resultado > 100, usar 100. Si < 0, usar 0.
+Clamp final 0–100.
 Si saleStatus = UNINTERPRETABLE, analysisConfidence NO puede ser > 35.
 Si wordCount < 40 o turnCount < 4, analyticsUsability NO puede ser > 40.
-"commercialSignalClarity" mide CLARIDAD de señales comerciales en el texto,
-  aunque NO haya venta (por ejemplo, precios claros puede dar score medio).
-"textIntegrity" penaliza fuerte frases rotas, incoherencia, ASR malo.
-"conversationalCoherence" evalúa continuidad (roles/turnos entendibles).
-"analyticsUsability" evalúa si se puede extraer data útil (productos, objeciones, cierre).
 
-Guía orientativa (no reemplaza la fórmula):
-90–100: texto claro, coherente, altamente usable
-70–89: texto bueno con ambigüedades menores
-50–69: interpretable pero ruidoso
-30–49: confuso, conclusiones inciertas
-0–29: muy pobre / no interpretable
+Definiciones de subscores:
+textIntegrity: calidad del texto (ruido ASR, cortes, números corruptos, palabras sin sentido).
+conversationalCoherence: continuidad del ida y vuelta (turnos/roles entendibles, hilo temático).
+analyticsUsability: qué tan extraíble es info útil (productos/precio/objeciones/siguiente paso),
+  aunque NO haya venta.
 
 ═══════════════════════════════════════════════════════════════════
-📦 FORMATO DE SALIDA (JSON ESTRICTO, TRAZABILIDAD OBLIGATORIA)
+📦 FORMATO DE SALIDA (JSON ESTRICTO)
 ═══════════════════════════════════════════════════════════════════
 
 Responde SIEMPRE en JSON válido con esta estructura exacta:
@@ -161,17 +152,15 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
   "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
   "analysisConfidence": 0-100,
   "confidenceTrace": {
-    "methodVersion": "confidence_v3_2026-02",
+    "methodVersion": "confidence_v4_2026-02",
     "subscores": {
       "textIntegrity": 0-100,
       "conversationalCoherence": 0-100,
-      "commercialSignalClarity": 0-100,
       "analyticsUsability": 0-100
     },
     "weights": {
-      "textIntegrity": 0.35,
-      "conversationalCoherence": 0.25,
-      "commercialSignalClarity": 0.25,
+      "textIntegrity": 0.50,
+      "conversationalCoherence": 0.35,
       "analyticsUsability": 0.15
     },
     "signals": {
@@ -181,14 +170,20 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
       "explicitCloseSignal": true/false
     },
     "flags": [],
-    "rationale": "1-2 frases SOLO sobre por qué el confidence score es el que es (calidad/claridad del input). NO resumir la conversación. NO repetir el executiveSummary."
+    "rationale": "1-2 frases SOLO sobre por qué el confidence es el que es (calidad/ruido/coherencia/usabilidad). NO resumir la conversación."
   },
   "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de venta'",
+  "saleEvidenceMeta": {
+    "closeSignalStrength": 0-100,
+    "closeSignalsDetected": [],
+    "evidenceType": "PAYMENT" | "DELIVERY" | "INVOICE" | "DATA_CAPTURE" | "EXPLICIT_COMMITMENT" | "NONE",
+    "evidenceQuote": "cita textual exacta o ''"
+  },
   "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
   "productsDiscussed": [],
   "customerObjections": [],
   "improvementSuggestions": [],
-  "executiveSummary": "Resumen factual (2–3 oraciones) de la interacción: qué buscó, qué se ofreció, qué se acordó. NO hablar del confidence score.",
+  "executiveSummary": "Resumen factual (2–3 oraciones) de la interacción (qué buscó / qué se ofreció / qué se acordó). NO hablar del confidence.",
   "sellerScore": 1-10,
   "sellerStrengths": [],
   "sellerWeaknesses": [],
@@ -196,26 +191,40 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
 }
 
 ═══════════════════════════════════════════════════════════════════
-📌 REGLAS DE CONSISTENCIA (OBLIGATORIAS)
+📌 REGLAS DE CONSISTENCIA
 ═══════════════════════════════════════════════════════════════════
 
 1) saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED.
-2) SALE_LIKELY NO cuenta como venta concretada.
-3) Si saleStatus = SALE_CONFIRMED:
+2) Si saleStatus = SALE_CONFIRMED:
    - saleEvidence NO puede ser null, vacío "" ni genérico.
-   - saleEvidence DEBE incluir una cita textual exacta del transcript (copy/paste).
-4) Si saleStatus ≠ SALE_CONFIRMED:
-   - saleEvidence = "Sin evidencia de venta" (o cita textual de "lo pienso / vuelvo" si aplica).
-5) explicitCloseSignal:
-   - true SOLO si hay una "señal dura" de cierre operativo (ver sección crítica).
-   - false si solo hay charla de precios, cuotas, medidas o interés.
-6) confidenceTrace.rationale y executiveSummary deben ser claramente diferentes:
-   - rationale: habla SOLO de calidad del texto, ruido, coherencia, claridad.
-   - executiveSummary: habla SOLO de hechos comerciales y resultado de la interacción.
-   - Prohibido que contengan frases equivalentes o el mismo contenido con sinónimos.
-7) No completar listas con strings vacíos: usar [] si no hay evidencia.
-8) sellerScore > 7 SOLO si hay evidencia clara de buena gestión + cierre o manejo sólido.
-9) En UNINTERPRETABLE, noSaleReason debe ser "Transcripción no interpretable".
+   - saleEvidence DEBE ser una cita textual exacta del transcript.
+   - saleEvidenceMeta.evidenceType != "NONE"
+   - saleEvidenceMeta.evidenceQuote obligatorio (cita exacta)
+   - saleEvidenceMeta.closeSignalsDetected no vacío
+   - saleEvidenceMeta.closeSignalStrength >= 70
+3) Si saleStatus ≠ SALE_CONFIRMED:
+   - saleEvidence = "Sin evidencia de venta" (o cita exacta de "vuelvo/lo pienso" si aplica)
+   - saleEvidenceMeta.evidenceType = "NONE"
+   - saleEvidenceMeta.closeSignalsDetected = []
+   - saleEvidenceMeta.closeSignalStrength = 0
+   - saleEvidenceMeta.evidenceQuote = ""
+4) explicitCloseSignal = true SOLO si saleEvidenceMeta.evidenceType != "NONE"
+5) confidenceTrace.rationale y executiveSummary deben ser diferentes:
+   - rationale: SOLO calidad del input
+   - executiveSummary: SOLO hechos comerciales
+6) No strings vacíos en arrays: usar [] si no hay evidencia.
+
+═══════════════════════════════════════════════════════════════════
+🔢 CÁLCULO closeSignalStrength (solo metadata, NO afecta confidence)
+═══════════════════════════════════════════════════════════════════
+
+Base 0.
++40 si hay pago explícito ("pago con…", "paso la tarjeta", "lo pago ahora").
++35 si hay entrega/envío con coordinación ("dirección", "mañana", "horario", "envío a domicilio").
++30 si hay factura/comprobante.
++25 si hay compromiso explícito ("lo llevo", "lo compro", "me lo quedo").
++20 si hay toma de datos operativos (mail + DNI + dirección) en contexto de compra.
+Clamp a 100.
 
 ═══════════════════════════════════════════════════════════════════
 ⚠️ IMPORTANTE FINAL
@@ -271,7 +280,7 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     private Integer getMaxTokens() {
         return configRepository.findByConfigKey(MAX_TOKENS_KEY)
                 .map(c -> Integer.parseInt(c.getConfigValue()))
-                .orElse(2000);
+                .orElse(3000);
     }
 
     public AnalysisResult analyzeTranscription(String transcriptionText, String sellerName, String branchName) {
@@ -408,6 +417,12 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             }
             
             result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
+            
+            // Guardar saleEvidenceMeta como JSON string
+            if (root.has("saleEvidenceMeta") && !root.get("saleEvidenceMeta").isNull()) {
+                result.setSaleEvidenceMeta(root.get("saleEvidenceMeta").toString());
+            }
+            
             result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull() 
                     ? root.get("noSaleReason").asText() : null);
             result.setProductsDiscussed(jsonArrayToList(root.get("productsDiscussed")));

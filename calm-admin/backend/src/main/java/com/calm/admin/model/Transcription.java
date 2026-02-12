@@ -33,6 +33,10 @@ public class Transcription {
     @Column(columnDefinition = "TEXT")
     private String saleEvidence; // Evidencia que confirma/descarta la venta
     
+    // Metadata de evidencia de venta (JSON)
+    @Column(columnDefinition = "TEXT")
+    private String saleEvidenceMeta;
+    
     @Column(columnDefinition = "TEXT")
     private String noSaleReason;
     
@@ -109,6 +113,9 @@ public class Transcription {
     
     public String getSaleEvidence() { return saleEvidence; }
     public void setSaleEvidence(String saleEvidence) { this.saleEvidence = saleEvidence; }
+    
+    public String getSaleEvidenceMeta() { return saleEvidenceMeta; }
+    public void setSaleEvidenceMeta(String saleEvidenceMeta) { this.saleEvidenceMeta = saleEvidenceMeta; }
     
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }

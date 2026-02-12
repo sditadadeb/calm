@@ -128,13 +128,20 @@ const Settings = () => {
     });
 
     eventSource.addEventListener('error', (event) => {
+      let errorData = null;
+      try { errorData = JSON.parse(event.data); } catch(e) {}
       eventSource.close();
       setReanalyzing(false);
       setReanalyzeProgress({ current: 0, total: 0, message: '' });
-      setMessage({ type: 'error', text: 'Error en el re-análisis' });
+      setMessage({ type: 'error', text: errorData?.message || 'Error en el re-análisis. Revisá los logs del servidor.' });
     });
 
-    eventSource.onerror = () => {
+    eventSource.onerror = (err) => {
+      // Only show error if we haven't received a complete event
+      // (connection drop after completion is not an error)
+      if (reanalyzeProgress.current > 0 && reanalyzeProgress.current < reanalyzeProgress.total) {
+        setMessage({ type: 'warning', text: `Conexión perdida en ${reanalyzeProgress.current}/${reanalyzeProgress.total}. El re-análisis continúa en el servidor.` });
+      }
       eventSource.close();
       setReanalyzing(false);
       setReanalyzeProgress({ current: 0, total: 0, message: '' });

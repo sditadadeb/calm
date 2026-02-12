@@ -128,7 +128,11 @@ public class TranscriptionController {
      */
     @GetMapping(value = "/reanalyze-all/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public SseEmitter reanalyzeAllWithProgress() {
+    public SseEmitter reanalyzeAllWithProgress(jakarta.servlet.http.HttpServletResponse response) {
+        // Headers needed for SSE through proxies (Render, etc)
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no"); // Disable Nginx buffering
         return transcriptionService.reanalyzeAllWithProgress();
     }
     
