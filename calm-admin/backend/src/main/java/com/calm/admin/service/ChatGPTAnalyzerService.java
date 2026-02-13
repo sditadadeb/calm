@@ -436,7 +436,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     
     /**
      * Repara JSON malformado que GPT a veces genera.
-     * Corrige: trailing commas, missing commas, smart quotes, etc.
+     * Corrige: trailing commas, missing commas, smart quotes, 
+     * Python-style booleans, line endings, decimales, etc.
      */
     private String repairJson(String json) {
         // Reemplazar comillas tipográficas
@@ -448,21 +449,48 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replace('\u00A0', ' ');
         // BOM
         if (json.startsWith("\uFEFF")) json = json.substring(1);
+        // Normalizar line endings (Windows \r\n y Mac viejo \r → \n)
+        json = json.replace("\r\n", "\n").replace("\r", "\n");
+        
+        // Python-style booleans/null (GPT a veces devuelve True/False/None)
+        json = json.replaceAll(":\\s*True\\b", ": true");
+        json = json.replaceAll(":\\s*False\\b", ": false");
+        json = json.replaceAll(":\\s*None\\b", ": null");
         
         // Eliminar trailing commas antes de } o ] (error MUY común de GPT)
-        // Ejemplo: "field": "value",\n} → "field": "value"\n}
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
         
-        // Arreglar commas faltantes entre campos de objeto:
-        // Patrón: "valor"\n  "campo" → "valor",\n  "campo"
-        // Esto ocurre cuando GPT omite la comma entre dos campos
-        json = json.replaceAll("(\"[^\"]*\")\\s*\\n(\\s*\")", "$1,\n$2");
-        json = json.replaceAll("(true|false|null|\\d+)\\s*\\n(\\s*\")", "$1,\n$2");
-        // Arreglar: }\n  "campo" → },\n  "campo" (sub-objeto seguido de campo)
-        json = json.replaceAll("(})\\s*\\n(\\s*\")", "$1,\n$2");
-        // Arreglar: ]\n  "campo" → ],\n  "campo"
-        json = json.replaceAll("(])\\s*\\n(\\s*\")", "$1,\n$2");
+        // ===== REPARACIÓN DE COMAS FALTANTES (con newline) =====
+        // GPT omite comas entre propiedades. Detectamos:
+        //   VALOR_COMPLETO  [espacios] \n [espacios]  "nueva_clave"
+        
+        // Después de string value: "valor" \n "clave"
+        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*\")[ \\t]*\\n(\\s*\")", "$1,\n$2");
+        
+        // Después de boolean/null: true \n "clave"
+        json = json.replaceAll("(true|false|null)[ \\t]*\\n(\\s*\")", "$1,\n$2");
+        
+        // Después de número (entero o decimal): 100 o 0.50 \n "clave"
+        json = json.replaceAll("(\\d+\\.?\\d*)[ \\t]*\\n(\\s*\")", "$1,\n$2");
+        
+        // Después de cierre de objeto/array: } o ] \n "clave"
+        json = json.replaceAll("([}\\]])[ \\t]*\\n(\\s*\")", "$1,\n$2");
+        
+        // ===== REPARACIÓN DE COMAS FALTANTES (misma línea, sin newline) =====
+        // Para cuando GPT pone entradas en la misma línea sin comas
+        
+        // Después de boolean/null en misma línea: true  "clave"
+        json = json.replaceAll("(true|false|null)([ \\t]+)(\")", "$1,$2$3");
+        
+        // Después de número en misma línea: 100  "clave" o 0.50  "clave"
+        json = json.replaceAll("(\\d+\\.?\\d*)([ \\t]+)(\")", "$1,$2$3");
+        
+        // Después de cierre } o ] en misma línea: }  "clave"
+        json = json.replaceAll("([}\\]])([ \\t]+)(\")", "$1,$2$3");
+        
+        // Después de string en misma línea: "valor"  "clave"
+        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*\")([ \\t]+)(\")", "$1,$2$3");
         
         // Si el JSON quedó truncado (GPT no terminó), intentar cerrarlo
         long openBraces = json.chars().filter(c -> c == '{').count();
@@ -487,6 +515,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         try {
             String cleanJson = extractJsonBlock(response);
             cleanJson = repairJson(cleanJson);
+            
+            log.debug("Repaired JSON (first 500 chars): {}", 
+                    cleanJson.length() > 500 ? cleanJson.substring(0, 500) : cleanJson);
             
             // Usar ObjectMapper con modo leniente
             ObjectMapper lenientMapper = objectMapper.copy();
