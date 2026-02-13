@@ -402,6 +402,23 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                 cleanJson = response.substring(response.indexOf("```") + 3);
                 cleanJson = cleanJson.substring(0, cleanJson.indexOf("```"));
             }
+            
+            // Limpiar caracteres problemáticos que GPT a veces devuelve
+            cleanJson = cleanJson.trim();
+            // Reemplazar comillas tipográficas por comillas rectas
+            cleanJson = cleanJson.replace('\u201C', '"');  // "
+            cleanJson = cleanJson.replace('\u201D', '"');  // "
+            cleanJson = cleanJson.replace('\u2018', '\''); // '
+            cleanJson = cleanJson.replace('\u2019', '\''); // '
+            // Reemplazar guiones especiales
+            cleanJson = cleanJson.replace('\u2013', '-');  // –
+            cleanJson = cleanJson.replace('\u2014', '-');  // —
+            // Reemplazar espacios no-breaking
+            cleanJson = cleanJson.replace('\u00A0', ' ');  // non-breaking space
+            // Eliminar BOM si existe
+            if (cleanJson.startsWith("\uFEFF")) {
+                cleanJson = cleanJson.substring(1);
+            }
 
             JsonNode root = objectMapper.readTree(cleanJson.trim());
 
