@@ -587,16 +587,21 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     private AnalysisResult parseAnalysisResponse(String response) {
         try {
             String cleanJson = extractJsonBlock(response);
+            
+            log.info("Raw GPT JSON (first 300 chars): {}", 
+                    cleanJson.length() > 300 ? cleanJson.substring(0, 300) + "..." : cleanJson);
+            
             cleanJson = repairJson(cleanJson);
             
-            log.debug("Repaired JSON (first 500 chars): {}", 
-                    cleanJson.length() > 500 ? cleanJson.substring(0, 500) : cleanJson);
+            log.info("Repaired JSON (first 300 chars): {}", 
+                    cleanJson.length() > 300 ? cleanJson.substring(0, 300) + "..." : cleanJson);
             
-            // Usar ObjectMapper con modo leniente
+            // Usar ObjectMapper con modo MUY leniente
             ObjectMapper lenientMapper = objectMapper.copy();
             lenientMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
             lenientMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
             lenientMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            lenientMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
             
             JsonNode root = lenientMapper.readTree(cleanJson.trim());
 

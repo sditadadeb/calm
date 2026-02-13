@@ -474,4 +474,107 @@ public class JsonRepairTest {
         assertEquals("Cliente dijo: \"lo llevo\"", root.get("saleEvidence").asText());
         assertEquals("El vendedor respondió: \"perfecto\"", root.get("executiveSummary").asText());
     }
+
+    /**
+     * Test con keys sin comillas (GPT a veces omite comillas en keys).
+     * Requiere ALLOW_UNQUOTED_FIELD_NAMES en Jackson.
+     */
+    @Test
+    void testUnquotedFieldNames() throws Exception {
+        System.out.println("=== Test: unquoted field names ===");
+        // Crear mapper con ALLOW_UNQUOTED_FIELD_NAMES
+        ObjectMapper unquotedMapper = new ObjectMapper();
+        unquotedMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+        unquotedMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        
+        String json = """
+        {
+          saleCompleted: true,
+          saleStatus: "SALE_CONFIRMED",
+          analysisConfidence: 73
+        }
+        """;
+        // repairJson + insertMissingCommas + unquoted mapper
+        String repaired = repairJson(extractJsonBlock(json));
+        JsonNode root = unquotedMapper.readTree(repaired.trim());
+        assertTrue(root.get("saleCompleted").asBoolean());
+        assertEquals("SALE_CONFIRMED", root.get("saleStatus").asText());
+        System.out.println("  UNQUOTED FIELDS PARSED CORRECTLY!");
+    }
+
+    /**
+     * Test exacto del error de producción: JSON completo v4 con pattern
+     * que produce "expecting double-quote to start field name" - 
+     * reproduciendo el caso real donde GPT mezcla formatos.
+     */
+    @Test
+    void testProductionError_expectingFieldName() throws Exception {
+        System.out.println("=== Test: production error - expecting field name ===");
+        ObjectMapper lenient = new ObjectMapper();
+        lenient.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+        lenient.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        lenient.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        
+        // Simular JSON con estructura v4 donde GPT omite comas Y comillas en algunos keys
+        String json = """
+        {
+          "saleCompleted": true
+          "saleStatus": "SALE_CONFIRMED"
+          "analysisConfidence": 73
+          "confidenceTrace": {
+            "methodVersion": "confidence_v4_2026-02"
+            "subscores": {
+              "textIntegrity": 70
+              "conversationalCoherence": 75
+              "analyticsUsability": 80
+            }
+            "weights": {
+              "textIntegrity": 0.50
+              "conversationalCoherence": 0.35
+              "analyticsUsability": 0.15
+            }
+            "signals": {
+              "wordCount": 900
+              "turnCount": 50
+              "dialogueDetectable": true
+              "explicitCloseSignal": true
+            }
+            "flags": []
+            "rationale": "Buen texto con claridad moderada."
+          }
+          "saleEvidence": "Paso la tarjeta, me lo llevo"
+          "saleEvidenceMeta": {
+            "closeSignalStrength": 95
+            "closeSignalsDetected": ["pago con tarjeta" "dirección de entrega"]
+            "evidenceType": "PAYMENT"
+            "evidenceQuote": "paso la tarjeta"
+          }
+          "noSaleReason": null
+          "productsDiscussed": ["Colchón Queen" "Almohada premium"]
+          "customerObjections": ["precio alto"]
+          "improvementSuggestions": ["Ofrecer financiación"]
+          "executiveSummary": "El cliente buscó colchón queen y se lo llevó."
+          "sellerScore": 8
+          "sellerStrengths": ["Buena atención" "Presentación clara"]
+          "sellerWeaknesses": ["No ofreció complementos"]
+          "followUpRecommendation": null
+        }
+        """;
+        
+        String repaired = repairJson(extractJsonBlock(json));
+        System.out.println("Repaired (first 400): " + repaired.substring(0, Math.min(400, repaired.length())));
+        
+        JsonNode root = lenient.readTree(repaired.trim());
+        
+        assertTrue(root.get("saleCompleted").asBoolean());
+        assertEquals("SALE_CONFIRMED", root.get("saleStatus").asText());
+        assertEquals(73, root.get("analysisConfidence").asInt());
+        assertEquals("PAYMENT", root.get("saleEvidenceMeta").get("evidenceType").asText());
+        assertEquals(2, root.get("productsDiscussed").size());
+        assertEquals(2, root.get("sellerStrengths").size());
+        assertEquals(8, root.get("sellerScore").asInt());
+        
+        System.out.println("  PRODUCTION ERROR PATTERN PARSED CORRECTLY!");
+    }
 }
+
