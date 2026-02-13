@@ -511,6 +511,36 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return json;
     }
     
+    /**
+     * Intenta parsear JSON, y si falla por comas faltantes, las inserta automáticamente
+     * usando la posición exacta del error reportada por Jackson. 
+     * Reintenta hasta maxAttempts veces.
+     */
+    private JsonNode parseWithAutoRepair(String json, ObjectMapper mapper) throws Exception {
+        String current = json.trim();
+        int maxAttempts = 20;
+        
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                return mapper.readTree(current);
+            } catch (com.fasterxml.jackson.core.JsonParseException e) {
+                long charOffset = e.getLocation().getCharOffset();
+                String msg = e.getMessage();
+                
+                if (charOffset > 0 && charOffset < current.length() && msg != null && msg.contains("expecting comma")) {
+                    log.warn("Auto-repair: inserting missing comma at offset {} (attempt {}/{})", 
+                            charOffset, attempt + 1, maxAttempts);
+                    current = current.substring(0, (int) charOffset) + "," + current.substring((int) charOffset);
+                } else {
+                    // Error no reparable con inserción de coma
+                    throw e;
+                }
+            }
+        }
+        // Último intento sin catch
+        return mapper.readTree(current);
+    }
+    
     private AnalysisResult parseAnalysisResponse(String response) {
         try {
             String cleanJson = extractJsonBlock(response);
@@ -525,7 +555,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             lenientMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
             lenientMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             
-            JsonNode root = lenientMapper.readTree(cleanJson.trim());
+            // Parsear con auto-repair: si falla por coma faltante, la inserta y reintenta
+            JsonNode root = parseWithAutoRepair(cleanJson, lenientMapper);
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
