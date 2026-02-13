@@ -437,10 +437,11 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     /**
      * Repara JSON malformado que GPT a veces genera.
      * Corrige: trailing commas, missing commas, smart quotes, 
-     * Python-style booleans, line endings, decimales, etc.
+     * Python-style booleans, line endings, truncamiento, etc.
      */
     private String repairJson(String json) {
-        // Reemplazar comillas tipográficas
+        // === FASE 1: Limpieza de caracteres ===
+        // Comillas tipográficas
         json = json.replace('\u201C', '"').replace('\u201D', '"');
         json = json.replace('\u2018', '\'').replace('\u2019', '\'');
         // Guiones especiales
@@ -449,56 +450,28 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replace('\u00A0', ' ');
         // BOM
         if (json.startsWith("\uFEFF")) json = json.substring(1);
-        // Normalizar line endings (Windows \r\n y Mac viejo \r → \n)
+        // Normalizar line endings
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
-        // Python-style booleans/null (GPT a veces devuelve True/False/None)
+        // === FASE 2: Correcciones de valores ===
+        // Python-style booleans/null
         json = json.replaceAll(":\\s*True\\b", ": true");
         json = json.replaceAll(":\\s*False\\b", ": false");
         json = json.replaceAll(":\\s*None\\b", ": null");
         
-        // Eliminar trailing commas antes de } o ] (error MUY común de GPT)
+        // === FASE 3: Trailing commas ===
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
         
-        // ===== REPARACIÓN DE COMAS FALTANTES (con newline) =====
-        // GPT omite comas entre propiedades. Detectamos:
-        //   VALOR_COMPLETO  [espacios] \n [espacios]  "nueva_clave"
+        // === FASE 4: Insertar comas faltantes (character-by-character) ===
+        json = insertMissingCommas(json);
         
-        // Después de string value: "valor" \n "clave"
-        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*\")[ \\t]*\\n(\\s*\")", "$1,\n$2");
-        
-        // Después de boolean/null: true \n "clave"
-        json = json.replaceAll("(true|false|null)[ \\t]*\\n(\\s*\")", "$1,\n$2");
-        
-        // Después de número (entero o decimal): 100 o 0.50 \n "clave"
-        json = json.replaceAll("(\\d+\\.?\\d*)[ \\t]*\\n(\\s*\")", "$1,\n$2");
-        
-        // Después de cierre de objeto/array: } o ] \n "clave"
-        json = json.replaceAll("([}\\]])[ \\t]*\\n(\\s*\")", "$1,\n$2");
-        
-        // ===== REPARACIÓN DE COMAS FALTANTES (misma línea, sin newline) =====
-        // Para cuando GPT pone entradas en la misma línea sin comas
-        
-        // Después de boolean/null en misma línea: true  "clave"
-        json = json.replaceAll("(true|false|null)([ \\t]+)(\")", "$1,$2$3");
-        
-        // Después de número en misma línea: 100  "clave" o 0.50  "clave"
-        json = json.replaceAll("(\\d+\\.?\\d*)([ \\t]+)(\")", "$1,$2$3");
-        
-        // Después de cierre } o ] en misma línea: }  "clave"
-        json = json.replaceAll("([}\\]])([ \\t]+)(\")", "$1,$2$3");
-        
-        // Después de string en misma línea: "valor"  "clave"
-        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*\")([ \\t]+)(\")", "$1,$2$3");
-        
-        // Si el JSON quedó truncado (GPT no terminó), intentar cerrarlo
+        // === FASE 5: Cerrar JSON truncado ===
         long openBraces = json.chars().filter(c -> c == '{').count();
         long closeBraces = json.chars().filter(c -> c == '}').count();
         long openBrackets = json.chars().filter(c -> c == '[').count();
         long closeBrackets = json.chars().filter(c -> c == ']').count();
         
-        // Cerrar arrays y objetos abiertos
         while (openBrackets > closeBrackets) {
             json = json + "]";
             closeBrackets++;
@@ -512,33 +485,103 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     }
     
     /**
-     * Intenta parsear JSON, y si falla por comas faltantes, las inserta automáticamente
-     * usando la posición exacta del error reportada por Jackson. 
-     * Reintenta hasta maxAttempts veces.
+     * Recorre el JSON caracter por caracter, detectando y corrigiendo TODAS las comas 
+     * faltantes en una sola pasada. Mucho más robusto que regex ya que entiende
+     * la estructura del JSON (strings, números, booleans, anidamiento).
+     * 
+     * Lógica: después de completar un valor JSON (string, número, boolean, null, }, ]),
+     * si el siguiente token NO es ',', ':', '}' o ']', se inserta una coma.
      */
-    private JsonNode parseWithAutoRepair(String json, ObjectMapper mapper) throws Exception {
-        String current = json.trim();
-        int maxAttempts = 20;
+    private String insertMissingCommas(String json) {
+        StringBuilder result = new StringBuilder(json.length() + 100);
+        int i = 0;
+        int len = json.length();
+        boolean afterValue = false;
         
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            try {
-                return mapper.readTree(current);
-            } catch (com.fasterxml.jackson.core.JsonParseException e) {
-                long charOffset = e.getLocation().getCharOffset();
-                String msg = e.getMessage();
-                
-                if (charOffset > 0 && charOffset < current.length() && msg != null && msg.contains("expecting comma")) {
-                    log.warn("Auto-repair: inserting missing comma at offset {} (attempt {}/{})", 
-                            charOffset, attempt + 1, maxAttempts);
-                    current = current.substring(0, (int) charOffset) + "," + current.substring((int) charOffset);
-                } else {
-                    // Error no reparable con inserción de coma
-                    throw e;
+        while (i < len) {
+            char c = json.charAt(i);
+            
+            // Skipear whitespace (preservándolo)
+            if (Character.isWhitespace(c)) {
+                result.append(c);
+                i++;
+                continue;
+            }
+            
+            // Si acabamos de completar un valor y el siguiente token inicia un nuevo valor/clave,
+            // falta una coma
+            if (afterValue && c != ',' && c != ':' && c != '}' && c != ']') {
+                result.append(',');
+            }
+            
+            afterValue = false;
+            
+            if (c == '"') {
+                // Leer string completo (respetando escapes)
+                result.append(c);
+                i++;
+                while (i < len) {
+                    char sc = json.charAt(i);
+                    result.append(sc);
+                    i++;
+                    if (sc == '\\' && i < len) {
+                        // Caracter escapado: copiar el siguiente tal cual
+                        result.append(json.charAt(i));
+                        i++;
+                    } else if (sc == '"') {
+                        break;
+                    }
                 }
+                afterValue = true;
+                
+            } else if (c == '{' || c == '[') {
+                result.append(c);
+                i++;
+                afterValue = false;
+                
+            } else if (c == '}' || c == ']') {
+                result.append(c);
+                i++;
+                afterValue = true;
+                
+            } else if (c == ',') {
+                result.append(c);
+                i++;
+                afterValue = false;
+                
+            } else if (c == ':') {
+                result.append(c);
+                i++;
+                afterValue = false;
+                
+            } else if (c == 't' || c == 'f' || c == 'n') {
+                // Literales: true, false, null
+                int start = i;
+                while (i < len && Character.isLetter(json.charAt(i))) {
+                    i++;
+                }
+                result.append(json, start, i);
+                afterValue = true;
+                
+            } else if (c == '-' || Character.isDigit(c)) {
+                // Números (enteros, decimales, notación científica)
+                int start = i;
+                if (c == '-') { i++; }
+                while (i < len && (Character.isDigit(json.charAt(i)) || json.charAt(i) == '.' 
+                        || json.charAt(i) == 'e' || json.charAt(i) == 'E' 
+                        || json.charAt(i) == '+' || json.charAt(i) == '-')) {
+                    i++;
+                }
+                result.append(json, start, i);
+                afterValue = true;
+                
+            } else {
+                // Cualquier otro caracter (no debería existir en JSON válido, pero lo preservamos)
+                result.append(c);
+                i++;
             }
         }
-        // Último intento sin catch
-        return mapper.readTree(current);
+        return result.toString();
     }
     
     private AnalysisResult parseAnalysisResponse(String response) {
@@ -555,8 +598,7 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             lenientMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
             lenientMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             
-            // Parsear con auto-repair: si falla por coma faltante, la inserta y reintenta
-            JsonNode root = parseWithAutoRepair(cleanJson, lenientMapper);
+            JsonNode root = lenientMapper.readTree(cleanJson.trim());
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
