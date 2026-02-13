@@ -346,6 +346,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                 if (result.getAnalysisConfidence() < 80) {
                     result.setAnalysisConfidence(80);
                 }
+                if (result.getSellerScore() <= 0) {
+                    result.setSellerScore(7); // Score razonable por defecto para venta detectada
+                }
             }
             
             return result;
@@ -461,6 +464,28 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replaceAll(":\\s*False\\b", ": false");
         json = json.replaceAll(":\\s*None\\b", ": null");
         
+        // English number words as values (GPT sometimes writes "fifty" instead of 50)
+        json = json.replaceAll("(?i):\\s*zero\\b", ": 0");
+        json = json.replaceAll("(?i):\\s*one\\b", ": 1");
+        json = json.replaceAll("(?i):\\s*two\\b", ": 2");
+        json = json.replaceAll("(?i):\\s*three\\b", ": 3");
+        json = json.replaceAll("(?i):\\s*four\\b", ": 4");
+        json = json.replaceAll("(?i):\\s*five\\b", ": 5");
+        json = json.replaceAll("(?i):\\s*six\\b", ": 6");
+        json = json.replaceAll("(?i):\\s*seven\\b", ": 7");
+        json = json.replaceAll("(?i):\\s*eight\\b", ": 8");
+        json = json.replaceAll("(?i):\\s*nine\\b", ": 9");
+        json = json.replaceAll("(?i):\\s*ten\\b", ": 10");
+        json = json.replaceAll("(?i):\\s*twenty\\b", ": 20");
+        json = json.replaceAll("(?i):\\s*thirty\\b", ": 30");
+        json = json.replaceAll("(?i):\\s*forty\\b", ": 40");
+        json = json.replaceAll("(?i):\\s*fifty\\b", ": 50");
+        json = json.replaceAll("(?i):\\s*sixty\\b", ": 60");
+        json = json.replaceAll("(?i):\\s*seventy\\b", ": 70");
+        json = json.replaceAll("(?i):\\s*eighty\\b", ": 80");
+        json = json.replaceAll("(?i):\\s*ninety\\b", ": 90");
+        json = json.replaceAll("(?i):\\s*hundred\\b", ": 100");
+        
         // === FASE 3: Trailing commas ===
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
@@ -542,8 +567,15 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                         i = readString(json, i, len, result);
                         state = ST_EXPECT_COLON;
                     } else if (c == '}') {
-                        // Objeto vacío {}
-                        result.append(c); i++;
+                        // Cierre de objeto - fix bracket mismatch si estamos en array
+                        char correct = (!stack.isEmpty() && stack.peek() == '[') ? ']' : '}';
+                        result.append(correct); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else if (c == ']') {
+                        // Bracket mismatch: ] en contexto de objeto → usar }
+                        char correct = (!stack.isEmpty() && stack.peek() == '{') ? '}' : ']';
+                        result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
                     } else if (Character.isLetter(c) || c == '_') {
@@ -567,6 +599,10 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                     if (c == ':') {
                         result.append(c); i++;
                         state = ST_EXPECT_VALUE;
+                    } else if (c == ',') {
+                        // GPT usó coma en lugar de dos puntos → reemplazar
+                        result.append(':'); i++;
+                        state = ST_EXPECT_VALUE;
                     } else {
                         // Falta el : entre key y value → insertarlo
                         result.append(':');
@@ -588,20 +624,16 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                         stack.push('[');
                         state = ST_EXPECT_VALUE;
                     } else if (c == ']') {
-                        // Array vacío o cierre de array
-                        result.append(c); i++;
+                        // Cierre de array - fix bracket mismatch si estamos en objeto
+                        char correct = (!stack.isEmpty() && stack.peek() == '{') ? '}' : ']';
+                        result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
                     } else if (c == '}') {
-                        // Objeto vacío o cierre (edge case con trailing comma eliminada)
-                        result.append(c); i++;
+                        // Cierre de objeto - fix bracket mismatch si estamos en array
+                        char correct = (!stack.isEmpty() && stack.peek() == '[') ? ']' : '}';
+                        result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
-                        state = ST_AFTER_VALUE;
-                    } else if (c == 't' || c == 'f' || c == 'n') {
-                        // Literales: true, false, null
-                        int start = i;
-                        while (i < len && Character.isLetter(json.charAt(i))) { i++; }
-                        result.append(json, start, i);
                         state = ST_AFTER_VALUE;
                     } else if (c == '-' || Character.isDigit(c)) {
                         // Números
@@ -613,6 +645,10 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                             i++;
                         }
                         result.append(json, start, i);
+                        state = ST_AFTER_VALUE;
+                    } else if (Character.isLetter(c)) {
+                        // Puede ser true/false/null, número en inglés, o string sin comillas
+                        i = readBareValue(json, i, len, result);
                         state = ST_AFTER_VALUE;
                     } else {
                         // Caracter inesperado, preservar
@@ -630,11 +666,15 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                             state = ST_EXPECT_VALUE;
                         }
                     } else if (c == '}') {
-                        result.append(c); i++;
+                        // Fix bracket mismatch: si estamos en array, usar ]
+                        char correct = (!stack.isEmpty() && stack.peek() == '[') ? ']' : '}';
+                        result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
                     } else if (c == ']') {
-                        result.append(c); i++;
+                        // Fix bracket mismatch: si estamos en objeto, usar }
+                        char correct = (!stack.isEmpty() && stack.peek() == '{') ? '}' : ']';
+                        result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
                     } else {
@@ -672,6 +712,75 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             }
         }
         return i;
+    }
+    
+    /**
+     * Lee un valor "bare" (sin comillas) que GPT a veces genera.
+     * Maneja: true/false/null (case-insensitive), números en inglés, y strings sin comillas.
+     * Retorna la nueva posición del cursor.
+     */
+    private int readBareValue(String json, int i, int len, StringBuilder result) {
+        // Leer la primera palabra (solo letras)
+        int wordStart = i;
+        while (i < len && Character.isLetter(json.charAt(i))) { i++; }
+        String firstWord = json.substring(wordStart, i);
+        String lower = firstWord.toLowerCase();
+        
+        // Literales JSON (case-insensitive para cubrir True/False/None de Python)
+        if (lower.equals("true")) { result.append("true"); return i; }
+        if (lower.equals("false")) { result.append("false"); return i; }
+        if (lower.equals("null") || lower.equals("none")) { result.append("null"); return i; }
+        
+        // Número en inglés (fifty → 50, etc.)
+        String numericValue = englishWordToNumber(lower);
+        if (numericValue != null) { result.append(numericValue); return i; }
+        
+        // Es un string sin comillas → leer hasta delimitador estructural
+        i = wordStart;
+        StringBuilder value = new StringBuilder();
+        while (i < len) {
+            char vc = json.charAt(i);
+            if (vc == ',' || vc == '}' || vc == ']') break;
+            if (vc == '\n') break;
+            value.append(vc);
+            i++;
+        }
+        
+        String trimmed = value.toString().trim();
+        // Escapar comillas internas y envolver en comillas
+        trimmed = trimmed.replace("\\", "\\\\").replace("\"", "\\\"");
+        result.append('"').append(trimmed).append('"');
+        log.debug("Auto-quoted bare value: {} → \"{}\"", value.toString().trim(), trimmed);
+        return i;
+    }
+    
+    /**
+     * Convierte palabras numéricas en inglés a dígitos.
+     */
+    private String englishWordToNumber(String word) {
+        return switch (word) {
+            case "zero" -> "0";
+            case "one" -> "1";
+            case "two" -> "2";
+            case "three" -> "3";
+            case "four" -> "4";
+            case "five" -> "5";
+            case "six" -> "6";
+            case "seven" -> "7";
+            case "eight" -> "8";
+            case "nine" -> "9";
+            case "ten" -> "10";
+            case "twenty" -> "20";
+            case "thirty" -> "30";
+            case "forty" -> "40";
+            case "fifty" -> "50";
+            case "sixty" -> "60";
+            case "seventy" -> "70";
+            case "eighty" -> "80";
+            case "ninety" -> "90";
+            case "hundred" -> "100";
+            default -> null;
+        };
     }
     
     private AnalysisResult parseAnalysisResponse(String response) {
