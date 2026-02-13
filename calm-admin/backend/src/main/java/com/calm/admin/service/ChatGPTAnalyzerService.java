@@ -309,12 +309,21 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
+            // Modelos 5.x no soportan max_tokens, usan max_completion_tokens
+            // La librería theokanning solo soporta maxTokens (max_tokens),
+            // así que para modelos 5.x no enviamos el parámetro
+            boolean isNewModel = model.startsWith("gpt-5") || model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4");
+            
+            ChatCompletionRequest.ChatCompletionRequestBuilder requestBuilder = ChatCompletionRequest.builder()
                     .model(model)
                     .messages(messages)
-                    .temperature(temperature)
-                    .maxTokens(maxTokens)
-                    .build();
+                    .temperature(temperature);
+            
+            if (!isNewModel) {
+                requestBuilder.maxTokens(maxTokens);
+            }
+            
+            ChatCompletionRequest request = requestBuilder.build();
 
             String response = openAiService.createChatCompletion(request)
                     .getChoices()

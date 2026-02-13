@@ -98,7 +98,10 @@ public class TranscriptionController {
      * Sync with Server-Sent Events for real-time progress updates.
      */
     @GetMapping(value = "/sync/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter syncWithProgress() {
+    public SseEmitter syncWithProgress(jakarta.servlet.http.HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no");
         return transcriptionService.forceSyncWithProgress();
     }
 
