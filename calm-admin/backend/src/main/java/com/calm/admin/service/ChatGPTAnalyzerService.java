@@ -3,6 +3,7 @@ package com.calm.admin.service;
 import com.calm.admin.model.AnalysisResult;
 import com.calm.admin.model.SystemConfig;
 import com.calm.admin.repository.SystemConfigRepository;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
@@ -392,49 +393,112 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return null;
     }
 
+    /**
+     * Extrae el bloque JSON de la respuesta de GPT (puede venir con markdown, texto extra, etc.)
+     */
+    private String extractJsonBlock(String response) {
+        String json = response;
+        
+        // Extraer de bloques de código markdown
+        if (json.contains("```json")) {
+            json = json.substring(json.indexOf("```json") + 7);
+            int endIdx = json.indexOf("```");
+            if (endIdx > 0) json = json.substring(0, endIdx);
+        } else if (json.contains("```")) {
+            json = json.substring(json.indexOf("```") + 3);
+            int endIdx = json.indexOf("```");
+            if (endIdx > 0) json = json.substring(0, endIdx);
+        }
+        
+        // Si no encontramos { al inicio, buscar el primer {
+        json = json.trim();
+        int firstBrace = json.indexOf('{');
+        if (firstBrace > 0) {
+            json = json.substring(firstBrace);
+        }
+        
+        // Asegurar que termina en } (truncamiento de GPT)
+        int lastBrace = json.lastIndexOf('}');
+        if (lastBrace > 0 && lastBrace < json.length() - 1) {
+            json = json.substring(0, lastBrace + 1);
+        }
+        
+        return json;
+    }
+    
+    /**
+     * Repara JSON malformado que GPT a veces genera.
+     * Corrige: trailing commas, missing commas, smart quotes, etc.
+     */
+    private String repairJson(String json) {
+        // Reemplazar comillas tipográficas
+        json = json.replace('\u201C', '"').replace('\u201D', '"');
+        json = json.replace('\u2018', '\'').replace('\u2019', '\'');
+        // Guiones especiales
+        json = json.replace('\u2013', '-').replace('\u2014', '-');
+        // Espacios especiales
+        json = json.replace('\u00A0', ' ');
+        // BOM
+        if (json.startsWith("\uFEFF")) json = json.substring(1);
+        
+        // Eliminar trailing commas antes de } o ] (error MUY común de GPT)
+        // Ejemplo: "field": "value",\n} → "field": "value"\n}
+        json = json.replaceAll(",\\s*}", "}");
+        json = json.replaceAll(",\\s*]", "]");
+        
+        // Arreglar commas faltantes entre campos de objeto:
+        // Patrón: "valor"\n  "campo" → "valor",\n  "campo"
+        // Esto ocurre cuando GPT omite la comma entre dos campos
+        json = json.replaceAll("(\"[^\"]*\")\\s*\\n(\\s*\")", "$1,\n$2");
+        json = json.replaceAll("(true|false|null|\\d+)\\s*\\n(\\s*\")", "$1,\n$2");
+        // Arreglar: }\n  "campo" → },\n  "campo" (sub-objeto seguido de campo)
+        json = json.replaceAll("(})\\s*\\n(\\s*\")", "$1,\n$2");
+        // Arreglar: ]\n  "campo" → ],\n  "campo"
+        json = json.replaceAll("(])\\s*\\n(\\s*\")", "$1,\n$2");
+        
+        // Si el JSON quedó truncado (GPT no terminó), intentar cerrarlo
+        long openBraces = json.chars().filter(c -> c == '{').count();
+        long closeBraces = json.chars().filter(c -> c == '}').count();
+        long openBrackets = json.chars().filter(c -> c == '[').count();
+        long closeBrackets = json.chars().filter(c -> c == ']').count();
+        
+        // Cerrar arrays y objetos abiertos
+        while (openBrackets > closeBrackets) {
+            json = json + "]";
+            closeBrackets++;
+        }
+        while (openBraces > closeBraces) {
+            json = json + "}";
+            closeBraces++;
+        }
+        
+        return json;
+    }
+    
     private AnalysisResult parseAnalysisResponse(String response) {
         try {
-            String cleanJson = response;
-            if (response.contains("```json")) {
-                cleanJson = response.substring(response.indexOf("```json") + 7);
-                cleanJson = cleanJson.substring(0, cleanJson.indexOf("```"));
-            } else if (response.contains("```")) {
-                cleanJson = response.substring(response.indexOf("```") + 3);
-                cleanJson = cleanJson.substring(0, cleanJson.indexOf("```"));
-            }
+            String cleanJson = extractJsonBlock(response);
+            cleanJson = repairJson(cleanJson);
             
-            // Limpiar caracteres problemáticos que GPT a veces devuelve
-            cleanJson = cleanJson.trim();
-            // Reemplazar comillas tipográficas por comillas rectas
-            cleanJson = cleanJson.replace('\u201C', '"');  // "
-            cleanJson = cleanJson.replace('\u201D', '"');  // "
-            cleanJson = cleanJson.replace('\u2018', '\''); // '
-            cleanJson = cleanJson.replace('\u2019', '\''); // '
-            // Reemplazar guiones especiales
-            cleanJson = cleanJson.replace('\u2013', '-');  // –
-            cleanJson = cleanJson.replace('\u2014', '-');  // —
-            // Reemplazar espacios no-breaking
-            cleanJson = cleanJson.replace('\u00A0', ' ');  // non-breaking space
-            // Eliminar BOM si existe
-            if (cleanJson.startsWith("\uFEFF")) {
-                cleanJson = cleanJson.substring(1);
-            }
-
-            JsonNode root = objectMapper.readTree(cleanJson.trim());
+            // Usar ObjectMapper con modo leniente
+            ObjectMapper lenientMapper = objectMapper.copy();
+            lenientMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+            lenientMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+            lenientMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            
+            JsonNode root = lenientMapper.readTree(cleanJson.trim());
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
             result.setSaleStatus(root.has("saleStatus") ? root.get("saleStatus").asText() : "NO_SALE");
             result.setAnalysisConfidence(root.has("analysisConfidence") ? root.get("analysisConfidence").asInt() : 50);
             
-            // Guardar confidenceTrace como JSON string
             if (root.has("confidenceTrace") && !root.get("confidenceTrace").isNull()) {
                 result.setConfidenceTrace(root.get("confidenceTrace").toString());
             }
             
             result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
             
-            // Guardar saleEvidenceMeta como JSON string
             if (root.has("saleEvidenceMeta") && !root.get("saleEvidenceMeta").isNull()) {
                 result.setSaleEvidenceMeta(root.get("saleEvidenceMeta").toString());
             }
@@ -453,7 +517,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             return result;
 
         } catch (Exception e) {
-            log.error("Error parsing analysis response: {}", e.getMessage());
+            log.error("Error parsing analysis response: {}. Raw response (first 500 chars): {}", 
+                    e.getMessage(), response != null && response.length() > 500 ? response.substring(0, 500) : response);
             return createErrorAnalysis("Error parseando respuesta de GPT: " + e.getMessage());
         }
     }
