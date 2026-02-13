@@ -99,13 +99,16 @@ export default function Filters({ onApply }) {
         <div>
           <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Resultado</label>
           <select
-            value={filters.saleCompleted === null || filters.saleCompleted === undefined ? '' : String(filters.saleCompleted)}
-            onChange={(e) => handleFilterChange('saleCompleted', e.target.value === '' ? null : e.target.value === 'true')}
+            value={filters.saleStatus || ''}
+            onChange={(e) => handleFilterChange('saleStatus', e.target.value || null)}
             className={inputClasses}
           >
             <option value="">Todos los resultados</option>
-            <option value="true">✓ Venta realizada</option>
-            <option value="false">✗ Sin venta</option>
+            <option value="SALE_CONFIRMED">✓ Venta confirmada</option>
+            <option value="SALE_LIKELY">↗ Venta probable</option>
+            <option value="ADVANCE_NO_CLOSE">⚡ Avance sin cierre</option>
+            <option value="NO_SALE">✗ Sin venta</option>
+            <option value="UNINTERPRETABLE">? No interpretable</option>
           </select>
         </div>
 

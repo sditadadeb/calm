@@ -11,7 +11,7 @@ const useStore = create((set, get) => ({
   filters: {
     userId: null,
     branchId: null,
-    saleCompleted: null,
+    saleStatus: null,
     dateFrom: null,
     dateTo: null,
     minScore: null,
@@ -33,7 +33,7 @@ const useStore = create((set, get) => ({
       filters: {
         userId: null,
         branchId: null,
-        saleCompleted: null,
+        saleStatus: null,
         dateFrom: null,
         dateTo: null,
         minScore: null,
@@ -55,8 +55,7 @@ const useStore = create((set, get) => ({
   fetchTranscriptions: async () => {
     set({ loading: true, error: null });
     try {
-      const { filters } = get();
-      const response = await api.getTranscriptions(filters);
+      const response = await api.getTranscriptions();
       set({ transcriptions: response.data, loading: false });
     } catch (error) {
       set({ error: error.message, loading: false });

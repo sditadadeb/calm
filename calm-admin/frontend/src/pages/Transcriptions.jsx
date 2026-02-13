@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Transcriptions() {
-  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters } = useStore();
+  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters, filters } = useStore();
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
@@ -26,11 +26,40 @@ export default function Transcriptions() {
     }));
   };
 
-  // Datos ordenados
-  const sortedTranscriptions = useMemo(() => {
+  // Filtrado client-side
+  const filteredTranscriptions = useMemo(() => {
     if (!transcriptions) return [];
     
-    return [...transcriptions].sort((a, b) => {
+    return transcriptions.filter(t => {
+      // Filtro por vendedor
+      if (filters.userId && String(t.userId) !== String(filters.userId)) return false;
+      // Filtro por sucursal
+      if (filters.branchId && String(t.branchId) !== String(filters.branchId)) return false;
+      // Filtro por estado de venta (saleStatus)
+      if (filters.saleStatus && t.saleStatus !== filters.saleStatus) return false;
+      // Filtro por fecha desde
+      if (filters.dateFrom && t.recordingDate) {
+        const recDate = new Date(t.recordingDate).toISOString().slice(0, 10);
+        if (recDate < filters.dateFrom) return false;
+      }
+      // Filtro por fecha hasta
+      if (filters.dateTo && t.recordingDate) {
+        const recDate = new Date(t.recordingDate).toISOString().slice(0, 10);
+        if (recDate > filters.dateTo) return false;
+      }
+      // Filtro por puntuación mínima
+      if (filters.minScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore < Number(filters.minScore))) return false;
+      // Filtro por puntuación máxima
+      if (filters.maxScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore > Number(filters.maxScore))) return false;
+      return true;
+    });
+  }, [transcriptions, filters]);
+
+  // Datos ordenados
+  const sortedTranscriptions = useMemo(() => {
+    if (!filteredTranscriptions) return [];
+    
+    return [...filteredTranscriptions].sort((a, b) => {
       const { key, direction } = sortConfig;
       let aVal = a[key];
       let bVal = b[key];
@@ -67,7 +96,7 @@ export default function Transcriptions() {
       if (aVal > bVal) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [transcriptions, sortConfig]);
+  }, [filteredTranscriptions, sortConfig]);
 
   // Componente para header ordenable
   const SortableHeader = ({ label, sortKey, className = '' }) => {
@@ -96,7 +125,7 @@ export default function Transcriptions() {
     
     const userId = searchParams.get('userId');
     const branchId = searchParams.get('branchId');
-    const saleCompleted = searchParams.get('saleCompleted');
+    const saleStatus = searchParams.get('saleStatus');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const minScore = searchParams.get('minScore');
@@ -104,9 +133,7 @@ export default function Transcriptions() {
 
     if (userId) urlFilters.userId = userId;
     if (branchId) urlFilters.branchId = branchId;
-    if (saleCompleted !== null && saleCompleted !== '') {
-      urlFilters.saleCompleted = saleCompleted === 'true';
-    }
+    if (saleStatus) urlFilters.saleStatus = saleStatus;
     if (dateFrom) urlFilters.dateFrom = dateFrom;
     if (dateTo) urlFilters.dateTo = dateTo;
     if (minScore) urlFilters.minScore = parseInt(minScore);
@@ -188,11 +215,11 @@ export default function Transcriptions() {
       {/* Info */}
       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
         <FileText className="w-4 h-4" />
-        <span>{transcriptions.length} registros</span>
+        <span>{filteredTranscriptions.length} de {transcriptions.length} registros</span>
       </div>
 
-      {/* Filters */}
-      <Filters onApply={fetchTranscriptions} />
+      {/* Filters - client-side, no need to re-fetch */}
+      <Filters />
 
       {/* Table */}
       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
