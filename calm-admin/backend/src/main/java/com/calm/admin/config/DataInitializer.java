@@ -39,9 +39,23 @@ public class DataInitializer implements CommandLineRunner {
             admin.setEnabled(true);
             userRepository.save(admin);
             log.info("✅ Usuario admin creado: {}", adminUsername);
-            log.info("⚠️  IMPORTANTE: Cambiá la contraseña por defecto en producción!");
         } else {
             log.info("Usuario admin ya existe");
+        }
+        
+        // Create viewer user (always exists)
+        String viewerUsername = "viewer";
+        String viewerPassword = "calm2026!";
+        if (!userRepository.existsByUsername(viewerUsername)) {
+            User viewer = new User();
+            viewer.setUsername(viewerUsername);
+            viewer.setPassword(passwordEncoder.encode(viewerPassword));
+            viewer.setRole("VIEWER");
+            viewer.setEnabled(true);
+            userRepository.save(viewer);
+            log.info("✅ Usuario viewer creado");
+        } else {
+            log.info("Usuario viewer ya existe");
         }
     }
 }

@@ -73,7 +73,7 @@ public class UserController {
         }
 
         // Validar rol
-        if (!role.equals("ADMIN") && !role.equals("USER")) {
+        if (!role.equals("ADMIN") && !role.equals("USER") && !role.equals("VIEWER")) {
             role = "USER";
         }
 
@@ -133,8 +133,8 @@ public class UserController {
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String newRole = request.get("role");
 
-        if (newRole == null || (!newRole.equals("ADMIN") && !newRole.equals("USER"))) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Rol inválido. Use ADMIN o USER"));
+        if (newRole == null || (!newRole.equals("ADMIN") && !newRole.equals("USER") && !newRole.equals("VIEWER"))) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Rol inválido. Use ADMIN, USER o VIEWER"));
         }
 
         User user = userRepository.findById(id).orElse(null);
