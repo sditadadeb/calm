@@ -31,7 +31,7 @@ const Settings = () => {
   const { isDark } = useTheme();
   const [config, setConfig] = useState({
     systemPrompt: '',
-    model: 'gpt-4.1-mini',
+    model: 'gpt-5.1-chat-latest',
     temperature: 0.3,
     maxTokens: 2000
   });
@@ -235,16 +235,16 @@ const Settings = () => {
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                 Modelo
-                <InfoIcon isDark={isDark} tooltip="gpt-4.1-mini: Rápido y económico (recomendado). gpt-4.1: Más preciso, mejor para análisis complejos. gpt-4o-nano: Ultra económico." />
+                <InfoIcon isDark={isDark} tooltip="gpt-5.1-instant: Rápido e inteligente (recomendado). gpt-4.1-mini: Económico. gpt-4.1: Más preciso para análisis complejos." />
               </label>
               <select
                 value={config.model}
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
                 className={inputClasses}
               >
-                <option value="gpt-4.1-mini">gpt-4.1-mini (Recomendado)</option>
+                <option value="gpt-5.1-chat-latest">gpt-5.1-instant (Recomendado)</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                 <option value="gpt-4.1">gpt-4.1</option>
-                <option value="gpt-4o-nano">gpt-4o-nano</option>
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
               </select>
             </div>
