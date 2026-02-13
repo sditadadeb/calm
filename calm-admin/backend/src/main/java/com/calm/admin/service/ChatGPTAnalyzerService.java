@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 
 @Service
@@ -484,19 +486,30 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return json;
     }
     
+    // Estados del parser de reparación JSON
+    private static final int ST_INITIAL = 0;
+    private static final int ST_EXPECT_KEY = 1;    // Después de { o , en objeto → esperamos "key"
+    private static final int ST_EXPECT_COLON = 2;  // Después de key → esperamos :
+    private static final int ST_EXPECT_VALUE = 3;   // Después de : o [ o , en array → esperamos valor
+    private static final int ST_AFTER_VALUE = 4;     // Después de valor → esperamos , o } o ]
+    
     /**
-     * Recorre el JSON caracter por caracter, detectando y corrigiendo TODAS las comas 
-     * faltantes en una sola pasada. Mucho más robusto que regex ya que entiende
-     * la estructura del JSON (strings, números, booleans, anidamiento).
+     * Parser con máquina de estados que repara JSON malformado de GPT.
+     * Entiende la estructura completa del JSON (objetos vs arrays, keys vs values)
+     * y puede insertar tanto comas faltantes como dos puntos faltantes.
      * 
-     * Lógica: después de completar un valor JSON (string, número, boolean, null, }, ]),
-     * si el siguiente token NO es ',', ':', '}' o ']', se inserta una coma.
+     * Maneja:
+     * - Comas faltantes entre propiedades de objeto
+     * - Comas faltantes entre elementos de array  
+     * - Dos puntos faltantes entre key y value
+     * - Keys sin comillas
      */
     private String insertMissingCommas(String json) {
         StringBuilder result = new StringBuilder(json.length() + 100);
+        Deque<Character> stack = new ArrayDeque<>(); // '{' para objeto, '[' para array
         int i = 0;
         int len = json.length();
-        boolean afterValue = false;
+        int state = ST_INITIAL;
         
         while (i < len) {
             char c = json.charAt(i);
@@ -508,80 +521,157 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                 continue;
             }
             
-            // Si acabamos de completar un valor y el siguiente token inicia un nuevo valor/clave,
-            // falta una coma
-            if (afterValue && c != ',' && c != ':' && c != '}' && c != ']') {
-                result.append(',');
-            }
-            
-            afterValue = false;
-            
-            if (c == '"') {
-                // Leer string completo (respetando escapes)
-                result.append(c);
-                i++;
-                while (i < len) {
-                    char sc = json.charAt(i);
-                    result.append(sc);
-                    i++;
-                    if (sc == '\\' && i < len) {
-                        // Caracter escapado: copiar el siguiente tal cual
-                        result.append(json.charAt(i));
-                        i++;
-                    } else if (sc == '"') {
-                        break;
+            switch (state) {
+                case ST_INITIAL:
+                    if (c == '{') {
+                        result.append(c); i++;
+                        stack.push('{');
+                        state = ST_EXPECT_KEY;
+                    } else if (c == '[') {
+                        result.append(c); i++;
+                        stack.push('[');
+                        state = ST_EXPECT_VALUE;
+                    } else {
+                        result.append(c); i++;
                     }
-                }
-                afterValue = true;
-                
-            } else if (c == '{' || c == '[') {
-                result.append(c);
-                i++;
-                afterValue = false;
-                
-            } else if (c == '}' || c == ']') {
-                result.append(c);
-                i++;
-                afterValue = true;
-                
-            } else if (c == ',') {
-                result.append(c);
-                i++;
-                afterValue = false;
-                
-            } else if (c == ':') {
-                result.append(c);
-                i++;
-                afterValue = false;
-                
-            } else if (c == 't' || c == 'f' || c == 'n') {
-                // Literales: true, false, null
-                int start = i;
-                while (i < len && Character.isLetter(json.charAt(i))) {
-                    i++;
-                }
-                result.append(json, start, i);
-                afterValue = true;
-                
-            } else if (c == '-' || Character.isDigit(c)) {
-                // Números (enteros, decimales, notación científica)
-                int start = i;
-                if (c == '-') { i++; }
-                while (i < len && (Character.isDigit(json.charAt(i)) || json.charAt(i) == '.' 
-                        || json.charAt(i) == 'e' || json.charAt(i) == 'E' 
-                        || json.charAt(i) == '+' || json.charAt(i) == '-')) {
-                    i++;
-                }
-                result.append(json, start, i);
-                afterValue = true;
-                
-            } else {
-                // Cualquier otro caracter (no debería existir en JSON válido, pero lo preservamos)
-                result.append(c);
-                i++;
+                    break;
+                    
+                case ST_EXPECT_KEY:
+                    if (c == '"') {
+                        // Key normal con comillas
+                        i = readString(json, i, len, result);
+                        state = ST_EXPECT_COLON;
+                    } else if (c == '}') {
+                        // Objeto vacío {}
+                        result.append(c); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else if (Character.isLetter(c) || c == '_') {
+                        // Key sin comillas (GPT a veces las omite)
+                        int start = i;
+                        while (i < len && (Character.isLetterOrDigit(json.charAt(i)) || json.charAt(i) == '_')) {
+                            i++;
+                        }
+                        // Escribir con comillas
+                        result.append('"');
+                        result.append(json, start, i);
+                        result.append('"');
+                        state = ST_EXPECT_COLON;
+                    } else {
+                        // Caracter inesperado, preservar
+                        result.append(c); i++;
+                    }
+                    break;
+                    
+                case ST_EXPECT_COLON:
+                    if (c == ':') {
+                        result.append(c); i++;
+                        state = ST_EXPECT_VALUE;
+                    } else {
+                        // Falta el : entre key y value → insertarlo
+                        result.append(':');
+                        state = ST_EXPECT_VALUE;
+                        // NO consumir c, se procesa como valor en ST_EXPECT_VALUE
+                    }
+                    break;
+                    
+                case ST_EXPECT_VALUE:
+                    if (c == '"') {
+                        i = readString(json, i, len, result);
+                        state = ST_AFTER_VALUE;
+                    } else if (c == '{') {
+                        result.append(c); i++;
+                        stack.push('{');
+                        state = ST_EXPECT_KEY;
+                    } else if (c == '[') {
+                        result.append(c); i++;
+                        stack.push('[');
+                        state = ST_EXPECT_VALUE;
+                    } else if (c == ']') {
+                        // Array vacío o cierre de array
+                        result.append(c); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else if (c == '}') {
+                        // Objeto vacío o cierre (edge case con trailing comma eliminada)
+                        result.append(c); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else if (c == 't' || c == 'f' || c == 'n') {
+                        // Literales: true, false, null
+                        int start = i;
+                        while (i < len && Character.isLetter(json.charAt(i))) { i++; }
+                        result.append(json, start, i);
+                        state = ST_AFTER_VALUE;
+                    } else if (c == '-' || Character.isDigit(c)) {
+                        // Números
+                        int start = i;
+                        if (c == '-') { i++; }
+                        while (i < len && (Character.isDigit(json.charAt(i)) || json.charAt(i) == '.'
+                                || json.charAt(i) == 'e' || json.charAt(i) == 'E'
+                                || json.charAt(i) == '+' || json.charAt(i) == '-')) {
+                            i++;
+                        }
+                        result.append(json, start, i);
+                        state = ST_AFTER_VALUE;
+                    } else {
+                        // Caracter inesperado, preservar
+                        result.append(c); i++;
+                    }
+                    break;
+                    
+                case ST_AFTER_VALUE:
+                    if (c == ',') {
+                        result.append(c); i++;
+                        // Después de coma: en objeto → esperar key, en array → esperar value
+                        if (!stack.isEmpty() && stack.peek() == '{') {
+                            state = ST_EXPECT_KEY;
+                        } else {
+                            state = ST_EXPECT_VALUE;
+                        }
+                    } else if (c == '}') {
+                        result.append(c); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else if (c == ']') {
+                        result.append(c); i++;
+                        if (!stack.isEmpty()) stack.pop();
+                        state = ST_AFTER_VALUE;
+                    } else {
+                        // Falta coma → insertarla
+                        result.append(',');
+                        if (!stack.isEmpty() && stack.peek() == '{') {
+                            state = ST_EXPECT_KEY;
+                        } else {
+                            state = ST_EXPECT_VALUE;
+                        }
+                        // NO consumir c, se procesa en el nuevo estado
+                    }
+                    break;
             }
         }
         return result.toString();
+    }
+    
+    /**
+     * Lee un string JSON completo (respetando escapes) y lo agrega al StringBuilder.
+     * Retorna la nueva posición del cursor.
+     */
+    private int readString(String json, int i, int len, StringBuilder result) {
+        result.append(json.charAt(i)); // opening "
+        i++;
+        while (i < len) {
+            char sc = json.charAt(i);
+            result.append(sc);
+            i++;
+            if (sc == '\\' && i < len) {
+                result.append(json.charAt(i));
+                i++;
+            } else if (sc == '"') {
+                break;
+            }
+        }
+        return i;
     }
     
     private AnalysisResult parseAnalysisResponse(String response) {
