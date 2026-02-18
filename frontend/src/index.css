@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --isl-primary: #EF4444;
+  --isl-secondary: #DC2626;
+  --isl-dark: #B91C1C;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+}
+
+/* Light mode body */
+body:not(.dark) {
+  background: #f9fafb;
+  color: #374151;
+}
+
+/* Dark mode body */
+.dark body,
+body.dark {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #EF4444;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Table styles - Light mode */
+.data-table thead {
+  background: #f9fafb;
+}
+
+.data-table thead th {
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #EF4444;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.data-table tbody td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  color: #374151;
+}
+
+/* Table styles - Dark mode */
+.dark .data-table thead {
+  background: #334155;
+}
+
+.dark .data-table thead th {
+  color: #94a3b8;
+  border-bottom: 2px solid #EF4444;
+}
+
+.dark .data-table tbody tr {
+  border-bottom: 1px solid #334155;
+}
+
+.dark .data-table tbody tr:hover {
+  background: #334155;
+}
+
+.dark .data-table tbody td {
+  color: #e2e8f0;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dark .progress-bar {
+  background: #334155;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #EF4444, #DC2626);
+}
+
+/* Sale status badges */
+.badge-sale {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.badge-no-sale {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* Score indicator */
+.score-excellent { color: #22c55e; }
+.score-good { color: #4ade80; }
+.score-average { color: #f59e0b; }
+.score-poor { color: #f97316; }
+.score-bad { color: #ef4444; }
+
+/* Tags */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tag-primary {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+}
+
+.tag-success {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.tag-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.tag-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+/* Ranking badges */
+.rank-badge-1 {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+}
+
+.rank-badge-2 {
+  background: #64748b;
+  color: #1e293b;
+}
+
+.rank-badge-3 {
+  background: #92400e;
+  color: #fef3c7;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Barra de progreso indeterminada (sync) */
+@keyframes sync-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.animate-sync-shimmer {
+  animation: sync-shimmer 1.5s ease-in-out infinite;
+}

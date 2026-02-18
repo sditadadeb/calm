@@ -1,0 +1,790 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  User, 
+  Building2, 
+  Calendar,
+  CheckCircle,
+  XCircle,
+  MessageSquare,
+  Target,
+  AlertTriangle,
+  Lightbulb,
+  ThumbsUp,
+  ThumbsDown,
+  FileText,
+  TrendingUp,
+  HelpCircle,
+  Shield,
+  Quote,
+  Volume2,
+  VolumeX,
+  Loader2,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import { getTranscriptions } from '../api';
+
+// Reproductor de audio personalizado con duración fija
+function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(initialDuration || 0);
+
+  useEffect(() => {
+    if (initialDuration) {
+      setDuration(initialDuration);
+    }
+  }, [initialDuration]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => { setIsPlaying(false); setCurrentTime(0); };
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('durationchange', handleDurationChange);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('durationchange', handleDurationChange);
+    };
+  }, [src]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+  };
+
+  const handleSeek = (e) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = percent * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const formatTime = (secs) => {
+    if (!secs || !isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-4">
+      <audio ref={audioRef} src={src} preload="auto" />
+      
+      <button
+        onClick={togglePlay}
+        className="p-3 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white transition-colors"
+      >
+        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+      </button>
+
+      <span className={`text-sm font-mono w-12 text-right ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+        {formatTime(currentTime)}
+      </span>
+
+      <div 
+        className={`flex-1 h-2 rounded-full cursor-pointer relative ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}
+        onClick={handleSeek}
+      >
+        <div 
+          className="h-full bg-[#EF4444] rounded-full"
+          style={{ width: `${progress}%` }}
+        />
+        <div 
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#EF4444]"
+          style={{ left: `calc(${progress}% - 8px)` }}
+        />
+      </div>
+
+      <span className={`text-sm font-mono w-12 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+        {formatTime(duration)}
+      </span>
+    </div>
+  );
+}
+import ScoreBadge from '../components/ScoreBadge';
+import { useTheme } from '../context/ThemeContext';
+import { getTranscription, getAudioUrl, getAudioStreamUrl } from '../api';
+
+
+// Resultado de llamada (calidad ISL)
+const RESULTADO_LLAMADA_CONFIG = {
+  resuelto: { label: 'Resuelto', icon: CheckCircle, bgClass: 'bg-green-500/20', textClass: 'text-green-400' },
+  parcial: { label: 'Parcial', icon: TrendingUp, bgClass: 'bg-yellow-500/20', textClass: 'text-yellow-400' },
+  'no resuelto': { label: 'No resuelto', icon: XCircle, bgClass: 'bg-red-500/20', textClass: 'text-red-400' },
+  derivado: { label: 'Derivado', icon: AlertTriangle, bgClass: 'bg-blue-500/20', textClass: 'text-blue-400' },
+  'falta info': { label: 'Falta info', icon: HelpCircle, bgClass: 'bg-slate-500/20', textClass: 'text-slate-400' },
+};
+// Legacy saleStatus (por si no hay resultadoLlamada)
+const SALE_STATUS_CONFIG = {
+  SALE_CONFIRMED: { label: 'Resuelto', icon: CheckCircle, bgClass: 'bg-green-500/20', textClass: 'text-green-400' },
+  SALE_LIKELY: { label: 'Probable', icon: TrendingUp, bgClass: 'bg-emerald-500/20', textClass: 'text-emerald-400' },
+  ADVANCE_NO_CLOSE: { label: 'Parcial', icon: AlertTriangle, bgClass: 'bg-yellow-500/20', textClass: 'text-yellow-400' },
+  NO_SALE: { label: 'No resuelto', icon: XCircle, bgClass: 'bg-red-500/20', textClass: 'text-red-400' },
+  UNINTERPRETABLE: { label: 'No interpretable', icon: HelpCircle, bgClass: 'bg-slate-500/20', textClass: 'text-slate-400' },
+  resuelto: RESULTADO_LLAMADA_CONFIG.resuelto,
+  parcial: RESULTADO_LLAMADA_CONFIG.parcial,
+  'no resuelto': RESULTADO_LLAMADA_CONFIG['no resuelto'],
+  derivado: RESULTADO_LLAMADA_CONFIG.derivado,
+  'falta info': RESULTADO_LLAMADA_CONFIG['falta info'],
+};
+
+export default function TranscriptionDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [transcription, setTranscription] = useState(null);
+  const [error, setError] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioAvailable, setAudioAvailable] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(true);
+  
+  // Navegación entre transcripciones
+  const [allIds, setAllIds] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(null);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    const fetchTranscription = async () => {
+      try {
+        setLoading(true);
+        const response = await getTranscription(id);
+        setTranscription(response.data);
+      } catch (err) {
+        console.error('Error fetching transcription:', err);
+        setError('Error al cargar la transcripción');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fetchAudioUrl = async () => {
+      try {
+        setAudioLoading(true);
+        setAudioProgress(0);
+        const response = await getAudioUrl(id);
+        
+        if (response.data.available) {
+          // Descargar audio completo como blob para permitir seeking
+          const streamUrl = getAudioStreamUrl(id);
+          
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', streamUrl, true);
+          xhr.responseType = 'blob';
+          
+          xhr.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              setAudioProgress(percent);
+            }
+          };
+          
+          xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 206) {
+              const blob = xhr.response;
+              const blobUrl = URL.createObjectURL(blob);
+              
+              // Truco para obtener duración de webm: crear audio temporal y forzar seek
+              const tempAudio = new Audio();
+              tempAudio.preload = 'metadata';
+              
+              tempAudio.onloadedmetadata = () => {
+                if (tempAudio.duration && isFinite(tempAudio.duration)) {
+                  setAudioDuration(tempAudio.duration);
+                  setAudioUrl(blobUrl);
+                  setAudioAvailable(true);
+                  setAudioLoading(false);
+                } else {
+                  // Si no hay duración, forzar seek al final
+                  tempAudio.currentTime = Number.MAX_SAFE_INTEGER;
+                }
+              };
+              
+              tempAudio.ontimeupdate = () => {
+                if (tempAudio.duration && isFinite(tempAudio.duration)) {
+                  setAudioDuration(tempAudio.duration);
+                  setAudioUrl(blobUrl);
+                  setAudioAvailable(true);
+                  setAudioLoading(false);
+                  tempAudio.ontimeupdate = null;
+                }
+              };
+              
+              tempAudio.onerror = () => {
+                // Aún sin duración, mostrar el reproductor
+                setAudioUrl(blobUrl);
+                setAudioAvailable(true);
+                setAudioLoading(false);
+              };
+              
+              tempAudio.src = blobUrl;
+            } else {
+              setAudioAvailable(false);
+              setAudioLoading(false);
+            }
+          };
+          
+          xhr.onerror = () => {
+            console.error('Error downloading audio');
+            setAudioAvailable(false);
+            setAudioLoading(false);
+          };
+          
+          xhr.send();
+        } else {
+          setAudioAvailable(false);
+          setAudioLoading(false);
+        }
+      } catch (err) {
+        console.error('Error fetching audio URL:', err);
+        setAudioAvailable(false);
+        setAudioLoading(false);
+      }
+    };
+    
+    fetchTranscription();
+    fetchAudioUrl();
+    
+    // Cleanup blob URL on unmount
+    return () => {
+      if (audioUrl && audioUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [id]);
+
+  // Cargar lista de IDs para navegación
+  useEffect(() => {
+    const fetchAllIds = async () => {
+      try {
+        const response = await getTranscriptions({});
+        const ids = response.data.map(t => t.recordingId);
+        setAllIds(ids);
+        const idx = ids.indexOf(id);
+        setCurrentIndex(idx);
+      } catch (err) {
+        console.error('Error fetching transcription IDs:', err);
+      }
+    };
+    fetchAllIds();
+  }, [id]);
+
+  // Navegación
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      navigate(`/transcriptions/${allIds[currentIndex - 1]}`);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentIndex < allIds.length - 1) {
+      navigate(`/transcriptions/${allIds[currentIndex + 1]}`);
+    }
+  };
+
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < allIds.length - 1 && currentIndex >= 0;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-AR', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '-';
+    }
+  };
+
+  const getStatusConfig = (status) => {
+    return SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG['no resuelto'] || SALE_STATUS_CONFIG.NO_SALE;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#EF4444] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripción...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !transcription) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || 'Transcripción no encontrada'}</p>
+          <button
+            onClick={() => navigate('/transcriptions')}
+            className="mt-4 px-4 py-2 bg-[#EF4444] text-white rounded-lg hover:opacity-90"
+          >
+            Volver al listado
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const t = transcription;
+  const statusForDisplay = t.resultadoLlamada || t.saleStatus;
+  const statusConfig = getStatusConfig(statusForDisplay);
+  const StatusIcon = statusConfig?.icon || HelpCircle;
+  let payloadData = null;
+  try {
+    if (t.analysisPayload) payloadData = JSON.parse(t.analysisPayload);
+  } catch (_) {}
+
+  // Normalizar textos que vienen de la IA para no mostrar lenguaje de ventas
+  const forDisplay = (str) => {
+    if (!str || typeof str !== 'string') return str;
+    return str
+      .replace(/\bventa\b/gi, 'resolución')
+      .replace(/\bventas\b/gi, 'resoluciones')
+      .replace(/\bcliente\b/gi, 'ciudadano')
+      .replace(/\bclientes\b/gi, 'ciudadanos')
+      .replace(/\bvendedor\b/gi, 'agente')
+      .replace(/\bvendedores\b/gi, 'agentes')
+      .replace(/Sin evidencia de venta/gi, 'Sin evidencia de resolución')
+      .replace(/enfoque en la venta/gi, 'enfoque en la resolución')
+      .replace(/guiar al cliente/gi, 'orientar al ciudadano')
+      .replace(/conversación de venta/gi, 'atención');
+  };
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      {/* Navigation Bar */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate('/transcriptions')}
+          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#EF4444]' : 'text-gray-500 hover:text-[#EF4444]'}`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver al listado
+        </button>
+        
+        {/* Flechas de navegación */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevious}
+            disabled={!hasPrevious}
+            className={`p-2 rounded-lg transition-colors ${
+              hasPrevious 
+                ? isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                : isDark
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+            title="Anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          {allIds.length > 0 && (
+            <span className={`text-sm px-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              {currentIndex + 1} / {allIds.length}
+            </span>
+          )}
+          
+          <button
+            onClick={goToNext}
+            disabled={!hasNext}
+            className={`p-2 rounded-lg transition-colors ${
+              hasNext 
+                ? isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                : isDark
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+            title="Siguiente"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Header Card */}
+      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="font-mono text-xl font-bold text-[#EF4444]">{t.recordingId}</span>
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
+                <StatusIcon className="w-4 h-4" /> {statusConfig.label}
+              </span>
+            </div>
+            
+            <div className={`flex flex-wrap items-center gap-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span>{t.userName || 'Sin agente'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                <span>{t.branchName || 'Sin sucursal'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(t.recordingDate)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-3">
+            <div>
+              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Score de Atención</p>
+              <ScoreBadge score={t.sellerScore} />
+            </div>
+            
+            {/* Analysis Confidence */}
+            {t.analysisConfidence !== null && t.analysisConfidence !== undefined && (
+              <div className="flex items-center gap-2">
+                <Shield className={`w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Confianza del análisis:
+                </span>
+                <div className={`h-2 w-20 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                  <div 
+                    className={`h-full rounded-full ${
+                      t.analysisConfidence >= 70 ? 'bg-green-500' : 
+                      t.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${t.analysisConfidence}%` }}
+                  />
+                </div>
+                <span className={`text-sm font-semibold ${
+                  t.analysisConfidence >= 70 ? 'text-green-500' : 
+                  t.analysisConfidence >= 50 ? 'text-yellow-500' : 'text-red-500'
+                }`}>
+                  {t.analysisConfidence}%
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Motivo y resultado calidad ISL */}
+        {(t.motivoPrincipal || t.resultadoLlamada) && (
+          <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+            <div className="flex flex-wrap gap-4">
+              {t.motivoPrincipal && (
+                <div>
+                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Motivo principal</p>
+                  <p className={`font-medium ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>{t.motivoPrincipal}</p>
+                </div>
+              )}
+              {t.resultadoLlamada && (
+                <div>
+                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Resultado</p>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-semibold ${statusConfig?.bgClass || ''} ${statusConfig?.textClass || ''}`}>
+                    {StatusIcon && <StatusIcon className="w-4 h-4" />} {statusConfig?.label || t.resultadoLlamada}
+                  </span>
+                </div>
+              )}
+              {t.senalesRiesgo && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Señales de riesgo</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Audio Player */}
+      <div className={`rounded-2xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+        {audioLoading ? (
+          <div className="space-y-2">
+            <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Descargando audio... {audioProgress}%</span>
+            </div>
+            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+              <div 
+                className="h-full bg-[#EF4444] transition-all duration-300"
+                style={{ width: `${audioProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : audioAvailable ? (
+          <AudioPlayerCustom 
+            src={audioUrl} 
+            duration={audioDuration} 
+            isDark={isDark} 
+          />
+        ) : (
+          <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <VolumeX className="w-5 h-5" />
+            <span className="text-sm">Audio no disponible para esta transcripción</span>
+          </div>
+        )}
+      </div>
+
+      {/* Analysis Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Executive Summary */}
+        {t.executiveSummary && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-[#EF4444] rounded-lg">
+                <FileText className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen Ejecutivo</h3>
+            </div>
+            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{forDisplay(t.executiveSummary)}</p>
+          </div>
+        )}
+
+        {/* Evidencia resultado (calidad ISL o legacy saleEvidence) */}
+        {(t.evidenciaResultado || t.saleEvidence) && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${
+            t.resultadoLlamada === 'resuelto' || t.saleCompleted
+              ? (isDark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-100')
+              : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-100')
+          }`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-lg ${t.resultadoLlamada === 'resuelto' || t.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-slate-600' : 'bg-gray-400')}`}>
+                <Quote className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Evidencia del resultado</h3>
+            </div>
+            <p className={`italic text-lg ${
+              t.resultadoLlamada === 'resuelto' || t.saleCompleted
+                ? (isDark ? 'text-green-300' : 'text-green-700')
+                : (isDark ? 'text-slate-300' : 'text-gray-600')
+            }`}>
+              "{forDisplay(t.evidenciaResultado || t.saleEvidence)}"
+            </p>
+          </div>
+        )}
+
+        {/* Insights desde analysisPayload (calidad ISL) */}
+        {payloadData && (payloadData.resumenEjecutivo || (payloadData.insightsAccionables && payloadData.insightsAccionables.length)) && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-[#EF4444] rounded-lg">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen e insights</h3>
+            </div>
+            {payloadData.resumenEjecutivo && (
+              <p className={`mb-4 leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{payloadData.resumenEjecutivo}</p>
+            )}
+            {payloadData.insightsAccionables && payloadData.insightsAccionables.length > 0 && (
+              <ul className="space-y-2">
+                {payloadData.insightsAccionables.map((insight, i) => (
+                  <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                    <span className="text-[#EF4444] mt-1">•</span>
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        {payloadData?.proximosPasos && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Próximos pasos</h3>
+            </div>
+            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{payloadData.proximosPasos}</p>
+          </div>
+        )}
+        {payloadData?.friccionesBrechas && payloadData.friccionesBrechas.length > 0 && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-amber-500 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>Fricciones / brechas</h3>
+            </div>
+            <ul className="space-y-2">
+              {payloadData.friccionesBrechas.map((f, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <span className="text-amber-500 mt-1">•</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* No Sale Reason (legacy) */}
+        {!t.saleCompleted && t.noSaleReason && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>Razón no resuelto</h3>
+            </div>
+            <p className={`font-medium text-lg ${isDark ? 'text-red-400' : 'text-red-600'}`}>{forDisplay(t.noSaleReason)}</p>
+          </div>
+        )}
+
+        {/* Products Discussed */}
+        {t.productsDiscussed && t.productsDiscussed.length > 0 && t.productsDiscussed[0] !== '' && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Temas tratados</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {t.productsDiscussed.map((prod, i) => (
+                <span key={i} className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+                  {forDisplay(prod)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Customer Objections */}
+        {t.customerObjections && t.customerObjections.length > 0 && t.customerObjections[0] !== '' && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Dudas o comentarios del ciudadano</h3>
+            </div>
+            <ul className="space-y-2">
+              {t.customerObjections.map((obj, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <span className="text-red-500 mt-1">•</span>
+                  {forDisplay(obj)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Seller Strengths */}
+        {t.sellerStrengths && t.sellerStrengths.length > 0 && t.sellerStrengths[0] !== '' && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-500 rounded-lg">
+                <ThumbsUp className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Fortalezas del agente</h3>
+            </div>
+            <ul className="space-y-2">
+              {t.sellerStrengths.map((f, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  {forDisplay(f)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Seller Weaknesses */}
+        {t.sellerWeaknesses && t.sellerWeaknesses.length > 0 && t.sellerWeaknesses[0] !== '' && (
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <ThumbsDown className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Áreas de Mejora</h3>
+            </div>
+            <ul className="space-y-2">
+              {t.sellerWeaknesses.map((d, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  {forDisplay(d)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Improvement Suggestions */}
+        {t.improvementSuggestions && t.improvementSuggestions.length > 0 && t.improvementSuggestions[0] !== '' && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-amber-500 rounded-lg">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>Sugerencias de Mejora</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {t.improvementSuggestions.map((s, i) => (
+                <div key={i} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-amber-800/50' : 'bg-white border-amber-200'}`}>
+                  <p className={isDark ? 'text-slate-300' : 'text-gray-700'}>{forDisplay(s)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Full Transcription */}
+      {t.transcriptionText && (
+        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+              <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
+            </div>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Transcripción Completa</h3>
+          </div>
+          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+              {t.transcriptionText}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
