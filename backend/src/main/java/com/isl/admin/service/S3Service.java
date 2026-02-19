@@ -1,5 +1,6 @@
 package com.isl.admin.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -198,7 +199,20 @@ public class S3Service {
                     .lines()
                     .collect(Collectors.joining("\n"));
 
-            JsonNode root = objectMapper.readTree(content);
+            if (content == null || content.isBlank()) {
+                log.warn("Transcription file is empty for recording {}", recordingId);
+                return null;
+            }
+
+            JsonNode root;
+            try {
+                root = objectMapper.readTree(content);
+            } catch (JsonProcessingException e) {
+                // Some providers may store plain text or partially malformed JSON.
+                // Importing raw content is better than dropping the transcription entirely.
+                log.warn("Transcription JSON is invalid for recording {}. Importing raw content.", recordingId);
+                return content.trim();
+            }
             StringBuilder transcriptionText = new StringBuilder();
             
             if (root.isArray()) {
