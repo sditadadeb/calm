@@ -1,12 +1,25 @@
-# Render Blueprint - CALM Admin Dashboard
+# Render Blueprint - ISL Admin (con PostgreSQL)
+# Conectar repo desde GitHub y usar branch ISL
+databases:
+  - name: isl-db
+    databaseName: isl_admin
+    user: isl_admin
+    plan: free
+
 services:
   - type: web
-    name: calm-admin-api
+    name: isl-admin-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: isl-db
+          property: connectionString
+      - key: SPRING_JPA_DATABASE_PLATFORM
+        value: org.hibernate.dialect.PostgreSQLDialect
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
@@ -28,7 +41,7 @@ services:
     healthCheckPath: /actuator/health
 
   - type: web
-    name: calm-admin-frontend
+    name: isl-admin-frontend
     runtime: static
     rootDir: ./frontend
     buildCommand: npm install && npm run build
