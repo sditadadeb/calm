@@ -23,7 +23,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
-        value: admin
+        value: Admin
       - key: ADMIN_PASSWORD
         sync: false
       - key: AWS_S3_METADATA_ACCESS_KEY
