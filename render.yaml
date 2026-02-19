@@ -33,6 +33,22 @@ services:
         sync: false
       - key: AWS_S3_TRANSCRIPTIONS_SECRET_KEY
         sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_METADATA_BUCKET
+        value: isl-grabaciones
+      - key: AWS_TRANSCRIPTIONS_BUCKET
+        value: isl-grabaciones
+      - key: AWS_METADATA_PREFIX
+        sync: false
+      - key: AWS_TRANSCRIPTIONS_PREFIX
+        sync: false
+      - key: AWS_TRANSCRIPTIONS_ID_PREFIX
+        sync: false
+      - key: AWS_TRANSCRIPTIONS_ID_SUFFIX
+        sync: false
+      - key: AWS_METADATA_AUDIO_SUFFIX
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: CORS_ALLOWED_ORIGINS
