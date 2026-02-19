@@ -11,7 +11,8 @@ import {
   UserPlus,
   Sun,
   Moon,
-  Search
+  Search,
+  Lightbulb
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
