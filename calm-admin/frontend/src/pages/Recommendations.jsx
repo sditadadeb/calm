@@ -1076,92 +1076,63 @@ export default function Recommendations() {
 
   return (
     <div className="space-y-6">
-      {/* Analysis Status Banner */}
-      {!loading && (
-        <div className={`rounded-xl p-4 border flex items-center justify-between ${
-          hasAdvancedData 
-            ? 'bg-green-500/10 border-green-500/30' 
-            : 'bg-amber-500/10 border-amber-500/30'
-        }`}>
-          <div className="flex items-center gap-3">
-            <Database className={`w-5 h-5 ${hasAdvancedData ? 'text-green-400' : 'text-amber-400'}`} />
-            <div>
-              <p className={`font-semibold ${hasAdvancedData ? 'text-green-400' : 'text-amber-400'}`}>
-                {hasAdvancedData 
-                  ? `Análisis avanzado disponible: ${advancedMetrics?.analyzedCount || 0} de ${advancedMetrics?.totalCount || 0} transcripciones`
-                  : 'Sin análisis avanzado - Los datos mostrados son estimaciones'
-                }
-              </p>
-              <p className={`text-sm ${hasAdvancedData ? 'text-green-500/70' : 'text-amber-500/70'}`}>
-                {hasAdvancedData 
-                  ? 'Datos reales extraídos con GPT-4'
-                  : 'Ejecutá el análisis avanzado para obtener datos reales de GPT'
-                }
-              </p>
-            </div>
-          </div>
+      {/* Admin action buttons */}
+      {!loading && isAdmin && (
+        <div className={`rounded-xl p-4 border flex items-center justify-end gap-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <button
+            onClick={runAdvancedAnalysis}
+            disabled={analyzing}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all ${
+              analyzing 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg'
+            }`}
+          >
+            {analyzing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                {analysisProgress.total > 0 
+                  ? `${analysisProgress.current}/${analysisProgress.total}` 
+                  : 'Conectando...'}
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                {hasAdvancedData ? 'Actualizar' : 'Ejecutar Análisis'}
+              </>
+            )}
+          </button>
           
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              {/* Botón principal de análisis */}
-              <button
-                onClick={runAdvancedAnalysis}
-                disabled={analyzing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all ${
-                  analyzing 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg'
-                }`}
-              >
-                {analyzing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    {analysisProgress.total > 0 
-                      ? `${analysisProgress.current}/${analysisProgress.total}` 
-                      : 'Conectando...'}
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    {hasAdvancedData ? 'Actualizar' : 'Ejecutar Análisis'}
-                  </>
-                )}
-              </button>
-              
-              {/* Botón de reintentar faltantes */}
-              {hasAdvancedData && missingCount > 0 && (
-                <button
-                  onClick={retryMissing}
-                  disabled={analyzing}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
-                    analyzing 
-                      ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
-                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300'
-                  }`}
-                  title={`Hay ${missingCount} transcripciones sin analizar`}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reintentar ({missingCount})
-                </button>
-              )}
-              
-              {/* Botón de limpiar análisis */}
-              {hasAdvancedData && (
-                <button
-                  onClick={clearAnalyses}
-                  disabled={analyzing}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
-                    analyzing 
-                      ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
-                      : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
-                  }`}
-                  title="Borrar todos los análisis para re-ejecutar"
-                >
-                  <Database className="w-4 h-4" />
-                  Limpiar
-                </button>
-              )}
-            </div>
+          {hasAdvancedData && missingCount > 0 && (
+            <button
+              onClick={retryMissing}
+              disabled={analyzing}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                analyzing 
+                  ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
+                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300'
+              }`}
+              title={`Hay ${missingCount} transcripciones sin analizar`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Reintentar ({missingCount})
+            </button>
+          )}
+          
+          {hasAdvancedData && (
+            <button
+              onClick={clearAnalyses}
+              disabled={analyzing}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+                analyzing 
+                  ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
+                  : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+              }`}
+              title="Borrar todos los análisis para re-ejecutar"
+            >
+              <Database className="w-4 h-4" />
+              Limpiar
+            </button>
           )}
         </div>
       )}
