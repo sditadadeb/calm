@@ -31,7 +31,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -42,13 +42,11 @@ const Login = () => {
       <div className="relative z-10 w-full max-w-md px-6">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#EF4444] mb-4 shadow-lg shadow-red-500/30">
-            <span className="text-2xl font-bold text-white">ISL</span>
-          </div>
+          <img src="/carrefour-banco-dark.png" alt="Carrefour Banco" className="h-28 w-auto mx-auto mb-4 rounded-md" />
           <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="text-[#EF4444]">ISL</span> Admin
+            Carrefour Banco Admin
           </h1>
-          <p className="text-gray-400">Instituto de Seguridad Laboral - Panel de Administración</p>
+          <p className="text-slate-300">Banco de servicios financieros</p>
         </div>
 
         {/* Login Card */}
@@ -70,7 +68,7 @@ const Login = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004F9F] focus:border-transparent transition-all"
                 placeholder="Ingresá tu usuario"
                 required
                 autoFocus
@@ -85,7 +83,7 @@ const Login = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#004F9F] focus:border-transparent transition-all"
                 placeholder="Ingresá tu contraseña"
                 required
               />
@@ -94,7 +92,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-[#EF4444] to-[#F7931E] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#EF4444] focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-500/30"
+              className="w-full py-3 px-4 bg-gradient-to-r from-[#004F9F] to-[#003A79] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#004F9F] focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#003A79]/30"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -113,7 +111,7 @@ const Login = () => {
 
         {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-6">
-          © 2026 ISL - Instituto de Seguridad Laboral (isl.gob.cl)
+          © 2026 Carrefour Banco - Dashboards Analytics
         </p>
       </div>
     </div>

@@ -136,6 +136,18 @@ public class S3Service {
         return recordingIds;
     }
 
+    /**
+     * Conteo liviano de IDs disponibles para evitar sync completo en cada request.
+     */
+    public int countAvailableRecordings() {
+        try {
+            return listAllRecordingIds().size();
+        } catch (Exception e) {
+            log.warn("No se pudo contar IDs disponibles en S3: {}", e.getMessage());
+            return -1;
+        }
+    }
+
     public Map<String, Object> getMetadata(String recordingId) {
         Map<String, Object> metadata = new HashMap<>();
         
@@ -170,6 +182,9 @@ public class S3Service {
                 metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
                 metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
             }
+
+            // Soporte Carrefour: sucursal puede viajar en extraField/extraFields/extrafield
+            enrichBranchFromExtraFields(root, metadata);
             
             log.info("Retrieved metadata for recording {}", recordingId);
         } catch (NoSuchKeyException e) {
@@ -492,6 +507,84 @@ public class S3Service {
         String idPrefix = transcriptionsIdPrefix != null ? transcriptionsIdPrefix : "";
         String idSuffix = transcriptionsIdSuffix != null ? transcriptionsIdSuffix : ".json";
         return prefix + idPrefix + recordingId + idSuffix;
+    }
+
+    private void enrichBranchFromExtraFields(JsonNode root, Map<String, Object> metadata) {
+        if (root == null || metadata == null) return;
+
+        JsonNode extra = firstNonNull(
+                root.get("extraField"),
+                root.get("extraFields"),
+                root.get("extrafield")
+        );
+        if (extra == null || extra.isNull()) return;
+
+        // Caso objeto: {"sucursal":"...", "branchName":"...", "branch":{"id":...,"name":"..."}}
+        if (extra.isObject()) {
+            JsonNode branchNode = firstNonNull(extra.get("branch"), extra.get("sucursal"));
+            if (branchNode != null && branchNode.isObject()) {
+                if ((metadata.get("branchId") == null) && branchNode.has("id") && branchNode.get("id").isNumber()) {
+                    metadata.put("branchId", branchNode.get("id").asLong());
+                }
+                if (isBlank((String) metadata.get("branchName"))) {
+                    String name = textOrNull(firstNonNull(branchNode.get("name"), branchNode.get("nombre")));
+                    if (name != null) metadata.put("branchName", name);
+                }
+            } else {
+                if (isBlank((String) metadata.get("branchName"))) {
+                    String name = textOrNull(firstNonNull(
+                            extra.get("branchName"),
+                            extra.get("branch"),
+                            extra.get("sucursal"),
+                            extra.get("sucursalNombre"),
+                            extra.get("store"),
+                            extra.get("storeName")
+                    ));
+                    if (name != null) metadata.put("branchName", name);
+                }
+                if (metadata.get("branchId") == null) {
+                    Long branchId = longOrNull(firstNonNull(
+                            extra.get("branchId"),
+                            extra.get("sucursalId"),
+                            extra.get("storeId")
+                    ));
+                    if (branchId != null) metadata.put("branchId", branchId);
+                }
+            }
+            return;
+        }
+
+        // Caso texto simple: extraField = "Sucursal X"
+        if (extra.isTextual() && isBlank((String) metadata.get("branchName"))) {
+            metadata.put("branchName", extra.asText());
+        }
+    }
+
+    private JsonNode firstNonNull(JsonNode... nodes) {
+        for (JsonNode node : nodes) {
+            if (node != null && !node.isNull()) return node;
+        }
+        return null;
+    }
+
+    private String textOrNull(JsonNode node) {
+        if (node == null || node.isNull()) return null;
+        if (!node.isTextual()) return null;
+        String value = node.asText();
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private Long longOrNull(JsonNode node) {
+        if (node == null || node.isNull()) return null;
+        if (node.isNumber()) return node.asLong();
+        if (node.isTextual()) {
+            try { return Long.parseLong(node.asText().trim()); } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
     
     /**

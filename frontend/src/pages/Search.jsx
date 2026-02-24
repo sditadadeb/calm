@@ -96,7 +96,7 @@ export default function Search() {
       <span>
         {parts.map((part, i) => 
           i % 2 === 1 ? (
-            <mark key={i} className="bg-[#EF4444]/30 text-[#EF4444] font-semibold px-0.5 rounded">
+            <mark key={i} className="bg-[#004F9F]/20 text-[#004F9F] font-semibold px-0.5 rounded">
               {part}
             </mark>
           ) : (
@@ -124,9 +124,9 @@ export default function Search() {
                 placeholder="Buscar en todas las transcripciones..."
                 className={`w-full pl-12 pr-4 py-3 rounded-lg border text-lg ${
                   isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-[#EF4444]' 
-                    : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#EF4444]'
-                } focus:outline-none focus:ring-2 focus:ring-[#EF4444]/20 transition-all`}
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-[#004F9F]' 
+                    : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#004F9F]'
+                } focus:outline-none focus:ring-2 focus:ring-[#004F9F]/20 transition-all`}
               />
             </div>
             <button
@@ -135,7 +135,7 @@ export default function Search() {
               className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 loading || query.trim().length < 2
                   ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white hover:opacity-90'
+                  : 'bg-gradient-to-r from-[#004F9F] to-[#003A79] text-white hover:opacity-90'
               }`}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <SearchIcon className="w-5 h-5" />}
@@ -152,12 +152,12 @@ export default function Search() {
                 isDark 
                   ? 'text-slate-300 hover:bg-slate-700' 
                   : 'text-gray-600 hover:bg-gray-100'
-              } ${hasActiveFilters ? 'text-[#EF4444]' : ''}`}
+              } ${hasActiveFilters ? 'text-[#004F9F]' : ''}`}
             >
               <Filter className="w-4 h-4" />
               Filtros
               {hasActiveFilters && (
-                <span className="bg-[#EF4444] text-white text-xs px-1.5 py-0.5 rounded-full">
+                <span className="bg-[#004F9F] text-white text-xs px-1.5 py-0.5 rounded-full">
                   {[filters.userId, filters.branchId, filters.saleCompleted !== null].filter(Boolean).length}
                 </span>
               )}
@@ -167,7 +167,7 @@ export default function Search() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-sm text-[#EF4444] hover:underline"
+                className="text-sm text-[#004F9F] hover:underline"
               >
                 Limpiar filtros
               </button>
@@ -261,7 +261,7 @@ export default function Search() {
               'No se encontraron resultados'
             ) : (
               <>
-                <span className="text-[#EF4444]">{totalResults}</span> transcripción{totalResults !== 1 && 'es'} encontrada{totalResults !== 1 && 's'}
+                <span className="text-[#004F9F]">{totalResults}</span> transcripción{totalResults !== 1 && 'es'} encontrada{totalResults !== 1 && 's'}
               </>
             )}
           </span>
@@ -269,7 +269,7 @@ export default function Search() {
             <>
               <span>•</span>
               <span>
-                <span className="text-[#EF4444]">{totalMatches}</span> coincidencia{totalMatches !== 1 && 's'} totales
+                <span className="text-[#004F9F]">{totalMatches}</span> coincidencia{totalMatches !== 1 && 's'} totales
               </span>
             </>
           )}
@@ -285,15 +285,15 @@ export default function Search() {
               onClick={() => navigate(`/transcriptions/${result.recordingId}`)}
               className={`rounded-xl border p-5 cursor-pointer transition-all hover:shadow-lg ${
                 isDark 
-                  ? 'bg-slate-800 border-slate-700 hover:border-[#EF4444]/50' 
-                  : 'bg-white border-gray-200 hover:border-[#EF4444]/50'
+                  ? 'bg-slate-800 border-slate-700 hover:border-[#004F9F]/50' 
+                  : 'bg-white border-gray-200 hover:border-[#004F9F]/50'
               }`}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#EF4444]/20">
-                    <FileText className="w-5 h-5 text-[#EF4444]" />
+                  <div className="p-2 rounded-lg bg-[#004F9F]/20">
+                    <FileText className="w-5 h-5 text-[#004F9F]" />
                   </div>
                   <div>
                     <span className={`font-mono font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -351,7 +351,7 @@ export default function Search() {
                   {result.snippets.map((snippet, idx) => (
                     <div
                       key={idx}
-                      className={`text-sm p-3 rounded-lg border-l-2 border-[#EF4444] ${
+                      className={`text-sm p-3 rounded-lg border-l-2 border-[#004F9F] ${
                         isDark ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-50 text-gray-600'
                       }`}
                     >
@@ -392,7 +392,7 @@ export default function Search() {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="mt-4 text-[#EF4444] hover:underline"
+              className="mt-4 text-[#004F9F] hover:underline"
             >
               Probar sin filtros
             </button>

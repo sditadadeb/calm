@@ -12,25 +12,25 @@ export default function MetricCard({
 }) {
   const { isDark } = useTheme();
   
-  // Variantes con colores ISL
+  // Variantes con colores Carrefour
   const variants = {
     default: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-[#EF4444] border border-slate-700'
-      : 'bg-white border-l-4 border-l-[#EF4444] border border-gray-200',
-    primary: 'bg-gradient-to-br from-[#EF4444] to-[#DC2626] text-white border-0',
+      ? 'bg-black border-l-4 border-l-white border border-zinc-800'
+      : 'bg-white border-l-4 border-l-[#004F9F] border border-gray-200',
+    primary: 'bg-gradient-to-br from-[#004F9F] to-[#003A79] text-white border-0',
     success: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-green-500 border border-slate-700'
+      ? 'bg-black border-l-4 border-l-green-400 border border-zinc-800'
       : 'bg-white border-l-4 border-l-green-500 border border-gray-200',
     danger: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-red-500 border border-slate-700'
+      ? 'bg-black border-l-4 border-l-red-400 border border-zinc-800'
       : 'bg-white border-l-4 border-l-red-500 border border-gray-200',
     warning: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-amber-500 border border-slate-700'
+      ? 'bg-black border-l-4 border-l-amber-400 border border-zinc-800'
       : 'bg-white border-l-4 border-l-amber-500 border border-gray-200',
   };
 
   const iconBg = {
-    default: 'bg-[#EF4444]/20 text-[#EF4444]',
+    default: isDark ? 'bg-white/10 text-white' : 'bg-[#004F9F]/20 text-[#004F9F]',
     primary: 'bg-white/20 text-white',
     success: 'bg-green-500/20 text-green-400',
     danger: 'bg-red-500/20 text-red-400',
@@ -43,14 +43,14 @@ export default function MetricCard({
     <div className={`rounded-2xl p-6 transition-all hover:shadow-lg hover:translate-y-[-2px] ${variants[variant]}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className={`text-sm font-medium ${isPrimary ? 'text-white/70' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <p className={`text-sm font-medium ${isPrimary ? 'text-white/70' : isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
             {title}
           </p>
           <p className={`text-3xl font-bold mt-2 ${isPrimary ? 'text-white' : isDark ? 'text-white' : 'text-gray-800'}`}>
             {value}
           </p>
           {subtitle && (
-            <p className={`text-sm mt-1 ${isPrimary ? 'text-white/60' : isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+            <p className={`text-sm mt-1 ${isPrimary ? 'text-white/60' : isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
               {subtitle}
             </p>
           )}
@@ -63,7 +63,7 @@ export default function MetricCard({
       </div>
       
       {trend !== undefined && (
-        <div className={`flex items-center gap-2 mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+        <div className={`flex items-center gap-2 mt-4 pt-4 border-t ${isDark ? 'border-zinc-800' : 'border-gray-200'}`}>
           {trend === 'up' && <TrendingUp className="w-4 h-4 text-green-400" />}
           {trend === 'down' && <TrendingDown className="w-4 h-4 text-red-400" />}
           <span className={`text-sm font-medium ${

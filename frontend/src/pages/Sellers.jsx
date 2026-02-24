@@ -17,7 +17,7 @@ export default function Sellers() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#EF4444] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando vendedores...</p>
         </div>
       </div>
@@ -30,14 +30,14 @@ export default function Sellers() {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#EF4444] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#004F9F] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Agentes activos</p>
               <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{sellers.length}</p>
             </div>
-            <div className="w-12 h-12 bg-[#EF4444]/20 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-[#EF4444]" />
+            <div className="w-12 h-12 bg-[#004F9F]/20 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-[#004F9F]" />
             </div>
           </div>
         </div>
@@ -85,12 +85,12 @@ export default function Sellers() {
           {sellers.map((seller, index) => (
             <div 
               key={seller.userId}
-              className={`rounded-2xl p-6 border transition-all relative overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700 hover:border-[#EF4444]/50' : 'bg-white border-gray-200 hover:border-[#EF4444]/50 hover:shadow-lg'}`}
+              className={`rounded-2xl p-6 border transition-all relative overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700 hover:border-[#004F9F]/50' : 'bg-white border-gray-200 hover:border-[#004F9F]/50 hover:shadow-lg'}`}
             >
               {/* Rank Badge */}
               {index < 3 && (
                 <div className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center ${
-                  index === 0 ? 'bg-gradient-to-br from-[#EF4444] to-[#DC2626]' :
+                  index === 0 ? 'bg-gradient-to-br from-[#004F9F] to-[#003A79]' :
                   index === 1 ? 'bg-slate-400' :
                   'bg-amber-700'
                 }`}>
@@ -105,7 +105,7 @@ export default function Sellers() {
               {/* Seller Info */}
               <div className="flex items-center gap-4 mb-6">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-slate-700 to-slate-600' : 'bg-gradient-to-br from-gray-100 to-gray-200'}`}>
-                  <span className="text-xl font-bold text-[#EF4444]">
+                  <span className="text-xl font-bold text-[#004F9F]">
                     {seller.userName?.charAt(0) || '?'}
                   </span>
                 </div>
@@ -165,7 +165,7 @@ export default function Sellers() {
                 <ScoreBadge score={Math.round(seller.averageScore)} size="small" />
                 <Link
                   to={`/transcriptions?userId=${seller.userId}`}
-                  className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#EF4444] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#EF4444] hover:text-white'}`}
+                  className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#004F9F] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#004F9F] hover:text-white'}`}
                 >
                   <Eye className="w-3 h-3" /> Ver atenciones
                 </Link>

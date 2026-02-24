@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -9,11 +9,26 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Transcriptions() {
-  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters } = useStore();
+  const {
+    transcriptions,
+    loading,
+    recalculating,
+    syncSummary,
+    fetchTranscriptions,
+    autoSyncTranscriptions,
+    analyzeTranscription,
+    deleteTranscription,
+    setFilters
+  } = useStore();
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
+  const searchParamsKey = searchParams.toString();
+  const AUTO_SYNC_CACHE_KEY = 'transcriptions_last_auto_sync_at';
+  const AUTO_SYNC_INTERVAL_MS = 120000;
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
+  const [syncingOnLoad, setSyncingOnLoad] = useState(false);
+  const didInitialAutoSync = useRef(false);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -81,8 +96,8 @@ export default function Transcriptions() {
           {label}
           {isActive ? (
             sortConfig.direction === 'asc' ? 
-              <ChevronUp className="w-4 h-4 text-[#EF4444]" /> : 
-              <ChevronDown className="w-4 h-4 text-[#EF4444]" />
+              <ChevronUp className="w-4 h-4 text-[#004F9F]" /> : 
+              <ChevronDown className="w-4 h-4 text-[#004F9F]" />
           ) : (
             <ChevronsUpDown className="w-3 h-3 opacity-40" />
           )}
@@ -92,6 +107,9 @@ export default function Transcriptions() {
   };
 
   useEffect(() => {
+    if (didInitialAutoSync.current) return;
+    didInitialAutoSync.current = true;
+
     const urlFilters = {};
     
     const userId = searchParams.get('userId');
@@ -116,12 +134,39 @@ export default function Transcriptions() {
     if (minScore) urlFilters.minScore = parseInt(minScore);
     if (maxScore) urlFilters.maxScore = parseInt(maxScore);
 
-    if (Object.keys(urlFilters).length > 0) {
-      setFilters(urlFilters);
-    }
-    
-    fetchTranscriptions();
-  }, [searchParams]);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        if (Object.keys(urlFilters).length > 0) {
+          setFilters(urlFilters);
+        }
+
+        const lastSyncAt = Number(sessionStorage.getItem(AUTO_SYNC_CACHE_KEY) || 0);
+        const shouldSync = Date.now() - lastSyncAt > AUTO_SYNC_INTERVAL_MS;
+
+        if (shouldSync) {
+          setSyncingOnLoad(true);
+          await autoSyncTranscriptions();
+          sessionStorage.setItem(AUTO_SYNC_CACHE_KEY, String(Date.now()));
+        }
+      } catch (error) {
+        console.error('Error en sync automático:', error);
+      } finally {
+        if (!cancelled) {
+          setSyncingOnLoad(false);
+        }
+      }
+
+      if (!cancelled) {
+        fetchTranscriptions();
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParamsKey, autoSyncTranscriptions, fetchTranscriptions, setFilters]);
 
   const handleAnalyze = async (recordingId, e) => {
     e.preventDefault();
@@ -170,7 +215,7 @@ export default function Transcriptions() {
       {recalculating && (
         <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3">
-            <RefreshCw className="w-5 h-5 text-[#EF4444] animate-spin" />
+            <RefreshCw className="w-5 h-5 text-[#004F9F] animate-spin" />
             <div className="flex-1">
               <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
                 Recalculando métricas...
@@ -182,9 +227,28 @@ export default function Transcriptions() {
           </div>
           <div className="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-[#EF4444] to-[#DC2626] rounded-full animate-pulse"
+              className="h-full bg-gradient-to-r from-[#004F9F] to-[#003A79] rounded-full animate-pulse"
               style={{ width: '100%' }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Sync automático al entrar a Transcripciones */}
+      {(syncingOnLoad || syncSummary) && (
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-3">
+            <RefreshCw className={`w-5 h-5 text-[#004F9F] ${syncingOnLoad ? 'animate-spin' : ''}`} />
+            <div className="flex-1">
+              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {syncingOnLoad ? 'Sincronizando transcripciones nuevas...' : 'Sync automático completado'}
+              </p>
+              {!syncingOnLoad && syncSummary && (
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Nuevas importadas: {syncSummary.imported ?? 0} | Analizadas: {syncSummary.analyzed ?? 0}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -202,7 +266,7 @@ export default function Transcriptions() {
       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-10 h-10 border-4 border-[#EF4444] border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-10 h-10 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
             <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripciones...</p>
           </div>
         ) : transcriptions.length === 0 ? (
@@ -238,7 +302,7 @@ export default function Transcriptions() {
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-[#EF4444]">#{t.recordingId}</span>
+                      <span className="font-mono text-sm font-medium text-[#004F9F]">#{t.recordingId}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
@@ -316,14 +380,14 @@ export default function Transcriptions() {
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${t.recordingId}`}
-                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#EF4444] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#EF4444] hover:text-white'}`}
+                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#004F9F] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#004F9F] hover:text-white'}`}
                         >
                           <Eye className="w-3 h-3" /> Ver
                         </Link>
                         {!t.analyzed && (
                           <button
                             onClick={(e) => handleAnalyze(t.recordingId, e)}
-                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white rounded-lg hover:opacity-90 transition-opacity"
+                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#004F9F] to-[#003A79] text-white rounded-lg hover:opacity-90 transition-opacity"
                             disabled={loading}
                           >
                             <Sparkles className="w-3 h-3" /> Analizar

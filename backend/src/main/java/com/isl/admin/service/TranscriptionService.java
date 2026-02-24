@@ -25,11 +25,17 @@ import java.util.stream.Collectors;
 public class TranscriptionService {
 
     private static final Logger log = LoggerFactory.getLogger(TranscriptionService.class);
+    private static final long AUTO_SYNC_CHECK_INTERVAL_MS = 120_000L;
+    private static final long AUTO_SYNC_FORCE_INTERVAL_MS = 900_000L;
 
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final S3Service s3Service;
     private final ChatGPTAnalyzerService analyzerService;
+    private final java.util.concurrent.locks.ReentrantLock autoSyncLock = new java.util.concurrent.locks.ReentrantLock();
+    private volatile long lastAutoSyncCheckAtMillis = 0L;
+    private volatile long lastFullSyncAtMillis = 0L;
+    private volatile int lastKnownS3Count = -1;
 
     public TranscriptionService(TranscriptionRepository repository, 
                                 AdvancedAnalysisRepository advancedAnalysisRepository,
@@ -46,18 +52,21 @@ public class TranscriptionService {
         log.info("Starting transcription sync from S3...");
         
         List<String> recordingIds = s3Service.listAllRecordingIds();
+        Set<String> existingIds = new HashSet<>(repository.findAllRecordingIds());
         int newCount = 0;
         
         for (String recordingId : recordingIds) {
-            if (!repository.existsByRecordingId(recordingId)) {
-                if (s3Service.transcriptionExists(recordingId)) {
-                    try {
-                        importTranscription(recordingId);
-                        newCount++;
-                    } catch (Exception e) {
-                        log.error("Error importing transcription {}: {}", recordingId, e.getMessage());
-                    }
+            if (existingIds.contains(recordingId)) {
+                continue;
+            }
+            try {
+                Transcription imported = importTranscription(recordingId);
+                if (imported != null) {
+                    newCount++;
+                    existingIds.add(recordingId);
                 }
+            } catch (Exception e) {
+                log.error("Error importing transcription {}: {}", recordingId, e.getMessage());
             }
         }
         
@@ -139,9 +148,14 @@ public class TranscriptionService {
         transcription.setSaleEvidence(analysis.getSaleEvidence());
         transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
+        // Compatibilidad: mapear categorías de no resolución como motivo principal cuando no exista.
+        transcription.setMotivoPrincipal(analysis.getNoSaleReason());
+        transcription.setResultadoLlamada(mapSaleStatusToResultado(analysis.getSaleStatus()));
         transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
         transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
         transcription.setImprovementSuggestions(String.join(", ", analysis.getImprovementSuggestions()));
+        transcription.setAnalysisPayload(analysis.getAnalysisPayload());
+        transcription.setFollowUpRecommendation(analysis.getFollowUpRecommendation());
         transcription.setExecutiveSummary(analysis.getExecutiveSummary());
         transcription.setSellerScore(analysis.getSellerScore());
         transcription.setSellerStrengths(String.join(", ", analysis.getSellerStrengths()));
@@ -163,6 +177,8 @@ public class TranscriptionService {
                     filter.getUserId(),
                     filter.getBranchId(),
                     filter.getSaleCompleted(),
+                    filter.getResultadoLlamada(),
+                    filter.getMotivoPrincipal(),
                     filter.getDateFrom() != null ? filter.getDateFrom().atStartOfDay() : null,
                     filter.getDateTo() != null ? filter.getDateTo().atTime(23, 59, 59) : null,
                     filter.getMinScore(),
@@ -229,6 +245,81 @@ public class TranscriptionService {
                         (a, b) -> a,
                         LinkedHashMap::new
                 ));
+
+        List<Transcription> analyzedTranscriptions = repository.findAll().stream()
+                .filter(t -> Boolean.TRUE.equals(t.getAnalyzed()))
+                .collect(Collectors.toList());
+
+        Map<String, Long> callReasons = analyzedTranscriptions.stream()
+                .map(t -> normalizeLabel(firstNonBlank(t.getMotivoPrincipal(), t.getNoSaleReason(), "Sin clasificar")))
+                .collect(Collectors.groupingBy(v -> v, Collectors.counting()))
+                .entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        Map<String, Long> nextSteps = analyzedTranscriptions.stream()
+                .map(t -> normalizeLabel(extractNextStep(t)))
+                .collect(Collectors.groupingBy(v -> v, Collectors.counting()))
+                .entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        Map<String, Long> recordingToBranchId = analyzedTranscriptions.stream()
+                .filter(t -> t.getRecordingId() != null)
+                .collect(Collectors.toMap(
+                        Transcription::getRecordingId,
+                        t -> t.getBranchId() != null ? t.getBranchId() : -1L,
+                        (a, b) -> a
+                ));
+
+        Map<String, String> recordingToBranchName = analyzedTranscriptions.stream()
+                .filter(t -> t.getRecordingId() != null)
+                .collect(Collectors.toMap(
+                        Transcription::getRecordingId,
+                        t -> normalizeLabel(firstNonBlank(t.getBranchName(), "Sin sucursal")),
+                        (a, b) -> a
+                ));
+
+        List<com.isl.admin.model.AdvancedAnalysis> advancedAnalyses = advancedAnalysisRepository.findAll().stream()
+                .filter(a -> a.getCustomerConfidenceScore() != null)
+                .collect(Collectors.toList());
+
+        double customerSatisfaction = Math.round(
+                advancedAnalyses.stream()
+                        .mapToInt(com.isl.admin.model.AdvancedAnalysis::getCustomerConfidenceScore)
+                        .average().orElse(0.0) * 100.0
+        ) / 100.0;
+
+        Map<String, List<com.isl.admin.model.AdvancedAnalysis>> analysesByBranch = advancedAnalyses.stream()
+                .collect(Collectors.groupingBy(
+                        a -> recordingToBranchId.getOrDefault(a.getRecordingId(), -1L) + "|" +
+                                recordingToBranchName.getOrDefault(a.getRecordingId(), "Sin sucursal")
+                ));
+
+        List<DashboardMetricsDTO.BranchSatisfaction> customerSatisfactionByBranch = analysesByBranch.entrySet().stream()
+                .map(entry -> {
+                    String[] parts = entry.getKey().split("\\|", 2);
+                    DashboardMetricsDTO.BranchSatisfaction bs = new DashboardMetricsDTO.BranchSatisfaction();
+                    bs.setBranchId(Long.parseLong(parts[0]));
+                    bs.setBranchName(parts.length > 1 ? parts[1] : "Sin sucursal");
+                    bs.setTotalInteractions(entry.getValue().size());
+                    bs.setSatisfaction(Math.round(entry.getValue().stream()
+                            .mapToInt(com.isl.admin.model.AdvancedAnalysis::getCustomerConfidenceScore)
+                            .average().orElse(0.0) * 100.0) / 100.0);
+                    return bs;
+                })
+                .sorted((a, b) -> Double.compare(b.getSatisfaction(), a.getSatisfaction()))
+                .collect(Collectors.toList());
         
         DashboardMetricsDTO metrics = new DashboardMetricsDTO();
         metrics.setTotalTranscriptions(total);
@@ -242,6 +333,10 @@ public class TranscriptionService {
         metrics.setSellerMetrics(sellerMetrics);
         metrics.setBranchMetrics(branchMetrics);
         metrics.setNoSaleReasons(noSaleReasons);
+        metrics.setCallReasons(callReasons);
+        metrics.setNextSteps(nextSteps);
+        metrics.setCustomerSatisfaction(customerSatisfaction);
+        metrics.setCustomerSatisfactionByBranch(customerSatisfactionByBranch);
         
         return metrics;
     }
@@ -268,6 +363,59 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Auto-sync performante:
+     * - No ejecuta en cada request (throttle por intervalo).
+     * - Si hay pendientes, analiza solo pendientes sin volver a escanear S3.
+     * - Compara conteo S3 vs DB y sincroniza completo solo si hay diferencia.
+     */
+    public void autoSyncIfNeeded() {
+        long now = System.currentTimeMillis();
+        if ((now - lastAutoSyncCheckAtMillis) < AUTO_SYNC_CHECK_INTERVAL_MS) {
+            return;
+        }
+        if (!autoSyncLock.tryLock()) {
+            return;
+        }
+        try {
+            long checkNow = System.currentTimeMillis();
+            if ((checkNow - lastAutoSyncCheckAtMillis) < AUTO_SYNC_CHECK_INTERVAL_MS) {
+                return;
+            }
+            lastAutoSyncCheckAtMillis = checkNow;
+
+            long pending = repository.countPendingAnalysis();
+            if (pending > 0) {
+                int analyzed = analyzeUnprocessedTranscriptions();
+                log.info("Auto-sync liviano: analizados pendientes={}", analyzed);
+                return;
+            }
+
+            long dbCount = repository.count();
+            boolean forceByTime = (checkNow - lastFullSyncAtMillis) >= AUTO_SYNC_FORCE_INTERVAL_MS;
+
+            int s3Count = s3Service.countAvailableRecordings();
+            if (s3Count >= 0) {
+                lastKnownS3Count = s3Count;
+            }
+
+            boolean needsSync = forceByTime || (s3Count >= 0 && s3Count > dbCount);
+            if (!needsSync) {
+                return;
+            }
+
+            Map<String, Object> result = forceSync();
+            lastFullSyncAtMillis = System.currentTimeMillis();
+            log.info("Auto-sync completo ejecutado. imported={}, analyzed={}",
+                    result.getOrDefault("imported", 0),
+                    result.getOrDefault("analyzed", 0));
+        } catch (Exception e) {
+            log.warn("Auto-sync falló: {}", e.getMessage());
+        } finally {
+            autoSyncLock.unlock();
+        }
+    }
+
     @Transactional
     public Map<String, Object> forceSync() {
         long beforeCount = repository.count();
@@ -286,6 +434,44 @@ public class TranscriptionService {
         result.put("analyzed", analyzed);
         result.put("timestamp", LocalDateTime.now());
         
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> resetAllAnalysisData() {
+        List<Transcription> all = repository.findAll();
+        int affected = 0;
+        for (Transcription t : all) {
+            t.setSaleCompleted(null);
+            t.setSaleStatus(null);
+            t.setAnalysisConfidence(null);
+            t.setConfidenceTrace(null);
+            t.setSaleEvidence(null);
+            t.setSaleEvidenceMeta(null);
+            t.setNoSaleReason(null);
+            t.setMotivoPrincipal(null);
+            t.setResultadoLlamada(null);
+            t.setProductsDiscussed(null);
+            t.setCustomerObjections(null);
+            t.setImprovementSuggestions(null);
+            t.setAnalysisPayload(null);
+            t.setFollowUpRecommendation(null);
+            t.setExecutiveSummary(null);
+            t.setSellerScore(null);
+            t.setSellerStrengths(null);
+            t.setSellerWeaknesses(null);
+            t.setAnalyzed(false);
+            t.setAnalyzedAt(null);
+            affected++;
+        }
+        repository.saveAll(all);
+        long advancedDeleted = advancedAnalysisRepository.count();
+        advancedAnalysisRepository.deleteAll();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("transcriptionsReset", affected);
+        result.put("advancedDeleted", advancedDeleted);
+        result.put("timestamp", LocalDateTime.now());
         return result;
     }
 
@@ -609,9 +795,13 @@ public class TranscriptionService {
         transcription.setSaleEvidence(analysis.getSaleEvidence());
         transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
+        transcription.setMotivoPrincipal(analysis.getNoSaleReason());
+        transcription.setResultadoLlamada(mapSaleStatusToResultado(analysis.getSaleStatus()));
         transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
         transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
         transcription.setImprovementSuggestions(String.join(", ", analysis.getImprovementSuggestions()));
+        transcription.setAnalysisPayload(analysis.getAnalysisPayload());
+        transcription.setFollowUpRecommendation(analysis.getFollowUpRecommendation());
         transcription.setExecutiveSummary(analysis.getExecutiveSummary());
         transcription.setSellerScore(analysis.getSellerScore());
         transcription.setSellerStrengths(String.join(", ", analysis.getSellerStrengths()));
@@ -652,12 +842,16 @@ public class TranscriptionService {
         dto.setSaleEvidence(t.getSaleEvidence());
         dto.setSaleEvidenceMeta(t.getSaleEvidenceMeta());
         dto.setNoSaleReason(t.getNoSaleReason());
+        dto.setMotivoPrincipal(t.getMotivoPrincipal());
+        dto.setResultadoLlamada(t.getResultadoLlamada());
         dto.setProductsDiscussed(t.getProductsDiscussed() != null 
                 ? Arrays.asList(t.getProductsDiscussed().split(", ")) : new ArrayList<>());
         dto.setCustomerObjections(t.getCustomerObjections() != null 
                 ? Arrays.asList(t.getCustomerObjections().split(", ")) : new ArrayList<>());
         dto.setImprovementSuggestions(t.getImprovementSuggestions() != null 
                 ? Arrays.asList(t.getImprovementSuggestions().split(", ")) : new ArrayList<>());
+        dto.setAnalysisPayload(t.getAnalysisPayload());
+        dto.setFollowUpRecommendation(t.getFollowUpRecommendation());
         dto.setExecutiveSummary(t.getExecutiveSummary());
         dto.setSellerScore(t.getSellerScore());
         dto.setSellerStrengths(t.getSellerStrengths() != null 
@@ -715,6 +909,39 @@ public class TranscriptionService {
             case "central" -> "Godoy Cruz";
             default -> originalName;
         };
+    }
+
+    private String mapSaleStatusToResultado(String saleStatus) {
+        if (saleStatus == null) return null;
+        return switch (saleStatus) {
+            case "SALE_CONFIRMED" -> "resuelto";
+            case "SALE_LIKELY", "ADVANCE_NO_CLOSE" -> "parcial";
+            case "NO_SALE" -> "no resuelto";
+            case "UNINTERPRETABLE" -> "falta info";
+            default -> null;
+        };
+    }
+
+    private String extractNextStep(Transcription t) {
+        String followUp = firstNonBlank(t.getFollowUpRecommendation());
+        if (followUp != null) return followUp;
+        if (t.getImprovementSuggestions() != null && !t.getImprovementSuggestions().isBlank()) {
+            String first = t.getImprovementSuggestions().split(",")[0].trim();
+            if (!first.isBlank()) return first;
+        }
+        return "Sin próximo paso";
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return null;
+    }
+
+    private String normalizeLabel(String value) {
+        if (value == null || value.isBlank()) return "Sin clasificar";
+        return value.trim().replaceAll("\\s{2,}", " ");
     }
     
     /**

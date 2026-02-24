@@ -24,6 +24,8 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
            "(:userId IS NULL OR t.userId = :userId) AND " +
            "(:branchId IS NULL OR t.branchId = :branchId) AND " +
            "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) AND " +
+           "(:resultadoLlamada IS NULL OR LOWER(t.resultadoLlamada) = LOWER(:resultadoLlamada)) AND " +
+           "(:motivoPrincipal IS NULL OR LOWER(t.motivoPrincipal) = LOWER(:motivoPrincipal)) AND " +
            "(:dateFrom IS NULL OR t.recordingDate >= :dateFrom) AND " +
            "(:dateTo IS NULL OR t.recordingDate <= :dateTo) AND " +
            "(:minScore IS NULL OR t.sellerScore >= :minScore) AND " +
@@ -33,6 +35,8 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
             @Param("userId") Long userId,
             @Param("branchId") Long branchId,
             @Param("saleCompleted") Boolean saleCompleted,
+            @Param("resultadoLlamada") String resultadoLlamada,
+            @Param("motivoPrincipal") String motivoPrincipal,
             @Param("dateFrom") LocalDateTime dateFrom,
             @Param("dateTo") LocalDateTime dateTo,
             @Param("minScore") Integer minScore,
@@ -63,6 +67,9 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
 
     @Query("SELECT DISTINCT t.branchId, t.branchName FROM Transcription t")
     List<Object[]> findAllBranches();
+
+    @Query("SELECT t.recordingId FROM Transcription t")
+    List<String> findAllRecordingIds();
 
     @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL GROUP BY t.noSaleReason")
     List<Object[]> countByNoSaleReason();

@@ -8,18 +8,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        calm: {
-          primary: '#F5A623',
-          secondary: '#FFBB54',
-          dark: '#1a1a2e',
-          light: '#f8f9fa',
+        carrefour: {
+          primary: '#004F9F',
+          secondary: '#E30613',
+          dark: '#003A79',
+          light: '#F5F7FA',
         }
       },
       fontFamily: {
         'display': ['Playfair Display', 'serif'],
         'body': ['Source Sans Pro', 'sans-serif'],
-        'vietnam': ['Be Vietnam Pro', 'Arial', 'sans-serif'],
-        'sans': ['Be Vietnam Pro', 'Arial', 'sans-serif'],
+        'vietnam': ['Montserrat', 'Arial', 'sans-serif'],
+        'sans': ['Montserrat', 'Arial', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.4s ease-out',

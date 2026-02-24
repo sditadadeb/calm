@@ -21,6 +21,7 @@ const useStore = create((set, get) => ({
   },
   loading: false,
   recalculating: false,
+  syncSummary: null,
   error: null,
 
   // Actions
@@ -120,6 +121,24 @@ const useStore = create((set, get) => ({
       return response.data;
     } catch (error) {
       set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  autoSyncTranscriptions: async () => {
+    set({ error: null });
+    try {
+      const response = await api.autoSyncTranscriptions();
+      set({ syncSummary: response.data || null });
+      return response.data;
+    } catch (error) {
+      const isTimeout = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
+      if (isTimeout) {
+        // No bloquear carga: el backend igual puede seguir con auto-sync por endpoints.
+        set({ syncSummary: { imported: 0, analyzed: 0, timedOut: true } });
+        return { imported: 0, analyzed: 0, timedOut: true };
+      }
+      set({ error: error.message });
       throw error;
     }
   },

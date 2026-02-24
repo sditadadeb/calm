@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" role="img" aria-label="Carrefour">
+  <rect width="360" height="140" fill="none"/>
+  <g transform="translate(10 12)">
+    <polygon points="20,56 80,8 80,104" fill="#E30613"/>
+    <polygon points="196,56 136,8 136,104" fill="#004F9F"/>
+    <rect x="72" y="8" width="72" height="96" rx="36" fill="#0058A5"/>
+    <circle cx="108" cy="30" r="12" fill="#FFFFFF"/>
+    <circle cx="108" cy="82" r="12" fill="#FFFFFF"/>
+  </g>
+  <text x="180" y="132" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="56" font-weight="700" fill="#004F9F">
+    Carrefour
+  </text>
+</svg>

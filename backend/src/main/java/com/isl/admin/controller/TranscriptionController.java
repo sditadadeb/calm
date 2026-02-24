@@ -40,6 +40,7 @@ public class TranscriptionController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardMetricsDTO> getDashboardMetrics() {
+        transcriptionService.autoSyncIfNeeded();
         return ResponseEntity.ok(transcriptionService.getDashboardMetrics());
     }
 
@@ -55,6 +56,7 @@ public class TranscriptionController {
             @RequestParam(required = false) Integer minScore,
             @RequestParam(required = false) Integer maxScore
     ) {
+        transcriptionService.autoSyncIfNeeded();
         // Validate score range
         if (minScore != null && (minScore < 0 || minScore > 10)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minScore debe estar entre 0 y 10");
@@ -87,6 +89,7 @@ public class TranscriptionController {
 
     @GetMapping("/transcriptions/{recordingId}")
     public ResponseEntity<TranscriptionDTO> getTranscription(@PathVariable String recordingId) {
+        transcriptionService.autoSyncIfNeeded();
         validateRecordingId(recordingId);
         return ResponseEntity.ok(transcriptionService.getTranscription(recordingId));
     }
@@ -102,6 +105,12 @@ public class TranscriptionController {
         return ResponseEntity.ok(transcriptionService.forceSync());
     }
 
+    @PostMapping("/sync/analysis/reset")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> resetAllAnalysis() {
+        return ResponseEntity.ok(transcriptionService.resetAllAnalysisData());
+    }
+
     /**
      * Sync with Server-Sent Events for real-time progress updates.
      */
@@ -115,11 +124,13 @@ public class TranscriptionController {
 
     @GetMapping("/sellers")
     public ResponseEntity<List<Map<String, Object>>> getSellers() {
+        transcriptionService.autoSyncIfNeeded();
         return ResponseEntity.ok(transcriptionService.getSellers());
     }
 
     @GetMapping("/branches")
     public ResponseEntity<List<Map<String, Object>>> getBranches() {
+        transcriptionService.autoSyncIfNeeded();
         return ResponseEntity.ok(transcriptionService.getBranches());
     }
     
@@ -174,6 +185,7 @@ public class TranscriptionController {
             @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Boolean saleCompleted
     ) {
+        transcriptionService.autoSyncIfNeeded();
         if (q == null || q.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda es requerido");
         }

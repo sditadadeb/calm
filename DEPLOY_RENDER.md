@@ -1,24 +1,25 @@
-# Deploy ISL Admin en Render (con PostgreSQL)
+# Deploy Carrefour Banco Analytics en Render (con PostgreSQL)
 
 Render proporciona **PostgreSQL** y lo conecta al backend mediante `DATABASE_URL`. El blueprint define todo en un solo archivo.
 
 ## Opción A: Deploy con Blueprint (recomendado)
 
-1. **Subir el código** a GitHub (branch `ISL` en el repo que uses).
+1. **Subir el código** a GitHub (branch `carrefour` en el repo que uses).
 2. En [render.com](https://render.com): **Dashboard** → **New +** → **Blueprint**.
-3. Conectar el repositorio y seleccionar el branch **ISL**.
+3. Conectar el repositorio y seleccionar el branch **carrefour**.
 4. Render detectará `render.yaml` y creará:
-   - **PostgreSQL** (`isl-db`)
-   - **Web Service** backend (`isl-admin-api`) con Docker
-   - **Static Site** frontend (`isl-admin-frontend`)
+   - **PostgreSQL** (`carrefour-db`)
+   - **Web Service** backend (`carrefour-admin-api`) con Docker
+   - **Static Site** frontend (`carrefour-admin-frontend`)
 5. En el backend, configurar **Environment Variables** (secretos):
    - `ADMIN_PASSWORD`: contraseña del usuario admin.
    - `AWS_S3_METADATA_ACCESS_KEY` / `AWS_S3_METADATA_SECRET_KEY` (si usás S3).
    - `AWS_S3_TRANSCRIPTIONS_ACCESS_KEY` / `AWS_S3_TRANSCRIPTIONS_SECRET_KEY` (si usás S3).
    - `OPENAI_API_KEY`: clave de OpenAI.
-   - `CORS_ALLOWED_ORIGINS`: URL del frontend en Render (ej: `https://isl-admin-frontend.onrender.com`).
+   - `VIEWER_PASSWORD`: contraseña del usuario viewer.
+   - `CORS_ALLOWED_ORIGINS`: URL del frontend en Render (ej: `https://carrefour-admin-frontend.onrender.com`).
 6. En el frontend, configurar:
-   - `VITE_API_URL`: URL del backend (ej: `https://isl-admin-api.onrender.com/api`).
+   - `VITE_API_URL`: URL del backend (ej: `https://carrefour-admin-api.onrender.com/api`).
 7. **Deploy**: Render construye y levanta todo. La primera vez puede tardar varios minutos.
 
 ## Opción B: Crear servicios a mano
@@ -26,13 +27,13 @@ Render proporciona **PostgreSQL** y lo conecta al backend mediante `DATABASE_URL
 ### 1. Base de datos PostgreSQL
 
 1. **New +** → **PostgreSQL**.
-2. Nombre: `isl-db`, plan Free.
+2. Nombre: `carrefour-db`, plan Free.
 3. Crear y anotar la **Internal Database URL** (o usar la que Render muestra en el panel).
 
 ### 2. Backend (Web Service)
 
 1. **New +** → **Web Service**.
-2. Repo y branch **ISL**, root: (dejar por defecto).
+2. Repo y branch **carrefour**, root: (dejar por defecto).
 3. **Environment**: Docker.
 4. **Dockerfile Path**: `./backend/Dockerfile`.
 5. **Variables de entorno**:
@@ -47,16 +48,16 @@ Render proporciona **PostgreSQL** y lo conecta al backend mediante `DATABASE_URL
 ### 3. Frontend (Static Site)
 
 1. **New +** → **Static Site**.
-2. Mismo repo, branch **ISL**.
+2. Mismo repo, branch **carrefour**.
 3. **Root Directory**: `frontend`.
 4. **Build Command**: `npm install && npm run build`.
 5. **Publish Directory**: `dist`.
-6. **Variable**: `VITE_API_URL` = URL del backend + `/api` (ej: `https://isl-admin-api.onrender.com/api`).
+6. **Variable**: `VITE_API_URL` = URL del backend + `/api` (ej: `https://carrefour-admin-api.onrender.com/api`).
 
 ### 4. CORS
 
 En el backend, en variables de entorno, poner:
-`CORS_ALLOWED_ORIGINS` = URL del frontend (ej: `https://isl-admin-frontend.onrender.com`).
+`CORS_ALLOWED_ORIGINS` = URL del frontend (ej: `https://carrefour-admin-frontend.onrender.com`).
 
 ## Base de datos
 

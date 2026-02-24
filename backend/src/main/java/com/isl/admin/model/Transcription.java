@@ -39,6 +39,13 @@ public class Transcription {
     
     @Column(columnDefinition = "TEXT")
     private String noSaleReason;
+
+    // Motivo principal de la llamada/consulta (si existe en metadata o análisis previo)
+    @Column(columnDefinition = "TEXT")
+    private String motivoPrincipal;
+
+    // Resultado operativo de la llamada: resuelto, parcial, no resuelto, derivado, falta info
+    private String resultadoLlamada;
     
     @Column(columnDefinition = "TEXT")
     private String productsDiscussed;
@@ -48,9 +55,15 @@ public class Transcription {
     
     @Column(columnDefinition = "TEXT")
     private String improvementSuggestions;
+
+    @Column(columnDefinition = "TEXT")
+    private String followUpRecommendation;
     
     @Column(columnDefinition = "TEXT")
     private String executiveSummary;
+
+    @Column(columnDefinition = "TEXT")
+    private String analysisPayload;
     
     private Integer sellerScore;
     
@@ -119,6 +132,12 @@ public class Transcription {
     
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }
+
+    public String getMotivoPrincipal() { return motivoPrincipal; }
+    public void setMotivoPrincipal(String motivoPrincipal) { this.motivoPrincipal = motivoPrincipal; }
+
+    public String getResultadoLlamada() { return resultadoLlamada; }
+    public void setResultadoLlamada(String resultadoLlamada) { this.resultadoLlamada = resultadoLlamada; }
     
     public String getProductsDiscussed() { return productsDiscussed; }
     public void setProductsDiscussed(String productsDiscussed) { this.productsDiscussed = productsDiscussed; }
@@ -128,9 +147,15 @@ public class Transcription {
     
     public String getImprovementSuggestions() { return improvementSuggestions; }
     public void setImprovementSuggestions(String improvementSuggestions) { this.improvementSuggestions = improvementSuggestions; }
+
+    public String getFollowUpRecommendation() { return followUpRecommendation; }
+    public void setFollowUpRecommendation(String followUpRecommendation) { this.followUpRecommendation = followUpRecommendation; }
     
     public String getExecutiveSummary() { return executiveSummary; }
     public void setExecutiveSummary(String executiveSummary) { this.executiveSummary = executiveSummary; }
+
+    public String getAnalysisPayload() { return analysisPayload; }
+    public void setAnalysisPayload(String analysisPayload) { this.analysisPayload = analysisPayload; }
     
     public Integer getSellerScore() { return sellerScore; }
     public void setSellerScore(Integer sellerScore) { this.sellerScore = sellerScore; }

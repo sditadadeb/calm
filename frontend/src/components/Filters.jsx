@@ -33,7 +33,7 @@ export default function Filters({ onApply }) {
     if (onApply) onApply();
   };
 
-  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#EF4444] focus:border-transparent ${
+  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#004F9F] focus:border-transparent ${
     isDark 
       ? 'bg-slate-700 border border-slate-600 text-white' 
       : 'bg-white border border-gray-300 text-gray-800'
@@ -44,7 +44,7 @@ export default function Filters({ onApply }) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-            <Filter className="w-5 h-5 text-[#EF4444]" />
+            <Filter className="w-5 h-5 text-[#004F9F]" />
           </div>
           <div>
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Filtros</h3>
@@ -70,8 +70,8 @@ export default function Filters({ onApply }) {
             className={inputClasses}
           >
             <option value="">Todos los agentes</option>
-            {sellers.map((seller) => (
-              <option key={seller.id} value={seller.id}>
+            {sellers.map((seller, idx) => (
+              <option key={`${seller.id ?? 'noid'}-${seller.name ?? 'noname'}-${idx}`} value={seller.id}>
                 {seller.name}
               </option>
             ))}
@@ -87,8 +87,8 @@ export default function Filters({ onApply }) {
             className={inputClasses}
           >
             <option value="">Todas las sucursales</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
+            {branches.map((branch, idx) => (
+              <option key={`${branch.id ?? 'noid'}-${branch.name ?? 'noname'}-${idx}`} value={branch.id}>
                 {branch.name}
               </option>
             ))}
@@ -182,7 +182,7 @@ export default function Filters({ onApply }) {
         </button>
         <button 
           onClick={handleApply} 
-          className="px-4 py-2 bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-[#004F9F] to-[#003A79] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <Search className="w-4 h-4" />
           Aplicar filtros

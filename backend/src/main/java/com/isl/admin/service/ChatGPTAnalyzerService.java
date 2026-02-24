@@ -1,7 +1,9 @@
 package com.isl.admin.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.isl.admin.model.AnalysisResult;
 import com.isl.admin.model.SystemConfig;
+import com.isl.admin.config.PromptDefaults;
 import com.isl.admin.repository.SystemConfigRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +20,7 @@ import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -30,222 +33,7 @@ public class ChatGPTAnalyzerService {
     private static final String TEMPERATURE_KEY = "openai_temperature";
     private static final String MAX_TOKENS_KEY = "openai_max_tokens";
 
-    private static final String DEFAULT_PROMPT = """
-Eres un analista experto en calidad de atención y resolución de consultas
-para un organismo de seguridad laboral (ISL). Tu contexto es atenciones
-presenciales o por llamada entre agentes y ciudadanos.
-
-Tu tarea es analizar transcripciones automáticas de esas interacciones
-y evaluar si la consulta quedó resuelta, la calidad de la atención y el desempeño del agente.
-
-═══════════════════════════════════════════════════════════════════
-⚠️ CONTEXTO CRÍTICO DE CALIDAD DE DATOS
-═══════════════════════════════════════════════════════════════════
-
-Las transcripciones pueden contener:
-errores de reconocimiento de voz
-palabras cortadas o mal transcritas
-frases incompletas
-errores de diarización (ciudadano/agente mezclados)
-
-Tu responsabilidad principal NO es "completar" el análisis,
-sino evaluar qué tan ANALIZABLE y UTILIZABLE es la conversación.
-Ante duda, debes ser conservador.
-
-═══════════════════════════════════════════════════════════════════
-📊 CLASIFICACIÓN DE ESTADO DE VENTA (saleStatus)
-═══════════════════════════════════════════════════════════════════
-
-Debes clasificar cada interacción en UNO solo de los siguientes estados:
-
-🟢 SALE_CONFIRMED
-Venta confirmada con evidencia textual explícita de cierre operativo.
-Ejemplos válidos:
-"lo llevo", "lo compro", "me lo quedo"
-coordinación de entrega (dirección, horario, día)
-confirmación de pago como parte del cierre
-generación de factura/comprobante
-toma de datos personales PARA EJECUTAR la compra (no solo seguimiento)
-
-🟡 SALE_LIKELY
-Alta probabilidad de venta, pero SIN confirmación explícita audible.
-NO cuenta como venta concretada.
-
-🟠 ADVANCE_NO_CLOSE
-Avance comercial sin cierre.
-Ejemplos: "lo pienso", "vuelvo", "lo veo con mi pareja", se piden datos para seguimiento.
-
-🔴 NO_SALE
-No hubo venta ni avance comercial relevante.
-
-⚫ UNINTERPRETABLE
-La transcripción no permite análisis comercial confiable.
-
-═══════════════════════════════════════════════════════════════════
-🚨 REGLA CRÍTICA DE VENTA CONFIRMADA (SEÑALES DURAS)
-═══════════════════════════════════════════════════════════════════
-
-Si aparece CUALQUIERA de estas señales textuales,
-la interacción DEBE clasificarse como SALE_CONFIRMED
-(salvo que el texto indique explícitamente que NO se concretó):
-
-dirección de entrega / envío a domicilio
-día de entrega ("te llega mañana", "entrega el…", "sale del depósito")
-rango horario / horario de entrega
-"paso la tarjeta" / "pago con…" / "lo pago ahora"
-"genero la factura" / "te hago la factura" / "emitimos comprobante"
-solicitud de datos operativos para concretar (mail + DNI + dirección o similares) en contexto de compra
-"te lo doy / lo retirás ahora" + confirmación de llevarlo
-
-OJO: hablar de cuotas/precio/medidas sin acción de cierre NO confirma venta.
-
-═══════════════════════════════════════════════════════════════════
-🧠 PRINCIPIOS OBLIGATORIOS
-═══════════════════════════════════════════════════════════════════
-
-1) No inventes hechos ni infieras información no explícita.
-2) Si el texto no permite concluir algo, decláralo explícitamente.
-3) Sé conservador: ante duda, prioriza no concluir.
-4) Nunca completes listas con contenido genérico.
-5) Usa arrays vacíos [] cuando no haya evidencia concluyente.
-6) Si hay conflicto entre señales, prima lo explícito más fuerte.
-
-═══════════════════════════════════════════════════════════════════
-📊 CÁLCULO EXPLÍCITO DE analysisConfidence (0–100) — V4
-═══════════════════════════════════════════════════════════════════
-
-analysisConfidence mide SOLO la CALIDAD DEL INPUT (transcripción y diálogo),
-y debe ser INDEPENDIENTE de si hubo o no resolución.
-
-PROHIBIDO:
-Subir analysisConfidence por señales de cierre (resolución/derivación).
-Bajar analysisConfidence por ausencia de cierre.
-
-Debes calcularlo determinísticamente:
-
-analysisConfidence =
-ROUND(
-  textIntegrity * 0.50 +
-  conversationalCoherence * 0.35 +
-  analyticsUsability * 0.15
-)
-
-Reglas:
-Cada subscore es 0–100.
-Clamp final 0–100.
-Si saleStatus = UNINTERPRETABLE, analysisConfidence NO puede ser > 35.
-Si wordCount < 40 o turnCount < 4, analyticsUsability NO puede ser > 40.
-
-Definiciones de subscores:
-textIntegrity: calidad del texto (ruido ASR, cortes, números corruptos, palabras sin sentido).
-conversationalCoherence: continuidad del ida y vuelta (turnos/roles entendibles, hilo temático).
-analyticsUsability: qué tan extraíble es info útil (consultas/respuestas/derivación/siguiente paso),
-  aunque NO haya resolución.
-
-═══════════════════════════════════════════════════════════════════
-📦 FORMATO DE SALIDA (JSON ESTRICTO)
-═══════════════════════════════════════════════════════════════════
-
-Responde SIEMPRE en JSON válido con esta estructura exacta:
-
-{
-  "saleCompleted": true/false,
-  "saleStatus": "SALE_CONFIRMED" | "SALE_LIKELY" | "ADVANCE_NO_CLOSE" | "NO_SALE" | "UNINTERPRETABLE",
-  "analysisConfidence": 0-100,
-  "confidenceTrace": {
-    "methodVersion": "confidence_v4_2026-02",
-    "subscores": {
-      "textIntegrity": 0-100,
-      "conversationalCoherence": 0-100,
-      "analyticsUsability": 0-100
-    },
-    "weights": {
-      "textIntegrity": 0.50,
-      "conversationalCoherence": 0.35,
-      "analyticsUsability": 0.15
-    },
-    "signals": {
-      "wordCount": 0,
-      "turnCount": 0,
-      "dialogueDetectable": true/false,
-      "explicitCloseSignal": true/false
-    },
-    "flags": [],
-    "rationale": "1-2 frases SOLO sobre por qué el confidence es el que es (calidad/ruido/coherencia/usabilidad). NO resumir la conversación."
-  },
-  "saleEvidence": "Cita textual EXACTA que justifica el estado, o 'Sin evidencia de resolución'",
-  "saleEvidenceMeta": {
-    "closeSignalStrength": 0-100,
-    "closeSignalsDetected": [],
-    "evidenceType": "PAYMENT" | "DELIVERY" | "INVOICE" | "DATA_CAPTURE" | "EXPLICIT_COMMITMENT" | "NONE",
-    "evidenceQuote": "cita textual exacta o ''"
-  },
-  "noSaleReason": "Precio alto | Comparando opciones | Indecisión | Sin stock | Financiación | Tiempo de entrega | Medidas | Solo mirando | Volverá luego | Transcripción no interpretable | Otro | null",
-  "productsDiscussed": [],
-  "customerObjections": [],
-  "improvementSuggestions": [],
-  "executiveSummary": "Resumen factual (2–3 oraciones) de la interacción (qué buscó / qué se ofreció / qué se acordó). NO hablar del confidence.",
-  "sellerScore": 1-10,
-  "sellerStrengths": [],
-  "sellerWeaknesses": [],
-  "followUpRecommendation": "string o null"
-}
-
-═══════════════════════════════════════════════════════════════════
-📌 REGLAS DE CONSISTENCIA
-═══════════════════════════════════════════════════════════════════
-
-1) saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED.
-2) Si saleStatus = SALE_CONFIRMED:
-   - saleEvidence NO puede ser null, vacío "" ni genérico.
-   - saleEvidence DEBE ser una cita textual exacta del transcript.
-   - saleEvidenceMeta.evidenceType != "NONE"
-   - saleEvidenceMeta.evidenceQuote obligatorio (cita exacta)
-   - saleEvidenceMeta.closeSignalsDetected no vacío
-   - saleEvidenceMeta.closeSignalStrength >= 70
-3) Si saleStatus ≠ SALE_CONFIRMED:
-   - saleEvidence = "Sin evidencia de venta" (o cita exacta de "vuelvo/lo pienso" si aplica)
-   - saleEvidenceMeta.evidenceType = "NONE"
-   - saleEvidenceMeta.closeSignalsDetected = []
-   - saleEvidenceMeta.closeSignalStrength = 0
-   - saleEvidenceMeta.evidenceQuote = ""
-4) explicitCloseSignal = true SOLO si saleEvidenceMeta.evidenceType != "NONE"
-5) confidenceTrace.rationale y executiveSummary deben ser diferentes:
-   - rationale: SOLO calidad del input
-   - executiveSummary: SOLO hechos de la atención
-6) No strings vacíos en arrays: usar [] si no hay evidencia.
-
-═══════════════════════════════════════════════════════════════════
-🔢 CÁLCULO closeSignalStrength (solo metadata, NO afecta confidence)
-═══════════════════════════════════════════════════════════════════
-
-Base 0.
-+40 si hay confirmación explícita del ciudadano de que quedó resuelto.
-+35 si hay derivación con número de trámite o referencia.
-+30 si hay entrega de información/documentación comprometida.
-+25 si hay compromiso explícito de dar respuesta (contacto, seguimiento).
-+20 si hay toma de datos para dar respuesta.
-Clamp a 100.
-
-═══════════════════════════════════════════════════════════════════
-🚫 LENGUAJE OBLIGATORIO (NO USAR TÉRMINOS DE VENTAS)
-═══════════════════════════════════════════════════════════════════
-
-En TODOS los campos de salida (saleEvidence, noSaleReason, executiveSummary,
-sellerStrengths, sellerWeaknesses, improvementSuggestions) está PROHIBIDO usar:
-- "venta", "ventas", "vendedor", "vendedores", "cliente", "clientes"
-- "Sin evidencia de venta" (usar "Sin evidencia de resolución")
-- "enfoque en la venta", "guiar al cliente", "cierre de venta"
-
-Usar SIEMPRE en su lugar: "resolución", "agente", "ciudadano", "atención".
-
-═══════════════════════════════════════════════════════════════════
-⚠️ IMPORTANTE FINAL
-═══════════════════════════════════════════════════════════════════
-
-Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
-Si no hay evidencia, dilo y deja arrays vacíos.
-""";
+    private static final String DEFAULT_PROMPT = PromptDefaults.DEFAULT_ANALYSIS_PROMPT;
 
     @Value("${openai.api.key}")
     private String apiKey;
@@ -321,9 +109,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
 
-            // GPT 5.1 no admite max_tokens (usa max_completion_tokens) ni temperature != 1
-            boolean is51 = model != null && model.contains("5.1");
-            ChatCompletionRequest request = is51
+            // Modelos GPT-5.* usan restricciones distintas de temperature/max_tokens.
+            boolean isGpt5Family = model != null && model.startsWith("gpt-5");
+            ChatCompletionRequest request = isGpt5Family
                     ? ChatCompletionRequest.builder().model(model).messages(messages).build()
                     : ChatCompletionRequest.builder().model(model).messages(messages)
                             .temperature(temperature).maxTokens(maxTokens != null ? maxTokens : 4096).build();
@@ -336,21 +124,6 @@ Si no hay evidencia, dilo y deja arrays vacíos.
 
             log.info("Received analysis response from ChatGPT");
             AnalysisResult result = parseAnalysisResponse(response);
-            
-            // Post-processing: Override ChatGPT decision if clear sale signals are detected
-            String saleSignal = detectSaleSignals(transcriptionText);
-            if (saleSignal != null && !result.isSaleCompleted()) {
-                log.info("Sale signal detected by keyword matching, overriding ChatGPT decision: {}", saleSignal);
-                result.setSaleCompleted(true);
-                result.setSaleStatus("SALE_CONFIRMED");
-                result.setSaleEvidence("Detectado por palabras clave: " + saleSignal);
-                result.setNoSaleReason(null);
-                // Aumentar confianza ya que es detección por palabras clave directa
-                if (result.getAnalysisConfidence() < 80) {
-                    result.setAnalysisConfidence(80);
-                }
-            }
-            
             return result;
 
         } catch (Exception e) {
@@ -359,53 +132,6 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         }
     }
     
-    /**
-     * Detects clear sale signals in the transcription text using keyword matching.
-     * This acts as a safety net when ChatGPT fails to detect obvious sales.
-     * @return The detected signal phrase, or null if no clear sale signal found
-     */
-    private String detectSaleSignals(String text) {
-        if (text == null) return null;
-        
-        String lowerText = text.toLowerCase()
-                .replace("ã¡", "a").replace("ã©", "e").replace("ã­", "i")
-                .replace("ã³", "o").replace("ãº", "u").replace("ã±", "n");
-        
-        // Phrases that ONLY appear when a sale is being processed
-        String[][] saleSignals = {
-            {"direccion de entrega", "dirección de entrega"},
-            {"nombre y apellido"},
-            {"te llega manana", "te llega mañana", "llegando manana", "llegando mañana"},
-            {"entregado para manana", "entregado para mañana"},
-            {"rango horario de"},
-            {"coordinamos el envio", "coordinamos el envío"},
-            {"sale del deposito", "sale del depósito"},
-            {"genero la factura"},
-            {"paso la tarjeta", "pasame la tarjeta"},
-            {"te queda en", "te quedaria en"}  // Price confirmation
-        };
-        
-        for (String[] signals : saleSignals) {
-            for (String signal : signals) {
-                if (lowerText.contains(signal)) {
-                    return signal;
-                }
-            }
-        }
-        
-        // Combined signals: if address AND tomorrow/delivery mentioned
-        boolean hasDeliveryMention = lowerText.contains("envio") || lowerText.contains("envío") || 
-                                     lowerText.contains("entrega") || lowerText.contains("domicilio");
-        boolean hasTomorrowMention = lowerText.contains("manana") || lowerText.contains("mañana");
-        boolean hasNameRequest = lowerText.contains("nombre") || lowerText.contains("apellido");
-        
-        if (hasDeliveryMention && hasTomorrowMention && hasNameRequest) {
-            return "Combinación: nombre + entrega + mañana";
-        }
-        
-        return null;
-    }
-
     private AnalysisResult parseAnalysisResponse(String response) {
         try {
             String cleanJson = response;
@@ -418,40 +144,146 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             }
 
             JsonNode root = objectMapper.readTree(cleanJson.trim());
+            boolean isNewSchema = root.has("experiencia_cliente")
+                    || root.has("analisis_contenido")
+                    || root.has("calidad_agente");
 
-            AnalysisResult result = new AnalysisResult();
-            result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
-            result.setSaleStatus(root.has("saleStatus") ? root.get("saleStatus").asText() : "NO_SALE");
-            result.setAnalysisConfidence(root.has("analysisConfidence") ? root.get("analysisConfidence").asInt() : 50);
-            
-            // Guardar confidenceTrace como JSON string
-            if (root.has("confidenceTrace") && !root.get("confidenceTrace").isNull()) {
-                result.setConfidenceTrace(root.get("confidenceTrace").toString());
+            if (!isNewSchema) {
+                return parseLegacySchema(root);
             }
-            
-            result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
-            
-            // Guardar saleEvidenceMeta como JSON string
-            if (root.has("saleEvidenceMeta") && !root.get("saleEvidenceMeta").isNull()) {
-                result.setSaleEvidenceMeta(root.get("saleEvidenceMeta").toString());
-            }
-            
-            result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull() 
-                    ? root.get("noSaleReason").asText() : null);
-            result.setProductsDiscussed(jsonArrayToList(root.get("productsDiscussed")));
-            result.setCustomerObjections(jsonArrayToList(root.get("customerObjections")));
-            result.setImprovementSuggestions(jsonArrayToList(root.get("improvementSuggestions")));
-            result.setExecutiveSummary(root.has("executiveSummary") ? root.get("executiveSummary").asText() : "");
-            result.setSellerScore(root.has("sellerScore") ? root.get("sellerScore").asInt() : 5);
-            result.setSellerStrengths(jsonArrayToList(root.get("sellerStrengths")));
-            result.setSellerWeaknesses(jsonArrayToList(root.get("sellerWeaknesses")));
-            result.setFollowUpRecommendation(root.has("followUpRecommendation") 
-                    ? root.get("followUpRecommendation").asText() : null);
-            return result;
+            return parseNewSchema(root);
 
         } catch (Exception e) {
             log.error("Error parsing analysis response: {}", e.getMessage());
             return createMockAnalysis();
+        }
+    }
+
+    private AnalysisResult parseLegacySchema(JsonNode root) {
+        AnalysisResult result = new AnalysisResult();
+        result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());
+        result.setSaleStatus(root.has("saleStatus") ? root.get("saleStatus").asText() : "NO_SALE");
+        result.setAnalysisConfidence(root.has("analysisConfidence") ? root.get("analysisConfidence").asInt() : 50);
+        if (root.has("confidenceTrace") && !root.get("confidenceTrace").isNull()) {
+            result.setConfidenceTrace(root.get("confidenceTrace").toString());
+        }
+        result.setSaleEvidence(root.has("saleEvidence") ? root.get("saleEvidence").asText() : null);
+        if (root.has("saleEvidenceMeta") && !root.get("saleEvidenceMeta").isNull()) {
+            result.setSaleEvidenceMeta(root.get("saleEvidenceMeta").toString());
+        }
+        result.setNoSaleReason(root.has("noSaleReason") && !root.get("noSaleReason").isNull()
+                ? root.get("noSaleReason").asText() : null);
+        result.setProductsDiscussed(jsonArrayToList(root.get("productsDiscussed")));
+        result.setCustomerObjections(jsonArrayToList(root.get("customerObjections")));
+        result.setImprovementSuggestions(jsonArrayToList(root.get("improvementSuggestions")));
+        result.setExecutiveSummary(root.has("executiveSummary") ? root.get("executiveSummary").asText() : "");
+        result.setSellerScore(root.has("sellerScore") ? root.get("sellerScore").asInt() : 5);
+        result.setSellerStrengths(jsonArrayToList(root.get("sellerStrengths")));
+        result.setSellerWeaknesses(jsonArrayToList(root.get("sellerWeaknesses")));
+        result.setFollowUpRecommendation(root.has("followUpRecommendation")
+                ? root.get("followUpRecommendation").asText() : null);
+        result.setAnalysisPayload(root.toString());
+        return result;
+    }
+
+    private AnalysisResult parseNewSchema(JsonNode root) throws JsonProcessingException {
+        JsonNode experiencia = root.path("experiencia_cliente");
+        JsonNode contenido = root.path("analisis_contenido");
+        JsonNode calidad = root.path("calidad_agente");
+
+        String solucion = normalizedText(calidad, "ofrece_solucion_concreta", "ofrece solución concreta");
+        String abandono = normalizedText(experiencia, "riesgo_abandono_baja", "riesgo de abandono o baja", "riesgo_abandono");
+        String friccionTipo = normalizedText(experiencia, "tipo_friccion_detectada", "tipo de fricción detectada");
+        String motivo = firstNonBlank(
+                text(contenido, "motivo_principal_contacto", "motivo principal de contacto"),
+                "Sin clasificar"
+        );
+        String categoria = firstNonBlank(
+                text(contenido, "categoria_general", "categoría general"),
+                "otro"
+        );
+
+        AnalysisResult result = new AnalysisResult();
+        boolean saleCompleted = "si".equals(solucion) || "sí".equals(solucion);
+        result.setSaleCompleted(saleCompleted);
+        if (saleCompleted) {
+            result.setSaleStatus("SALE_CONFIRMED");
+        } else if ("parcial".equals(solucion)) {
+            result.setSaleStatus("ADVANCE_NO_CLOSE");
+        } else if ("alto".equals(abandono)) {
+            result.setSaleStatus("NO_SALE");
+        } else {
+            result.setSaleStatus("SALE_LIKELY");
+        }
+
+        int sentimentScore = intValue(experiencia, 3, "score_sentimiento_general", "score de sentimiento general");
+        int qualityScore = intValue(calidad, 3, "score_general_calidad_agente", "score general de calidad del agente");
+        int confidence = Math.max(20, Math.min(100, 45 + (qualityScore * 8) + (sentimentScore * 4)));
+        result.setAnalysisConfidence(confidence);
+        result.setConfidenceTrace(createSimpleConfidenceTrace(confidence, sentimentScore, qualityScore, root));
+
+        List<String> fricciones = asStringList(experiencia, "tipo_friccion_detectada", "tipo de fricción detectada");
+        List<String> indicadoresFriccion = asStringList(experiencia, "indicadores_textuales_friccion", "indicadores textuales de fricción");
+        List<String> crisis = asStringList(contenido, "presencia_palabras_asociadas", "presencia de palabras asociadas");
+
+        result.setSaleEvidence(firstNonBlank(
+                firstString(indicadoresFriccion),
+                saleCompleted ? "Resolución concreta detectada por el modelo" : "Sin evidencia de resolución"
+        ));
+        result.setSaleEvidenceMeta("{}");
+        result.setNoSaleReason(categoria);
+
+        List<String> temas = new ArrayList<>();
+        temas.add(motivo);
+        String submotivo = text(contenido, "submotivo");
+        if (submotivo != null && !submotivo.isBlank()) temas.add(submotivo.trim());
+        String intencion = text(contenido, "intencion_comercial_detectada", "intención comercial detectada");
+        if (intencion != null && !intencion.isBlank()) temas.add("Intención: " + intencion.trim());
+        result.setProductsDiscussed(temas);
+
+        List<String> objections = new ArrayList<>();
+        objections.addAll(indicadoresFriccion);
+        objections.addAll(crisis);
+        result.setCustomerObjections(objections);
+
+        List<String> improvements = new ArrayList<>();
+        if (!fricciones.isEmpty()) {
+            improvements.add("Reducir fricción: " + String.join(", ", fricciones));
+        }
+        String claridad = normalizedText(calidad, "claridad_explicaciones", "claridad en las explicaciones");
+        if ("baja".equals(claridad)) improvements.add("Mejorar claridad de explicación");
+        String empatia = normalizedText(calidad, "muestra_empatia", "muestra empatía");
+        if ("baja".equals(empatia)) improvements.add("Incrementar empatía en la atención");
+        result.setImprovementSuggestions(improvements);
+
+        result.setExecutiveSummary(buildExecutiveSummary(experiencia, contenido, calidad));
+        result.setSellerScore(Math.max(1, Math.min(10, qualityScore * 2)));
+        result.setSellerStrengths(buildStrengths(calidad));
+        result.setSellerWeaknesses(buildWeaknesses(calidad));
+        result.setFollowUpRecommendation(firstNonBlank(
+                text(experiencia, "probabilidad_recontacto", "probabilidad de recontacto"),
+                text(contenido, "requirio_escalamiento", "requirió escalamiento"),
+                "Revisar seguimiento de este caso"
+        ));
+        result.setAnalysisPayload(objectMapper.writeValueAsString(root));
+        return result;
+    }
+
+    private String createSimpleConfidenceTrace(int confidence, int sentimentScore, int qualityScore, JsonNode root) {
+        try {
+            return objectMapper.writeValueAsString(java.util.Map.of(
+                    "methodVersion", "cx_prompt_v1",
+                    "confidence", confidence,
+                    "inputs", java.util.Map.of(
+                            "sentimentScore", sentimentScore,
+                            "agentQualityScore", qualityScore,
+                            "hasExperiencia", root.has("experiencia_cliente"),
+                            "hasContenido", root.has("analisis_contenido"),
+                            "hasCalidad", root.has("calidad_agente")
+                    )
+            ));
+        } catch (Exception e) {
+            return "{}";
         }
     }
 
@@ -463,6 +295,133 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             }
         }
         return list;
+    }
+
+    private List<String> asStringList(JsonNode parent, String... keys) {
+        if (parent == null || parent.isMissingNode() || keys == null) return Collections.emptyList();
+        for (String key : keys) {
+            if (!parent.has(key) || parent.get(key).isNull()) continue;
+            JsonNode node = parent.get(key);
+            if (node.isArray()) {
+                List<String> list = new ArrayList<>();
+                for (JsonNode item : node) {
+                    if (item != null && !item.isNull()) {
+                        String value = item.asText("").trim();
+                        if (!value.isEmpty()) list.add(value);
+                    }
+                }
+                return list;
+            }
+            if (node.isObject()) {
+                List<String> list = new ArrayList<>();
+                node.fields().forEachRemaining(entry -> {
+                    if (entry.getValue().asBoolean(false)) {
+                        list.add(entry.getKey());
+                    }
+                });
+                if (!list.isEmpty()) return list;
+            }
+            String text = node.asText("").trim();
+            if (!text.isEmpty()) return List.of(text);
+        }
+        return Collections.emptyList();
+    }
+
+    private int intValue(JsonNode parent, int fallback, String... keys) {
+        for (String key : keys) {
+            if (parent.has(key) && parent.get(key).isNumber()) {
+                return parent.get(key).asInt(fallback);
+            }
+            if (parent.has(key) && parent.get(key).isTextual()) {
+                try {
+                    return Integer.parseInt(parent.get(key).asText().trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return fallback;
+    }
+
+    private String normalizedText(JsonNode parent, String... keys) {
+        String value = text(parent, keys);
+        if (value == null) return null;
+        String normalized = value.toLowerCase()
+                .replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u");
+        return normalized.trim();
+    }
+
+    private String text(JsonNode parent, String... keys) {
+        if (parent == null || parent.isMissingNode() || keys == null) return null;
+        for (String key : keys) {
+            if (parent.has(key) && !parent.get(key).isNull()) {
+                String value = parent.get(key).asText();
+                if (value != null && !value.isBlank()) return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String firstString(List<String> values) {
+        if (values == null || values.isEmpty()) return null;
+        return values.get(0);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) return null;
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return null;
+    }
+
+    private String buildExecutiveSummary(JsonNode experiencia, JsonNode contenido, JsonNode calidad) {
+        String motivo = firstNonBlank(
+                text(contenido, "motivo_principal_contacto", "motivo principal de contacto"),
+                "consulta general"
+        );
+        String categoria = firstNonBlank(text(contenido, "categoria_general", "categoría general"), "otro");
+        String solucion = firstNonBlank(text(calidad, "ofrece_solucion_concreta", "ofrece solución concreta"), "no informado");
+        String sentimientoFinal = firstNonBlank(text(experiencia, "sentimiento_final_cliente", "sentimiento final del cliente"), "no definido");
+        return String.format(
+                "El caso se clasifica como %s con motivo principal '%s'. El agente ofrece solución: %s. El sentimiento final del ciudadano se interpreta como %s.",
+                categoria, motivo, solucion, sentimientoFinal
+        );
+    }
+
+    private List<String> buildStrengths(JsonNode calidad) {
+        List<String> strengths = new ArrayList<>();
+        if ("si".equals(normalizedText(calidad, "agente_saluda_correctamente", "el agente saluda correctamente"))) {
+            strengths.add("Saludo correcto");
+        }
+        if ("si".equals(normalizedText(calidad, "se_identifica", "se identifica"))) {
+            strengths.add("Se identifica correctamente");
+        }
+        String empatia = normalizedText(calidad, "muestra_empatia", "muestra empatía");
+        if ("alta".equals(empatia) || "media".equals(empatia)) strengths.add("Buen nivel de empatía");
+        String claridad = normalizedText(calidad, "claridad_explicaciones", "claridad en las explicaciones");
+        if ("alta".equals(claridad) || "media".equals(claridad)) strengths.add("Claridad en las explicaciones");
+        if (strengths.isEmpty()) strengths.add("Sin fortalezas explícitas detectables");
+        return strengths;
+    }
+
+    private List<String> buildWeaknesses(JsonNode calidad) {
+        List<String> weaknesses = new ArrayList<>();
+        if ("no".equals(normalizedText(calidad, "agente_saluda_correctamente", "el agente saluda correctamente"))) {
+            weaknesses.add("No realiza saludo formal");
+        }
+        if ("no".equals(normalizedText(calidad, "se_identifica", "se identifica"))) {
+            weaknesses.add("No se identifica");
+        }
+        if ("si".equals(normalizedText(calidad, "uso_excesivo_tecnicismos", "uso excesivo de tecnicismos"))) {
+            weaknesses.add("Uso excesivo de tecnicismos");
+        }
+        String claridad = normalizedText(calidad, "claridad_explicaciones", "claridad en las explicaciones");
+        if ("baja".equals(claridad)) weaknesses.add("Baja claridad al explicar");
+        if (weaknesses.isEmpty()) weaknesses.add("Sin debilidades críticas detectables");
+        return weaknesses;
     }
 
     private AnalysisResult createMockAnalysis() {
@@ -480,6 +439,7 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         result.setSellerStrengths(new ArrayList<>());
         result.setSellerWeaknesses(new ArrayList<>());
         result.setFollowUpRecommendation("Pendiente de análisis");
+        result.setAnalysisPayload("{}");
         return result;
     }
 }

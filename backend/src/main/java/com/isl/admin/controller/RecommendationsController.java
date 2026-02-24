@@ -1,6 +1,7 @@
 package com.isl.admin.controller;
 
 import com.isl.admin.service.AdvancedAnalyzerService;
+import com.isl.admin.service.TranscriptionService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,9 +16,11 @@ import java.util.Map;
 public class RecommendationsController {
     
     private final AdvancedAnalyzerService advancedAnalyzerService;
+    private final TranscriptionService transcriptionService;
     
-    public RecommendationsController(AdvancedAnalyzerService advancedAnalyzerService) {
+    public RecommendationsController(AdvancedAnalyzerService advancedAnalyzerService, TranscriptionService transcriptionService) {
         this.advancedAnalyzerService = advancedAnalyzerService;
+        this.transcriptionService = transcriptionService;
     }
     
     /**

@@ -22,11 +22,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401/403 responses (unauthorized/forbidden - token expired or invalid)
+// Solo cerrar sesión en 401 (token inválido/vencido).
+// Un 403 puede ser simplemente falta de permisos en un endpoint específico.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -94,6 +95,9 @@ export const searchTranscriptions = (query, filters = {}) => {
 
 // Sync (timeout 5 min por si hay muchas grabaciones)
 export const syncTranscriptions = () => api.post('/sync', {}, { timeout: 300000 });
+// Auto-sync al entrar: timeout corto para no bloquear UI.
+export const autoSyncTranscriptions = () => api.post('/sync', {}, { timeout: 25000 });
+export const resetAllAnalysisData = () => api.post('/sync/analysis/reset');
 
 // Filters data
 export const getSellers = () => api.get('/sellers');

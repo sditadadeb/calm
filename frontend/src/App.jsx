@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transcriptions from './pages/Transcriptions';
@@ -15,7 +16,7 @@ import Search from './pages/Search';
 function App() {
   return (
     <ThemeProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           {/* Public route */}
           <Route path="/login" element={<Login />} />
@@ -31,8 +32,8 @@ function App() {
                   <Route path="/search" element={<Search />} />
                   <Route path="/sellers" element={<Sellers />} />
                   <Route path="/branches" element={<Branches />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/users" element={<AdminRoute><Users /></AdminRoute>} />
+                  <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
                 </Routes>
               </Layout>
             </PrivateRoute>

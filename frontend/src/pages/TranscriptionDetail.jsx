@@ -104,7 +104,7 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
       
       <button
         onClick={togglePlay}
-        className="p-3 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white transition-colors"
+        className="p-3 rounded-full bg-[#004F9F] hover:bg-[#003A79] text-white transition-colors"
       >
         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
       </button>
@@ -118,11 +118,11 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
         onClick={handleSeek}
       >
         <div 
-          className="h-full bg-[#EF4444] rounded-full"
+          className="h-full bg-[#004F9F] rounded-full"
           style={{ width: `${progress}%` }}
         />
         <div 
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#EF4444]"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#004F9F]"
           style={{ left: `calc(${progress}% - 8px)` }}
         />
       </div>
@@ -138,7 +138,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getTranscription, getAudioUrl, getAudioStreamUrl } from '../api';
 
 
-// Resultado de llamada (calidad ISL)
+// Resultado de llamada (calidad de atención)
 const RESULTADO_LLAMADA_CONFIG = {
   resuelto: { label: 'Resuelto', icon: CheckCircle, bgClass: 'bg-green-500/20', textClass: 'text-green-400' },
   parcial: { label: 'Parcial', icon: TrendingUp, bgClass: 'bg-yellow-500/20', textClass: 'text-yellow-400' },
@@ -343,7 +343,7 @@ export default function TranscriptionDetail() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#EF4444] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripción...</p>
         </div>
       </div>
@@ -358,7 +358,7 @@ export default function TranscriptionDetail() {
           <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || 'Transcripción no encontrada'}</p>
           <button
             onClick={() => navigate('/transcriptions')}
-            className="mt-4 px-4 py-2 bg-[#EF4444] text-white rounded-lg hover:opacity-90"
+            className="mt-4 px-4 py-2 bg-[#004F9F] text-white rounded-lg hover:opacity-90"
           >
             Volver al listado
           </button>
@@ -375,6 +375,9 @@ export default function TranscriptionDetail() {
   try {
     if (t.analysisPayload) payloadData = JSON.parse(t.analysisPayload);
   } catch (_) {}
+  const experienciaCliente = payloadData?.experiencia_cliente || null;
+  const analisisContenido = payloadData?.analisis_contenido || null;
+  const calidadAgente = payloadData?.calidad_agente || null;
 
   // Normalizar textos que vienen de la IA para no mostrar lenguaje de ventas
   const forDisplay = (str) => {
@@ -398,7 +401,7 @@ export default function TranscriptionDetail() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/transcriptions')}
-          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#EF4444]' : 'text-gray-500 hover:text-[#EF4444]'}`}
+          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#004F9F]' : 'text-gray-500 hover:text-[#004F9F]'}`}
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al listado
@@ -453,7 +456,7 @@ export default function TranscriptionDetail() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xl font-bold text-[#EF4444]">{t.recordingId}</span>
+              <span className="font-mono text-xl font-bold text-[#004F9F]">{t.recordingId}</span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                 <StatusIcon className="w-4 h-4" /> {statusConfig.label}
               </span>
@@ -507,7 +510,7 @@ export default function TranscriptionDetail() {
             )}
           </div>
         </div>
-        {/* Motivo y resultado calidad ISL */}
+        {/* Motivo y resultado de atención */}
         {(t.motivoPrincipal || t.resultadoLlamada) && (
           <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
             <div className="flex flex-wrap gap-4">
@@ -546,7 +549,7 @@ export default function TranscriptionDetail() {
             </div>
             <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
               <div 
-                className="h-full bg-[#EF4444] transition-all duration-300"
+                className="h-full bg-[#004F9F] transition-all duration-300"
                 style={{ width: `${audioProgress}%` }}
               />
             </div>
@@ -567,11 +570,42 @@ export default function TranscriptionDetail() {
 
       {/* Analysis Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {(experienciaCliente || analisisContenido || calidadAgente) && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>Análisis estructurado CX</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Experiencia Cliente</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Sentimiento inicial: {experienciaCliente?.sentimiento_inicial_cliente || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Sentimiento final: {experienciaCliente?.sentimiento_final_cliente || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Score sentimiento: {experienciaCliente?.score_sentimiento_general ?? '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Fricción: {String(experienciaCliente?.evidencia_friccion ?? '-')}</p>
+              </div>
+
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Contenido</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Motivo: {analisisContenido?.motivo_principal_contacto || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Submotivo: {analisisContenido?.submotivo || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Categoría: {analisisContenido?.categoria_general || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Complejidad: {analisisContenido?.nivel_complejidad_caso || '-'}</p>
+              </div>
+
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Calidad Agente</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Empatía: {calidadAgente?.muestra_empatia || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Claridad: {calidadAgente?.claridad_explicaciones || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Solución concreta: {calidadAgente?.ofrece_solucion_concreta || '-'}</p>
+                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Score calidad: {calidadAgente?.score_general_calidad_agente ?? '-'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Executive Summary */}
         {t.executiveSummary && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#EF4444] rounded-lg">
+              <div className="p-2 bg-[#004F9F] rounded-lg">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen Ejecutivo</h3>
@@ -580,7 +614,7 @@ export default function TranscriptionDetail() {
           </div>
         )}
 
-        {/* Evidencia resultado (calidad ISL o legacy saleEvidence) */}
+        {/* Evidencia resultado (atención o legacy saleEvidence) */}
         {(t.evidenciaResultado || t.saleEvidence) && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${
             t.resultadoLlamada === 'resuelto' || t.saleCompleted
@@ -603,11 +637,11 @@ export default function TranscriptionDetail() {
           </div>
         )}
 
-        {/* Insights desde analysisPayload (calidad ISL) */}
+        {/* Insights desde analysisPayload (calidad de atención) */}
         {payloadData && (payloadData.resumenEjecutivo || (payloadData.insightsAccionables && payloadData.insightsAccionables.length)) && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#EF4444] rounded-lg">
+              <div className="p-2 bg-[#004F9F] rounded-lg">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen e insights</h3>
@@ -619,7 +653,7 @@ export default function TranscriptionDetail() {
               <ul className="space-y-2">
                 {payloadData.insightsAccionables.map((insight, i) => (
                   <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                    <span className="text-[#EF4444] mt-1">•</span>
+                    <span className="text-[#004F9F] mt-1">•</span>
                     {insight}
                   </li>
                 ))}
@@ -749,24 +783,6 @@ export default function TranscriptionDetail() {
           </div>
         )}
 
-        {/* Improvement Suggestions */}
-        {t.improvementSuggestions && t.improvementSuggestions.length > 0 && t.improvementSuggestions[0] !== '' && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500 rounded-lg">
-                <Lightbulb className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>Sugerencias de Mejora</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {t.improvementSuggestions.map((s, i) => (
-                <div key={i} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-amber-800/50' : 'bg-white border-amber-200'}`}>
-                  <p className={isDark ? 'text-slate-300' : 'text-gray-700'}>{forDisplay(s)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Full Transcription */}

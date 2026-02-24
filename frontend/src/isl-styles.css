@@ -1,14 +1,14 @@
-/* ISL Styles - Instituto de Seguridad Laboral (isl.gob.cl) */
+/* Carrefour branding styles */
 
 :root {
-  --ph-survey-font-family: "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --isl-primary: #EF4444;
-  --isl-primary-dark: #DC2626;
+  --ph-survey-font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --carrefour-primary: #004F9F;
+  --carrefour-primary-dark: #003A79;
 }
 
 /* Base styles */
 * {
-  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-family: "Montserrat", Arial, sans-serif;
 }
 
 /* Carousel styles */
@@ -277,15 +277,15 @@
   opacity: 1;
 }
 
-/* ISL Button styles */
+/* Carrefour button styles */
 .realizar-pedido {
-  background: #EF4444 !important;
+  background: #004F9F !important;
 }
 
 .btn-isl {
   border-radius: 30px;
   padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, #EF4444, #DC2626);
+  background: linear-gradient(135deg, #004F9F, #003A79);
   color: white;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -293,10 +293,10 @@
 
 .btn-isl:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 162, 3, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 79, 159, 0.35);
 }
 
-/* Custom scrollbar - ISL style */
+/* Custom scrollbar - Carrefour style */
 @media (min-width: 1024px) {
   ::-webkit-scrollbar {
     width: 7px;
@@ -309,10 +309,10 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #EF4444;
+    background: #004F9F;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #DC2626;
+    background: #003A79;
   }
 }

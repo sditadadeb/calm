@@ -19,6 +19,7 @@ public class AnalysisResult {
     private List<String> sellerStrengths;
     private List<String> sellerWeaknesses;
     private String followUpRecommendation;
+    private String analysisPayload;
 
     public AnalysisResult() {}
 
@@ -66,4 +67,7 @@ public class AnalysisResult {
 
     public String getFollowUpRecommendation() { return followUpRecommendation; }
     public void setFollowUpRecommendation(String followUpRecommendation) { this.followUpRecommendation = followUpRecommendation; }
+
+    public String getAnalysisPayload() { return analysisPayload; }
+    public void setAnalysisPayload(String analysisPayload) { this.analysisPayload = analysisPayload; }
 }

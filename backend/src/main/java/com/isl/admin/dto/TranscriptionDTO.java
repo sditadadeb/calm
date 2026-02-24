@@ -18,13 +18,17 @@ public class TranscriptionDTO {
     private String saleEvidence;
     private String saleEvidenceMeta;
     private String noSaleReason;
+    private String motivoPrincipal;
+    private String resultadoLlamada;
     private List<String> productsDiscussed;
     private List<String> customerObjections;
     private List<String> improvementSuggestions;
+    private String followUpRecommendation;
     private String executiveSummary;
     private Integer sellerScore;
     private List<String> sellerStrengths;
     private List<String> sellerWeaknesses;
+    private String analysisPayload;
     private LocalDateTime recordingDate;
     private LocalDateTime analyzedAt;
     private Boolean analyzed;
@@ -70,6 +74,12 @@ public class TranscriptionDTO {
     public String getNoSaleReason() { return noSaleReason; }
     public void setNoSaleReason(String noSaleReason) { this.noSaleReason = noSaleReason; }
 
+    public String getMotivoPrincipal() { return motivoPrincipal; }
+    public void setMotivoPrincipal(String motivoPrincipal) { this.motivoPrincipal = motivoPrincipal; }
+
+    public String getResultadoLlamada() { return resultadoLlamada; }
+    public void setResultadoLlamada(String resultadoLlamada) { this.resultadoLlamada = resultadoLlamada; }
+
     public List<String> getProductsDiscussed() { return productsDiscussed; }
     public void setProductsDiscussed(List<String> productsDiscussed) { this.productsDiscussed = productsDiscussed; }
 
@@ -78,6 +88,9 @@ public class TranscriptionDTO {
 
     public List<String> getImprovementSuggestions() { return improvementSuggestions; }
     public void setImprovementSuggestions(List<String> improvementSuggestions) { this.improvementSuggestions = improvementSuggestions; }
+
+    public String getFollowUpRecommendation() { return followUpRecommendation; }
+    public void setFollowUpRecommendation(String followUpRecommendation) { this.followUpRecommendation = followUpRecommendation; }
 
     public String getExecutiveSummary() { return executiveSummary; }
     public void setExecutiveSummary(String executiveSummary) { this.executiveSummary = executiveSummary; }
@@ -90,6 +103,9 @@ public class TranscriptionDTO {
 
     public List<String> getSellerWeaknesses() { return sellerWeaknesses; }
     public void setSellerWeaknesses(List<String> sellerWeaknesses) { this.sellerWeaknesses = sellerWeaknesses; }
+
+    public String getAnalysisPayload() { return analysisPayload; }
+    public void setAnalysisPayload(String analysisPayload) { this.analysisPayload = analysisPayload; }
 
     public LocalDateTime getRecordingDate() { return recordingDate; }
     public void setRecordingDate(LocalDateTime recordingDate) { this.recordingDate = recordingDate; }

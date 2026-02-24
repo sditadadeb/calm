@@ -15,6 +15,11 @@ public class DashboardMetricsDTO {
     private List<BranchMetrics> branchMetrics;
     private List<SellerMetrics> sellerMetrics;
     private Map<String, Long> noSaleReasons;
+    private Map<String, Long> callReasons;
+    private Map<String, Long> nextSteps;
+    private Map<String, Object> cxMetrics;
+    private double customerSatisfaction;
+    private List<BranchSatisfaction> customerSatisfactionByBranch;
     private Map<String, Long> commonObjections;
     private Map<String, Long> popularProducts;
 
@@ -49,6 +54,21 @@ public class DashboardMetricsDTO {
 
     public Map<String, Long> getNoSaleReasons() { return noSaleReasons; }
     public void setNoSaleReasons(Map<String, Long> noSaleReasons) { this.noSaleReasons = noSaleReasons; }
+
+    public Map<String, Long> getCallReasons() { return callReasons; }
+    public void setCallReasons(Map<String, Long> callReasons) { this.callReasons = callReasons; }
+
+    public Map<String, Long> getNextSteps() { return nextSteps; }
+    public void setNextSteps(Map<String, Long> nextSteps) { this.nextSteps = nextSteps; }
+
+    public Map<String, Object> getCxMetrics() { return cxMetrics; }
+    public void setCxMetrics(Map<String, Object> cxMetrics) { this.cxMetrics = cxMetrics; }
+
+    public double getCustomerSatisfaction() { return customerSatisfaction; }
+    public void setCustomerSatisfaction(double customerSatisfaction) { this.customerSatisfaction = customerSatisfaction; }
+
+    public List<BranchSatisfaction> getCustomerSatisfactionByBranch() { return customerSatisfactionByBranch; }
+    public void setCustomerSatisfactionByBranch(List<BranchSatisfaction> customerSatisfactionByBranch) { this.customerSatisfactionByBranch = customerSatisfactionByBranch; }
 
     public Map<String, Long> getCommonObjections() { return commonObjections; }
     public void setCommonObjections(Map<String, Long> commonObjections) { this.commonObjections = commonObjections; }
@@ -132,5 +152,26 @@ public class DashboardMetricsDTO {
 
         public List<String> getAreasToImprove() { return areasToImprove; }
         public void setAreasToImprove(List<String> areasToImprove) { this.areasToImprove = areasToImprove; }
+    }
+
+    public static class BranchSatisfaction {
+        private Long branchId;
+        private String branchName;
+        private double satisfaction;
+        private long totalInteractions;
+
+        public BranchSatisfaction() {}
+
+        public Long getBranchId() { return branchId; }
+        public void setBranchId(Long branchId) { this.branchId = branchId; }
+
+        public String getBranchName() { return branchName; }
+        public void setBranchName(String branchName) { this.branchName = branchName; }
+
+        public double getSatisfaction() { return satisfaction; }
+        public void setSatisfaction(double satisfaction) { this.satisfaction = satisfaction; }
+
+        public long getTotalInteractions() { return totalInteractions; }
+        public void setTotalInteractions(long totalInteractions) { this.totalInteractions = totalInteractions; }
     }
 }

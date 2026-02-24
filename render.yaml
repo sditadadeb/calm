@@ -1,29 +1,35 @@
-# Render Blueprint - ISL Admin (con PostgreSQL)
-# Conectar repo desde GitHub y usar branch ISL
+# Render Blueprint - Carrefour Banco Analytics (PostgreSQL)
+# Conectar repo desde GitHub y usar branch carrefour
 databases:
-  - name: isl-db
-    databaseName: isl_admin
-    user: isl_admin
+  - name: carrefour-db
+    databaseName: carrefour_admin
+    user: carrefour_admin
     plan: free
 
 services:
   - type: web
-    name: isl-admin-api
+    name: carrefour-admin-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: isl-db
+          name: carrefour-db
           property: connectionString
       - key: SPRING_JPA_DATABASE_PLATFORM
         value: org.hibernate.dialect.PostgreSQLDialect
       - key: JWT_SECRET
         generateValue: true
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: ADMIN_USERNAME
         value: Admin
       - key: ADMIN_PASSWORD
+        sync: false
+      - key: VIEWER_USERNAME
+        value: viewer
+      - key: VIEWER_PASSWORD
         sync: false
       - key: AWS_S3_METADATA_ACCESS_KEY
         sync: false
@@ -36,27 +42,29 @@ services:
       - key: AWS_REGION
         value: us-east-1
       - key: AWS_METADATA_BUCKET
-        value: isl-grabaciones
+        value: carrefour-grabaciones
       - key: AWS_TRANSCRIPTIONS_BUCKET
-        value: isl-grabaciones
+        value: carrefour-grabaciones
       - key: AWS_METADATA_PREFIX
-        sync: false
+        value: 48100171/
       - key: AWS_TRANSCRIPTIONS_PREFIX
-        sync: false
+        value: 48100171/
       - key: AWS_TRANSCRIPTIONS_ID_PREFIX
-        sync: false
+        value: ""
       - key: AWS_TRANSCRIPTIONS_ID_SUFFIX
-        sync: false
+        value: /transcripcion.json
       - key: AWS_METADATA_AUDIO_SUFFIX
-        sync: false
+        value: /archive.mp4
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.2
       - key: CORS_ALLOWED_ORIGINS
         sync: false
     healthCheckPath: /actuator/health
 
   - type: web
-    name: isl-admin-frontend
+    name: carrefour-admin-frontend
     runtime: static
     rootDir: ./frontend
     buildCommand: npm install && npm run build

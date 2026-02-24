@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --isl-primary: #EF4444;
-  --isl-secondary: #DC2626;
-  --isl-dark: #B91C1C;
+  --carrefour-primary: #004F9F;
+  --carrefour-secondary: #E30613;
+  --carrefour-dark: #003A79;
 }
 
 * {
@@ -15,7 +15,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
 }
 
@@ -28,8 +28,8 @@ body:not(.dark) {
 /* Dark mode body */
 .dark body,
 body.dark {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: #000000;
+  color: #ffffff;
 }
 
 /* Custom scrollbar */
@@ -44,7 +44,7 @@ body.dark {
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #111111;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -53,11 +53,11 @@ body.dark {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #3f3f46;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #EF4444;
+  background: #004F9F;
 }
 
 /* Animations */
@@ -81,7 +81,7 @@ body.dark {
 
 /* Button styles */
 .btn-primary {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  background: linear-gradient(135deg, #004F9F 0%, #003A79 100%);
   color: white;
   font-weight: 600;
   padding: 12px 24px;
@@ -90,12 +90,12 @@ body.dark {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 79, 159, 0.35);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 79, 159, 0.45);
 }
 
 .btn-primary:disabled {
@@ -117,7 +117,7 @@ body.dark {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #EF4444;
+  border-bottom: 2px solid #004F9F;
 }
 
 .data-table tbody tr {
@@ -142,7 +142,7 @@ body.dark {
 
 .dark .data-table thead th {
   color: #94a3b8;
-  border-bottom: 2px solid #EF4444;
+  border-bottom: 2px solid #004F9F;
 }
 
 .dark .data-table tbody tr {
@@ -173,7 +173,7 @@ body.dark {
   height: 100%;
   border-radius: 4px;
   transition: width 0.5s ease;
-  background: linear-gradient(90deg, #EF4444, #DC2626);
+  background: linear-gradient(90deg, #004F9F, #003A79);
 }
 
 /* Sale status badges */
@@ -207,8 +207,8 @@ body.dark {
 }
 
 .tag-primary {
-  background: rgba(239, 68, 68, 0.2);
-  color: #EF4444;
+  background: rgba(0, 79, 159, 0.16);
+  color: #004F9F;
 }
 
 .tag-success {
@@ -217,8 +217,8 @@ body.dark {
 }
 
 .tag-danger {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background: rgba(227, 6, 19, 0.18);
+  color: #E30613;
 }
 
 .tag-warning {
@@ -228,7 +228,7 @@ body.dark {
 
 /* Ranking badges */
 .rank-badge-1 {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  background: linear-gradient(135deg, #004F9F 0%, #003A79 100%);
   color: white;
 }
 

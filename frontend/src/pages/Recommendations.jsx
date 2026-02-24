@@ -1171,11 +1171,11 @@ export default function Recommendations() {
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between text-sm mb-2">
             <span className={isDark ? 'text-slate-300' : 'text-gray-600'}>{analysisProgress.message}</span>
-            <span className="font-medium text-[#EF4444]">{analysisProgress.percent}%</span>
+            <span className="font-medium text-[#004F9F]">{analysisProgress.percent}%</span>
           </div>
           <div className={`w-full rounded-full h-2 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
             <div 
-              className="bg-gradient-to-r from-[#EF4444] to-[#DC2626] h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-[#004F9F] to-[#003A79] h-2 rounded-full transition-all duration-300"
               style={{ width: `${analysisProgress.percent}%` }}
             />
           </div>
