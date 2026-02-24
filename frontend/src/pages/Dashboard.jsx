@@ -50,41 +50,6 @@ export default function Dashboard() {
     fetchTranscriptions();
   }, [fetchDashboardMetrics, fetchTranscriptions]);
 
-  if (loading && !dashboardMetrics) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando datos...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!dashboardMetrics) {
-    return (
-      <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-gray-100'}`}>
-          <FileText className="w-8 h-8 text-[#004F9F]" />
-        </div>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Sin datos disponibles</h3>
-        <p className={isDark ? 'text-zinc-400' : 'text-gray-500'}>Sincroniza desde S3 para comenzar</p>
-      </div>
-    );
-  }
-
-  const { 
-    totalTranscriptions, 
-    totalSales, 
-    totalNoSales, 
-    conversionRate,
-    averageSellerScore,
-    sellerMetrics,
-    branchMetrics,
-    noSaleReasons,
-    cxMetrics
-  } = dashboardMetrics;
-
   const computedCxMetrics = useMemo(() => {
     const analyzed = (transcriptions || []).filter((t) => t?.analysisPayload);
     if (analyzed.length === 0) return null;
@@ -176,6 +141,41 @@ export default function Dashboard() {
       topMotivosContacto: topMotivosSorted,
     };
   }, [transcriptions]);
+
+  if (loading && !dashboardMetrics) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardMetrics) {
+    return (
+      <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-gray-100'}`}>
+          <FileText className="w-8 h-8 text-[#004F9F]" />
+        </div>
+        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Sin datos disponibles</h3>
+        <p className={isDark ? 'text-zinc-400' : 'text-gray-500'}>Sincroniza desde S3 para comenzar</p>
+      </div>
+    );
+  }
+
+  const { 
+    totalTranscriptions, 
+    totalSales, 
+    totalNoSales, 
+    conversionRate,
+    averageSellerScore,
+    sellerMetrics,
+    branchMetrics,
+    noSaleReasons,
+    cxMetrics
+  } = dashboardMetrics;
 
   const effectiveCxMetrics = cxMetrics || computedCxMetrics || {};
   const sentimentAvg = effectiveCxMetrics.averageSentimentScore ?? 0;
