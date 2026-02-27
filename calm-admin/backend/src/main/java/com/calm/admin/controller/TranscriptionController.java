@@ -3,6 +3,8 @@ package com.calm.admin.controller;
 import com.calm.admin.dto.DashboardMetricsDTO;
 import com.calm.admin.dto.FilterDTO;
 import com.calm.admin.dto.TranscriptionDTO;
+import com.calm.admin.model.TranscriptionComment;
+import com.calm.admin.repository.TranscriptionCommentRepository;
 import com.calm.admin.service.S3Service;
 import com.calm.admin.service.TranscriptionService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,14 +12,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -25,13 +31,15 @@ public class TranscriptionController {
 
     private final TranscriptionService transcriptionService;
     private final S3Service s3Service;
+    private final TranscriptionCommentRepository commentRepository;
     
-    // Only allow alphanumeric recording IDs (prevent path traversal)
     private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
 
-    public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service) {
+    public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
+                                   TranscriptionCommentRepository commentRepository) {
         this.transcriptionService = transcriptionService;
         this.s3Service = s3Service;
+        this.commentRepository = commentRepository;
     }
 
     @GetMapping("/dashboard")
@@ -287,67 +295,5 @@ public class TranscriptionController {
         if (!VALID_RECORDING_ID.matcher(recordingId).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recording ID inválido");
         }
-    }
-
-    // ===== COMMENTS =====
-
-    @GetMapping("/transcriptions/{recordingId}/comments")
-    public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String recordingId) {
-        validateRecordingId(recordingId);
-        List<Map<String, Object>> comments = commentRepository
-                .findByRecordingIdOrderByCreatedAtAsc(recordingId)
-                .stream()
-                .map(c -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("id", c.getId());
-                    m.put("authorUsername", c.getAuthorUsername());
-                    m.put("content", c.getContent());
-                    m.put("createdAt", c.getCreatedAt());
-                    return m;
-                })
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(comments);
-    }
-
-    @PostMapping("/transcriptions/{recordingId}/comments")
-    public ResponseEntity<Map<String, Object>> addComment(
-            @PathVariable String recordingId,
-            @RequestBody Map<String, String> request) {
-        validateRecordingId(recordingId);
-
-        String content = request.get("content");
-        if (content == null || content.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario no puede estar vacío");
-        }
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-
-        TranscriptionComment comment = new TranscriptionComment();
-        comment.setRecordingId(recordingId);
-        comment.setAuthorUsername(username);
-        comment.setContent(content.trim());
-        commentRepository.save(comment);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", comment.getId());
-        response.put("authorUsername", comment.getAuthorUsername());
-        response.put("content", comment.getContent());
-        response.put("createdAt", comment.getCreatedAt());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @DeleteMapping("/transcriptions/{recordingId}/comments/{commentId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> deleteComment(
-            @PathVariable String recordingId,
-            @PathVariable Long commentId) {
-        validateRecordingId(recordingId);
-        TranscriptionComment comment = commentRepository.findById(commentId).orElse(null);
-        if (comment == null || !comment.getRecordingId().equals(recordingId)) {
-            return ResponseEntity.notFound().build();
-        }
-        commentRepository.delete(comment);
-        return ResponseEntity.ok(Map.of("message", "Comentario eliminado"));
     }
 }

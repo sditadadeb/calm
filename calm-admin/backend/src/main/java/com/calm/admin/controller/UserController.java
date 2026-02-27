@@ -44,6 +44,8 @@ public class UserController {
                     dto.put("enabled", user.getEnabled());
                     dto.put("createdAt", user.getCreatedAt());
                     dto.put("lastLogin", user.getLastLogin());
+                    dto.put("sellerId", user.getSellerId());
+                    dto.put("sellerName", user.getSellerName());
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -51,17 +53,13 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * Crea un nuevo usuario (solo ADMIN)
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> createUser(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String password = request.get("password");
-        String role = request.getOrDefault("role", "USER");
+    public ResponseEntity<?> createUser(@RequestBody Map<String, Object> request) {
+        String username = (String) request.get("username");
+        String password = (String) request.get("password");
+        String role = request.get("role") != null ? (String) request.get("role") : "USER";
 
-        // Validaciones
         if (username == null || username.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "El nombre de usuario es requerido"));
         }
@@ -72,7 +70,6 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "El nombre de usuario ya existe"));
         }
 
-        // Validar rol
         if (!role.equals("ADMIN") && !role.equals("USER") && !role.equals("VIEWER")) {
             role = "USER";
         }
@@ -83,8 +80,17 @@ public class UserController {
         user.setRole(role);
         user.setEnabled(true);
 
+        Object sellerIdObj = request.get("sellerId");
+        if (sellerIdObj instanceof Number) {
+            user.setSellerId(((Number) sellerIdObj).longValue());
+            user.setSellerName((String) request.get("sellerName"));
+        } else if (sellerIdObj instanceof String && !((String) sellerIdObj).isEmpty()) {
+            user.setSellerId(Long.parseLong((String) sellerIdObj));
+            user.setSellerName((String) request.get("sellerName"));
+        }
+
         userRepository.save(user);
-        log.info("Usuario creado: {} con rol {}", username, role);
+        log.info("Usuario creado: {} con rol {} sellerId={}", username, role, user.getSellerId());
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
