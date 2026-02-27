@@ -33,6 +33,7 @@ public class TranscriptionController {
     private final S3Service s3Service;
     private final TranscriptionCommentRepository commentRepository;
     
+    // Only allow alphanumeric recording IDs (prevent path traversal)
     private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
 
     public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
@@ -125,7 +126,7 @@ public class TranscriptionController {
     
     /**
      * Re-analiza solo las transcripciones marcadas como "no venta".
-     * Útil para corregir errores de detección después de mejorar el prompt.
+     * ├Ütil para corregir errores de detecci├│n despu├®s de mejorar el prompt.
      */
     @PostMapping("/reanalyze-no-sales")
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
@@ -148,7 +149,7 @@ public class TranscriptionController {
     }
     
     /**
-     * Elimina una transcripción y sus análisis asociados.
+     * Elimina una transcripci├│n y sus an├ílisis asociados.
      * Solo para administradores.
      */
     @DeleteMapping("/transcriptions/{recordingId}")
@@ -158,14 +159,14 @@ public class TranscriptionController {
         transcriptionService.deleteTranscription(recordingId);
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "Transcripción eliminada correctamente",
+            "message", "Transcripci├│n eliminada correctamente",
             "recordingId", recordingId
         ));
     }
     
     /**
      * Busca texto en las transcripciones.
-     * Devuelve resultados con snippets del contexto donde se encontró la palabra.
+     * Devuelve resultados con snippets del contexto donde se encontr├│ la palabra.
      */
     @GetMapping("/transcriptions/search")
     public ResponseEntity<Map<String, Object>> searchTranscriptions(
@@ -175,20 +176,20 @@ public class TranscriptionController {
             @RequestParam(required = false) Boolean saleCompleted
     ) {
         if (q == null || q.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda es requerido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El t├®rmino de b├║squeda es requerido");
         }
         if (q.length() < 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda debe tener al menos 2 caracteres");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El t├®rmino de b├║squeda debe tener al menos 2 caracteres");
         }
         if (q.length() > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El término de búsqueda no puede exceder 100 caracteres");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El t├®rmino de b├║squeda no puede exceder 100 caracteres");
         }
         
         return ResponseEntity.ok(transcriptionService.searchTranscriptions(q, userId, branchId, saleCompleted));
     }
     
     /**
-     * Verifica si el audio está disponible para una transcripción.
+     * Verifica si el audio est├í disponible para una transcripci├│n.
      */
     @GetMapping("/transcriptions/{recordingId}/audio")
     public ResponseEntity<Map<String, Object>> getAudioInfo(@PathVariable String recordingId) {
@@ -199,7 +200,7 @@ public class TranscriptionController {
         if (!exists) {
             return ResponseEntity.ok(Map.of(
                 "available", false,
-                "message", "Audio no disponible para esta transcripción"
+                "message", "Audio no disponible para esta transcripci├│n"
             ));
         }
         
@@ -223,7 +224,7 @@ public class TranscriptionController {
     ) {
         validateRecordingId(recordingId);
         
-        // Primero obtener el tamaño total del archivo
+        // Primero obtener el tama├▒o total del archivo
         long totalSize = s3Service.getAudioSize(recordingId);
         if (totalSize <= 0) {
             return ResponseEntity.notFound().build();
@@ -268,11 +269,11 @@ public class TranscriptionController {
                         .body(new org.springframework.core.io.InputStreamResource(audioStream));
                         
             } catch (NumberFormatException e) {
-                // Si el rango es inválido, devolver el archivo completo
+                // Si el rango es inv├ílido, devolver el archivo completo
             }
         }
         
-        // Sin Range header o Range inválido: devolver archivo completo
+        // Sin Range header o Range inv├ílido: devolver archivo completo
         var audioStream = s3Service.getAudioStream(recordingId);
         if (audioStream == null) {
             return ResponseEntity.notFound().build();
@@ -293,7 +294,69 @@ public class TranscriptionController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recording ID es requerido");
         }
         if (!VALID_RECORDING_ID.matcher(recordingId).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recording ID inválido");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recording ID inv├ílido");
         }
+    }
+
+    // ===== COMMENTS =====
+
+    @GetMapping("/transcriptions/{recordingId}/comments")
+    public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        List<Map<String, Object>> comments = commentRepository
+                .findByRecordingIdOrderByCreatedAtAsc(recordingId)
+                .stream()
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getId());
+                    m.put("authorUsername", c.getAuthorUsername());
+                    m.put("content", c.getContent());
+                    m.put("createdAt", c.getCreatedAt());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/transcriptions/{recordingId}/comments")
+    public ResponseEntity<Map<String, Object>> addComment(
+            @PathVariable String recordingId,
+            @RequestBody Map<String, String> request) {
+        validateRecordingId(recordingId);
+
+        String content = request.get("content");
+        if (content == null || content.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario no puede estar vac├¡o");
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        TranscriptionComment comment = new TranscriptionComment();
+        comment.setRecordingId(recordingId);
+        comment.setAuthorUsername(username);
+        comment.setContent(content.trim());
+        commentRepository.save(comment);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", comment.getId());
+        response.put("authorUsername", comment.getAuthorUsername());
+        response.put("content", comment.getContent());
+        response.put("createdAt", comment.getCreatedAt());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/transcriptions/{recordingId}/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteComment(
+            @PathVariable String recordingId,
+            @PathVariable Long commentId) {
+        validateRecordingId(recordingId);
+        TranscriptionComment comment = commentRepository.findById(commentId).orElse(null);
+        if (comment == null || !comment.getRecordingId().equals(recordingId)) {
+            return ResponseEntity.notFound().build();
+        }
+        commentRepository.delete(comment);
+        return ResponseEntity.ok(Map.of("message", "Comentario eliminado"));
     }
 }
