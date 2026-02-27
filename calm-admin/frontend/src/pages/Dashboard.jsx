@@ -44,10 +44,18 @@ export default function Dashboard() {
   const { isDark } = useTheme();
 
   useEffect(() => {
-    // Siempre cargar datos al entrar al Dashboard
     fetchDashboardMetrics();
     fetchTranscriptions();
   }, [fetchDashboardMetrics, fetchTranscriptions]);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userSellerId = currentUser.sellerId;
+
+  const myTranscriptions = useMemo(() => {
+    if (!transcriptions) return [];
+    if (!userSellerId) return transcriptions;
+    return transcriptions.filter(t => String(t.userId) === String(userSellerId));
+  }, [transcriptions, userSellerId]);
 
   if (loading && !dashboardMetrics) {
     return (
@@ -59,16 +67,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  // Filtrar por vendedor asociado al usuario logueado
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const userSellerId = currentUser.sellerId;
-
-  const myTranscriptions = useMemo(() => {
-    if (!transcriptions) return [];
-    if (!userSellerId) return transcriptions;
-    return transcriptions.filter(t => String(t.userId) === String(userSellerId));
-  }, [transcriptions, userSellerId]);
 
   if (!dashboardMetrics) {
     return (
@@ -89,7 +87,7 @@ export default function Dashboard() {
   const totalNoSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === false).length : rawMetrics.totalNoSales;
   const conversionRate = totalTranscriptions > 0 ? Math.round((totalSales / totalTranscriptions) * 100) : 0;
   const averageSellerScore = userSellerId 
-    ? (myTranscriptions.filter(t => t.sellerScore).reduce((sum, t) => sum + t.sellerScore, 0) / (myTranscriptions.filter(t => t.sellerScore).length || 1)).toFixed(1)
+    ? (myTranscriptions.filter(t => t.sellerScore).reduce((sum, t) => sum + t.sellerScore, 0) / (myTranscriptions.filter(t => t.sellerScore).length || 1))
     : rawMetrics.averageSellerScore;
   const sellerMetrics = rawMetrics.sellerMetrics;
   const branchMetrics = rawMetrics.branchMetrics;

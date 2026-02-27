@@ -30,9 +30,8 @@ export default function Transcriptions() {
   const filteredTranscriptions = useMemo(() => {
     if (!transcriptions) return [];
     
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     return transcriptions.filter(t => {
-      // Filtro global por vendedor asociado al usuario logueado
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       if (currentUser.sellerId && String(t.userId) !== String(currentUser.sellerId)) return false;
       // Filtro por vendedor (del panel de filtros)
       if (filters.userId && String(t.userId) !== String(filters.userId)) return false;
