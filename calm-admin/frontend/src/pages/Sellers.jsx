@@ -24,7 +24,11 @@ export default function Sellers() {
     );
   }
 
-  const sellers = dashboardMetrics?.sellerMetrics || [];
+  const allSellers = dashboardMetrics?.sellerMetrics || [];
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const sellers = currentUser.sellerId 
+    ? allSellers.filter(s => String(s.userId) === String(currentUser.sellerId))
+    : allSellers;
 
   return (
     <div className="space-y-6">

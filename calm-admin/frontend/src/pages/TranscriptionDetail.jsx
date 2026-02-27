@@ -27,6 +27,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { getTranscriptions } from '../api';
+import api from '../api';
 
 // Reproductor de audio personalizado con duración fija
 function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
@@ -194,6 +195,13 @@ export default function TranscriptionDetail() {
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(null);
   const audioRef = useRef(null);
+  
+  // Comments
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = currentUser.role === 'ADMIN';
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -319,6 +327,43 @@ export default function TranscriptionDetail() {
     };
     fetchAllIds();
   }, [id]);
+
+  // Comments
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        setCommentsLoading(true);
+        const response = await api.get(`/transcriptions/${id}/comments`);
+        setComments(response.data);
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    fetchComments();
+  }, [id]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const response = await api.post(`/transcriptions/${id}/comments`, { content: newComment.trim() });
+      setComments([...comments, response.data]);
+      setNewComment('');
+    } catch (err) {
+      console.error('Error adding comment:', err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('¿Eliminar este comentario?')) return;
+    try {
+      await api.delete(`/transcriptions/${id}/comments/${commentId}`);
+      setComments(comments.filter(c => c.id !== commentId));
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+    }
+  };
 
   // Navegación
   const goToPrevious = () => {
@@ -703,6 +748,76 @@ export default function TranscriptionDetail() {
           </div>
         </div>
       )}
+
+      {/* Comments Thread */}
+      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
+          </div>
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            Comentarios {comments.length > 0 && `(${comments.length})`}
+          </h3>
+        </div>
+
+        {/* Comment list */}
+        <div className="space-y-3 mb-4">
+          {commentsLoading ? (
+            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cargando comentarios...</p>
+          ) : comments.length === 0 ? (
+            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Sin comentarios aún</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-[#F5A623]/20 text-[#F5A623]' : 'bg-[#F5A623]/20 text-[#F5A623]'}`}>
+                      {c.authorUsername?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{c.authorUsername}</span>
+                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      {c.createdAt ? new Date(c.createdAt).toLocaleString('es-AR') : ''}
+                    </span>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteComment(c.id)}
+                      className={`text-xs px-2 py-1 rounded transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                      title="Eliminar comentario"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{c.content}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* New comment input */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+            placeholder="Escribí un comentario..."
+            className={`flex-1 px-4 py-2 rounded-lg border text-sm ${
+              isDark 
+                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500 focus:border-[#F5A623]' 
+                : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#F5A623]'
+            } focus:outline-none focus:ring-1 focus:ring-[#F5A623]/50`}
+          />
+          <button
+            onClick={handleAddComment}
+            disabled={!newComment.trim()}
+            className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
+          >
+            Enviar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

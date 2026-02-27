@@ -288,4 +288,66 @@ public class TranscriptionController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recording ID inválido");
         }
     }
+
+    // ===== COMMENTS =====
+
+    @GetMapping("/transcriptions/{recordingId}/comments")
+    public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        List<Map<String, Object>> comments = commentRepository
+                .findByRecordingIdOrderByCreatedAtAsc(recordingId)
+                .stream()
+                .map(c -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getId());
+                    m.put("authorUsername", c.getAuthorUsername());
+                    m.put("content", c.getContent());
+                    m.put("createdAt", c.getCreatedAt());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/transcriptions/{recordingId}/comments")
+    public ResponseEntity<Map<String, Object>> addComment(
+            @PathVariable String recordingId,
+            @RequestBody Map<String, String> request) {
+        validateRecordingId(recordingId);
+
+        String content = request.get("content");
+        if (content == null || content.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario no puede estar vacío");
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        TranscriptionComment comment = new TranscriptionComment();
+        comment.setRecordingId(recordingId);
+        comment.setAuthorUsername(username);
+        comment.setContent(content.trim());
+        commentRepository.save(comment);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", comment.getId());
+        response.put("authorUsername", comment.getAuthorUsername());
+        response.put("content", comment.getContent());
+        response.put("createdAt", comment.getCreatedAt());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/transcriptions/{recordingId}/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteComment(
+            @PathVariable String recordingId,
+            @PathVariable Long commentId) {
+        validateRecordingId(recordingId);
+        TranscriptionComment comment = commentRepository.findById(commentId).orElse(null);
+        if (comment == null || !comment.getRecordingId().equals(recordingId)) {
+            return ResponseEntity.notFound().build();
+        }
+        commentRepository.delete(comment);
+        return ResponseEntity.ok(Map.of("message", "Comentario eliminado"));
+    }
 }

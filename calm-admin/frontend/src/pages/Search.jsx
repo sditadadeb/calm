@@ -54,8 +54,16 @@ export default function Search() {
     
     try {
       const response = await searchTranscriptions(query.trim(), filters);
-      setResults(response.data.results || []);
-      setTotalResults(response.data.totalResults || 0);
+      let searchResults = response.data.results || [];
+      
+      // Filter by logged-in user's sellerId
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser.sellerId) {
+        searchResults = searchResults.filter(r => String(r.userId) === String(currentUser.sellerId));
+      }
+      
+      setResults(searchResults);
+      setTotalResults(searchResults.length);
       setTotalMatches(response.data.totalMatches || 0);
     } catch (error) {
       console.error('Search error:', error);

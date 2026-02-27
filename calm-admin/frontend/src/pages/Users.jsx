@@ -1,20 +1,31 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Trash2, Shield, User } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, Link2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import api from '../api';
+import api, { getSellers } from '../api';
 
 export default function Users() {
   const { isDark } = useTheme();
   const [users, setUsers] = useState([]);
+  const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'USER' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'USER', sellerId: '', sellerName: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
     fetchUsers();
+    fetchSellersData();
   }, []);
+
+  const fetchSellersData = async () => {
+    try {
+      const response = await getSellers();
+      setSellers(response.data || []);
+    } catch (err) {
+      console.error('Error fetching sellers:', err);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -35,7 +46,7 @@ export default function Users() {
     try {
       await api.post('/users', newUser);
       setSuccess('Usuario creado exitosamente');
-      setNewUser({ username: '', password: '', role: 'USER' });
+      setNewUser({ username: '', password: '', role: 'USER', sellerId: '', sellerName: '' });
       setShowForm(false);
       fetchUsers();
     } catch (err) {
@@ -64,6 +75,36 @@ export default function Users() {
       fetchUsers();
     } catch (err) {
       setError(err.response?.data?.error || 'Error al actualizar rol');
+    }
+  };
+
+  const handleSellerChange = (sellerValue) => {
+    if (!sellerValue) {
+      setNewUser({ ...newUser, sellerId: '', sellerName: '' });
+    } else {
+      const seller = sellers.find(s => String(s.id || s.userId) === sellerValue);
+      setNewUser({ 
+        ...newUser, 
+        sellerId: sellerValue, 
+        sellerName: seller ? (seller.name || seller.userName) : '' 
+      });
+    }
+  };
+
+  const handleUpdateSeller = async (userId, sellerValue) => {
+    try {
+      let sellerId = null;
+      let sellerName = null;
+      if (sellerValue) {
+        sellerId = Number(sellerValue);
+        const seller = sellers.find(s => String(s.id || s.userId) === sellerValue);
+        sellerName = seller ? (seller.name || seller.userName) : null;
+      }
+      await api.patch(`/users/${userId}/seller`, { sellerId, sellerName });
+      setSuccess('Vendedor actualizado');
+      fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al actualizar vendedor');
     }
   };
 
@@ -151,6 +192,28 @@ export default function Users() {
                 </select>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-2">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  Vendedor asociado
+                </label>
+                <select
+                  value={newUser.sellerId}
+                  onChange={(e) => handleSellerChange(e.target.value)}
+                  className={inputClasses}
+                >
+                  <option value="">Todos (ve todas las transcripciones)</option>
+                  {sellers.map((s) => (
+                    <option key={s.id || s.userId} value={s.id || s.userId}>
+                      {s.name || s.userName}
+                    </option>
+                  ))}
+                </select>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                  Si se asocia un vendedor, el usuario solo verá sus transcripciones
+                </p>
+              </div>
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -182,7 +245,7 @@ export default function Users() {
                 Rol
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Creado
+                Vendedor
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 Último acceso
@@ -213,13 +276,26 @@ export default function Users() {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     user.role === 'ADMIN' 
                       ? 'bg-[#F5A623]/20 text-[#F5A623]' 
-                      : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
+                      : user.role === 'VIEWER'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {user.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
+                    {user.role === 'ADMIN' ? 'Admin' : user.role === 'VIEWER' ? 'Viewer' : 'Usuario'}
                   </span>
                 </td>
-                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-AR') : '-'}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <select
+                    value={user.sellerId || ''}
+                    onChange={(e) => handleUpdateSeller(user.id, e.target.value)}
+                    className={`text-sm px-2 py-1 rounded-lg border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
+                  >
+                    <option value="">Todos</option>
+                    {sellers.map((s) => (
+                      <option key={s.id || s.userId} value={s.id || s.userId}>
+                        {s.name || s.userName}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                   {user.lastLogin ? new Date(user.lastLogin).toLocaleString('es-AR') : 'Nunca'}
@@ -252,8 +328,10 @@ export default function Users() {
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
         <p className="text-sm text-blue-400">
           <strong>Roles:</strong><br />
-          • <strong>Administrador:</strong> Acceso completo (sync, configuración, gestión de usuarios)<br />
-          • <strong>Usuario:</strong> Solo visualización de datos (dashboard, transcripciones, vendedores, sucursales)
+          • <strong>Admin:</strong> Acceso completo (sync, configuración, gestión de usuarios)<br />
+          • <strong>Usuario:</strong> Visualización de datos<br />
+          • <strong>Viewer:</strong> Solo lectura<br /><br />
+          <strong>Vendedor asociado:</strong> Si un usuario tiene un vendedor asociado, solo verá las transcripciones de ese vendedor. "Todos" muestra todas.
         </p>
       </div>
     </div>

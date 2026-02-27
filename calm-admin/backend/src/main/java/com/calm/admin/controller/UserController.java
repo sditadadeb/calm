@@ -163,4 +163,37 @@ public class UserController {
                 "role", user.getRole()
         ));
     }
+
+    @PatchMapping("/{id}/seller")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUserSeller(@PathVariable Long id, @RequestBody Map<String, Object> request) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Object sellerIdObj = request.get("sellerId");
+        if (sellerIdObj == null) {
+            user.setSellerId(null);
+            user.setSellerName(null);
+        } else if (sellerIdObj instanceof Number) {
+            user.setSellerId(((Number) sellerIdObj).longValue());
+            user.setSellerName((String) request.get("sellerName"));
+        } else if (sellerIdObj instanceof String && !((String) sellerIdObj).isEmpty()) {
+            user.setSellerId(Long.parseLong((String) sellerIdObj));
+            user.setSellerName((String) request.get("sellerName"));
+        } else {
+            user.setSellerId(null);
+            user.setSellerName(null);
+        }
+
+        userRepository.save(user);
+        log.info("Vendedor actualizado para {}: sellerId={}", user.getUsername(), user.getSellerId());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Vendedor actualizado",
+                "sellerId", user.getSellerId() != null ? user.getSellerId() : "",
+                "sellerName", user.getSellerName() != null ? user.getSellerName() : ""
+        ));
+    }
 }

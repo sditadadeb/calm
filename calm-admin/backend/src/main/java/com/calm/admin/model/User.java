@@ -23,6 +23,9 @@ public class User {
     @Column(nullable = false)
     private Boolean enabled = true;
 
+    private Long sellerId;
+    private String sellerName;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime lastLogin;
@@ -95,6 +98,12 @@ public class User {
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
     }
+
+    public Long getSellerId() { return sellerId; }
+    public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
+
+    public String getSellerName() { return sellerName; }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
 
     @Override
     public String toString() {

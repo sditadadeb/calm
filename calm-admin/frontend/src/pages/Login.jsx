@@ -16,10 +16,10 @@ const Login = () => {
 
     try {
       const response = await login(username, password);
-      const { token, username: user, role } = response.data;
+      const { token, username: user, role, sellerId, sellerName } = response.data;
       
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({ username: user, role }));
+      localStorage.setItem('user', JSON.stringify({ username: user, role, sellerId, sellerName }));
       
       navigate('/');
     } catch (err) {

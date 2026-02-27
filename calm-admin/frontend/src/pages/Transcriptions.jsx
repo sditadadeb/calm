@@ -31,7 +31,10 @@ export default function Transcriptions() {
     if (!transcriptions) return [];
     
     return transcriptions.filter(t => {
-      // Filtro por vendedor
+      // Filtro global por vendedor asociado al usuario logueado
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser.sellerId && String(t.userId) !== String(currentUser.sellerId)) return false;
+      // Filtro por vendedor (del panel de filtros)
       if (filters.userId && String(t.userId) !== String(filters.userId)) return false;
       // Filtro por sucursal
       if (filters.branchId && String(t.branchId) !== String(filters.branchId)) return false;

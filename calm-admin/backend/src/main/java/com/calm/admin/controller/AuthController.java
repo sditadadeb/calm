@@ -76,7 +76,7 @@ public class AuthController {
             // Reset rate limit on successful login
             rateLimitingService.resetAttempts(rateLimitKey);
 
-            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole(), user.getSellerId());
 
             log.info("Successful login for user: {} from IP: {}", user.getUsername(), clientIp);
 
@@ -84,6 +84,8 @@ public class AuthController {
                     token,
                     user.getUsername(),
                     user.getRole(),
+                    user.getSellerId(),
+                    user.getSellerName(),
                     86400000 // 24 hours in milliseconds
             );
 
@@ -118,6 +120,8 @@ public class AuthController {
         Map<String, Object> response = new HashMap<>();
         response.put("username", user.getUsername());
         response.put("role", user.getRole());
+        response.put("sellerId", user.getSellerId());
+        response.put("sellerName", user.getSellerName());
         response.put("lastLogin", user.getLastLogin());
 
         return ResponseEntity.ok(response);

@@ -24,16 +24,24 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, String role) {
+        return generateToken(username, role, null);
+    }
+
+    public String generateToken(String username, String role, Long sellerId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(username)
                 .claim("role", role)
                 .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSigningKey())
-                .compact();
+                .expiration(expiryDate);
+
+        if (sellerId != null) {
+            builder.claim("sellerId", sellerId);
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
     public String getUsernameFromToken(String token) {
@@ -52,6 +60,15 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
         return claims.get("role", String.class);
+    }
+
+    public Long getSellerIdFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return claims.get("sellerId", Long.class);
     }
 
     public boolean validateToken(String token) {

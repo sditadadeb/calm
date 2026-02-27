@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FileText, 
@@ -60,6 +60,16 @@ export default function Dashboard() {
     );
   }
 
+  // Filtrar por vendedor asociado al usuario logueado
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userSellerId = currentUser.sellerId;
+
+  const myTranscriptions = useMemo(() => {
+    if (!transcriptions) return [];
+    if (!userSellerId) return transcriptions;
+    return transcriptions.filter(t => String(t.userId) === String(userSellerId));
+  }, [transcriptions, userSellerId]);
+
   if (!dashboardMetrics) {
     return (
       <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
@@ -72,16 +82,18 @@ export default function Dashboard() {
     );
   }
 
-  const { 
-    totalTranscriptions, 
-    totalSales, 
-    totalNoSales, 
-    conversionRate,
-    averageSellerScore,
-    sellerMetrics,
-    branchMetrics,
-    noSaleReasons 
-  } = dashboardMetrics;
+  // If user has sellerId, compute metrics from filtered transcriptions
+  const rawMetrics = dashboardMetrics;
+  const totalTranscriptions = userSellerId ? myTranscriptions.length : rawMetrics.totalTranscriptions;
+  const totalSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === true).length : rawMetrics.totalSales;
+  const totalNoSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === false).length : rawMetrics.totalNoSales;
+  const conversionRate = totalTranscriptions > 0 ? Math.round((totalSales / totalTranscriptions) * 100) : 0;
+  const averageSellerScore = userSellerId 
+    ? (myTranscriptions.filter(t => t.sellerScore).reduce((sum, t) => sum + t.sellerScore, 0) / (myTranscriptions.filter(t => t.sellerScore).length || 1)).toFixed(1)
+    : rawMetrics.averageSellerScore;
+  const sellerMetrics = rawMetrics.sellerMetrics;
+  const branchMetrics = rawMetrics.branchMetrics;
+  const noSaleReasons = rawMetrics.noSaleReasons;
 
   const sellerChartData = sellerMetrics?.slice(0, 5).map(s => ({
     name: s.userName?.split(' ')[0] || 'N/A',
@@ -103,9 +115,8 @@ export default function Dashboard() {
         matrix[day][hour] = 0;
       }
     }
-    // Contar transcripciones (solo si hay datos)
-    if (transcriptions && transcriptions.length > 0) {
-      transcriptions.forEach(t => {
+    if (myTranscriptions && myTranscriptions.length > 0) {
+      myTranscriptions.forEach(t => {
         if (t.recordingDate) {
           const date = new Date(t.recordingDate);
           const day = date.getDay(); // 0-6
@@ -126,15 +137,14 @@ export default function Dashboard() {
   // Procesar datos para Scatter plot temporal (X = fecha, Y = hora)
   const scatterData = (() => {
     // Verificar que hay datos antes de procesar
-    if (!transcriptions || transcriptions.length === 0) {
+    if (!myTranscriptions || myTranscriptions.length === 0) {
       return { branches: [], dates: [], dateToX: {} };
     }
     
-    const branches = [...new Set(transcriptions.map(t => t.branchName).filter(Boolean))];
+    const branches = [...new Set(myTranscriptions.map(t => t.branchName).filter(Boolean))];
     
-    // Obtener todas las fechas únicas para el eje X
     const allDates = [...new Set(
-      transcriptions
+      myTranscriptions
         .filter(t => t.recordingDate)
         .map(t => new Date(t.recordingDate).toDateString())
     )].sort((a, b) => new Date(a) - new Date(b));
@@ -146,7 +156,7 @@ export default function Dashboard() {
       branches: branches.map((branch, idx) => ({
         branch,
         color: BRANCH_COLORS[idx % BRANCH_COLORS.length],
-        data: transcriptions
+        data: myTranscriptions
           .filter(t => t.branchName === branch && t.recordingDate)
           .map(t => {
             const date = new Date(t.recordingDate);
