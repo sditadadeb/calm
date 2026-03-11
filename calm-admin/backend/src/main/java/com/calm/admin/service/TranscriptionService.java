@@ -74,10 +74,9 @@ public class TranscriptionService {
             return null;
         }
         
-        // Obtener la fecha del archivo en S3 (cuando se creó la grabación)
         java.time.Instant s3Date = s3Service.getTranscriptionDate(recordingId);
         LocalDateTime recordingDate = s3Date != null 
-            ? LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault())
+            ? LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault()).minusHours(3)
             : LocalDateTime.now();
         
         // Obtener valores de metadata
