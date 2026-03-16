@@ -5,6 +5,7 @@ import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import Filters from '../components/Filters';
 import ScoreBadge from '../components/ScoreBadge';
+import { checkNewTranscriptions } from '../api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,6 +15,8 @@ export default function Transcriptions() {
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -145,7 +148,22 @@ export default function Transcriptions() {
       setFilters(urlFilters);
     }
     
-    fetchTranscriptions();
+    const loadData = async () => {
+      setSyncing(true);
+      try {
+        const { data } = await checkNewTranscriptions();
+        if (data.imported > 0) {
+          setSyncResult(data.imported);
+          setTimeout(() => setSyncResult(null), 5000);
+        }
+      } catch (err) {
+        console.error('Auto-check failed:', err);
+      } finally {
+        setSyncing(false);
+      }
+      fetchTranscriptions();
+    };
+    loadData();
   }, [searchParams]);
 
   const handleAnalyze = async (recordingId, e) => {
@@ -216,8 +234,22 @@ export default function Transcriptions() {
 
       {/* Info */}
       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-        <FileText className="w-4 h-4" />
-        <span>{filteredTranscriptions.length} de {transcriptions.length} registros</span>
+        {syncing ? (
+          <>
+            <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
+            <span>Verificando nuevas transcripciones en S3...</span>
+          </>
+        ) : (
+          <>
+            <FileText className="w-4 h-4" />
+            <span>{filteredTranscriptions.length} de {transcriptions.length} registros</span>
+          </>
+        )}
+        {syncResult && (
+          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400">
+            +{syncResult} nuevas importadas
+          </span>
+        )}
       </div>
 
       {/* Filters - client-side, no need to re-fetch */}

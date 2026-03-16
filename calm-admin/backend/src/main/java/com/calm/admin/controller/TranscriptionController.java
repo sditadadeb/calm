@@ -103,6 +103,11 @@ public class TranscriptionController {
         return ResponseEntity.ok(transcriptionService.forceSync());
     }
 
+    @PostMapping("/transcriptions/check-new")
+    public ResponseEntity<Map<String, Object>> checkNewTranscriptions() {
+        return ResponseEntity.ok(transcriptionService.quickSync());
+    }
+
     /**
      * Sync with Server-Sent Events for real-time progress updates.
      */

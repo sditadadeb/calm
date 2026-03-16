@@ -74,6 +74,8 @@ export const getAudioStreamUrl = (recordingId) => {
 
 export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${recordingId}/analyze`);
 
+export const checkNewTranscriptions = () => api.post('/transcriptions/check-new');
+
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);
 
 // Search

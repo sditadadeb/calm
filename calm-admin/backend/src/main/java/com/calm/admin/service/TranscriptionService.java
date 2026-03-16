@@ -65,6 +65,32 @@ public class TranscriptionService {
     }
 
     @Transactional
+    public Map<String, Object> quickSync() {
+        List<String> s3Ids = s3Service.listAllRecordingIds();
+        int imported = 0;
+
+        for (String recordingId : s3Ids) {
+            if (!repository.existsByRecordingId(recordingId)) {
+                if (s3Service.transcriptionExists(recordingId)) {
+                    try {
+                        importTranscription(recordingId);
+                        imported++;
+                    } catch (Exception e) {
+                        log.error("quickSync import error {}: {}", recordingId, e.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (imported > 0) {
+            log.info("quickSync: imported {} new, analyzing...", imported);
+            analyzeUnprocessedTranscriptions();
+        }
+
+        return Map.of("imported", imported);
+    }
+
+    @Transactional
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
         String transcriptionText = s3Service.getTranscription(recordingId);
