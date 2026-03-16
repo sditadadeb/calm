@@ -16,7 +16,6 @@ export default function Transcriptions() {
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState(null);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -148,18 +147,22 @@ export default function Transcriptions() {
       setFilters(urlFilters);
     }
     
+    const COOLDOWN_MS = 60 * 60 * 1000;
+    const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
+    const now = Date.now();
+    const shouldCheck = (now - lastCheck) >= COOLDOWN_MS;
+
     const loadData = async () => {
-      setSyncing(true);
-      try {
-        const { data } = await checkNewTranscriptions();
-        if (data.imported > 0) {
-          setSyncResult(data.imported);
-          setTimeout(() => setSyncResult(null), 5000);
+      if (shouldCheck) {
+        setSyncing(true);
+        try {
+          await checkNewTranscriptions();
+          localStorage.setItem('lastS3Check', String(Date.now()));
+        } catch (err) {
+          console.error('Auto-check failed:', err);
+        } finally {
+          setSyncing(false);
         }
-      } catch (err) {
-        console.error('Auto-check failed:', err);
-      } finally {
-        setSyncing(false);
       }
       fetchTranscriptions();
     };
@@ -237,18 +240,13 @@ export default function Transcriptions() {
         {syncing ? (
           <>
             <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
-            <span>Verificando nuevas transcripciones en S3...</span>
+            <span>Verificando si existen nuevas atenciones...</span>
           </>
         ) : (
           <>
             <FileText className="w-4 h-4" />
             <span>{filteredTranscriptions.length} de {transcriptions.length} registros</span>
           </>
-        )}
-        {syncResult && (
-          <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400">
-            +{syncResult} nuevas importadas
-          </span>
         )}
       </div>
 
