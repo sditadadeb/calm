@@ -12,6 +12,7 @@ import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Recommendations from './pages/Recommendations';
 import Search from './pages/Search';
+import Timeline from './pages/Timeline';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                   <Route path="/sellers" element={<Sellers />} />
                   <Route path="/branches" element={<Branches />} />
                   <Route path="/recommendations" element={<Recommendations />} />
+                  <Route path="/timeline" element={<Timeline />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>

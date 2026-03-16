@@ -12,7 +12,8 @@ import {
   Lightbulb,
   Sun,
   Moon,
-  Search
+  Search,
+  TrendingUp
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
@@ -26,6 +27,7 @@ const pageConfig = {
   '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
   '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
   '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
+  '/timeline': { name: 'Línea de Tiempo', subtitle: 'Impacto de acciones en métricas', icon: TrendingUp },
   '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
   '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
 };
@@ -42,6 +44,7 @@ const baseNavigation = [
 
 // Navegación solo para ADMIN
 const adminNavigation = [
+  { name: 'Línea de Tiempo', href: '/timeline', icon: TrendingUp },
   { name: 'Usuarios', href: '/users', icon: UserPlus },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];

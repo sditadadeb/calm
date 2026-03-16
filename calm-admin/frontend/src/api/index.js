@@ -115,4 +115,19 @@ export const getRecommendationsMetrics = () => api.get('/recommendations/metrics
 export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');
 export const clearRecommendationsAnalyses = () => api.delete('/recommendations/clear');
 
+// Timeline
+export const getTimelineEvents = () => api.get('/timeline/events');
+export const createTimelineEvent = (event) => api.post('/timeline/events', event);
+export const deleteTimelineEvent = (id) => api.delete(`/timeline/events/${id}`);
+export const getTimelineMetrics = (groupBy = 'week', sellerId = null) => {
+  const params = new URLSearchParams({ groupBy });
+  if (sellerId) params.append('sellerId', sellerId);
+  return api.get(`/timeline/metrics?${params.toString()}`);
+};
+export const getTimelineCompare = (eventDate, days = 14, sellerId = null) => {
+  const params = new URLSearchParams({ eventDate, days: String(days) });
+  if (sellerId) params.append('sellerId', sellerId);
+  return api.get(`/timeline/compare?${params.toString()}`);
+};
+
 export default api;
