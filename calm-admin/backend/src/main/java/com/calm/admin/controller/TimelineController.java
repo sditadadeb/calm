@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/timeline")
-@PreAuthorize("hasRole('ADMIN')")
 public class TimelineController {
 
     private final TimelineEventRepository eventRepository;
@@ -35,6 +34,7 @@ public class TimelineController {
     }
 
     @PostMapping("/events")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TimelineEvent> createEvent(@RequestBody TimelineEvent event) {
         if (event.getTitle() == null || event.getTitle().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El titulo es requerido");
@@ -49,6 +49,7 @@ public class TimelineController {
     }
 
     @DeleteMapping("/events/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> deleteEvent(@PathVariable Long id) {
         if (!eventRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
