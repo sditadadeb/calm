@@ -3,7 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend
 } from 'recharts';
-import { Plus, Trash2, Calendar, Tag, ChevronDown, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
+import { Plus, Trash2, Calendar, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import {
   getTimelineEvents, createTimelineEvent, deleteTimelineEvent,
@@ -275,71 +275,20 @@ export default function Timeline() {
         </div>
       )}
 
-      {/* Events list + form */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Events */}
-        <div className={`lg:col-span-2 ${cardClass}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Eventos registrados</h3>
-            <button onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
-              <Plus className="w-4 h-4" />
-              Nuevo evento
-            </button>
-          </div>
-
-          {events.length === 0 ? (
-            <div className={`text-center py-8 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No hay eventos registrados</p>
-              <p className="text-sm mt-1">Agregá hitos para medir el impacto de tus acciones</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {events.map(ev => {
-                const cat = getCategoryInfo(ev.category);
-                const isSelected = selectedEvent?.id === ev.id;
-                return (
-                  <div key={ev.id}
-                    onClick={() => handleSelectEvent(ev)}
-                    className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all border ${
-                      isSelected
-                        ? isDark ? 'bg-slate-700 border-[#F5A623]/50' : 'bg-orange-50 border-[#F5A623]/50'
-                        : isDark ? 'bg-slate-700/30 border-transparent hover:bg-slate-700/60' : 'bg-gray-50 border-transparent hover:bg-gray-100'
-                    }`}>
-                    <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{ev.title}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
-                          {cat.label}
-                        </span>
-                      </div>
-                      {ev.description && (
-                        <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{ev.description}</p>
-                      )}
-                      <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                        {new Date(ev.eventDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </p>
-                    </div>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(ev.id); }}
-                      className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}>
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      {/* Events */}
+      <div className={cardClass}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Eventos registrados</h3>
+          <button onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+            <Plus className="w-4 h-4" />
+            {showForm ? 'Cancelar' : 'Nuevo evento'}
+          </button>
         </div>
 
-        {/* Create form */}
-        <div className={cardClass}>
-          <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {showForm ? 'Nuevo evento' : 'Registrar evento'}
-          </h3>
-          {showForm ? (
-            <form onSubmit={handleCreate} className="space-y-4">
+        {showForm && (
+          <form onSubmit={handleCreate} className={`mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-700/40 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
                 <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Título *</label>
                 <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
@@ -358,31 +307,62 @@ export default function Timeline() {
               </div>
               <div>
                 <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Descripción</label>
-                <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                  placeholder="Detalle opcional de lo que se hizo..." rows={3} className={inputClass} />
+                <input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+                  placeholder="Detalle opcional..." className={inputClass} />
               </div>
-              <div className="flex gap-2">
-                <button type="submit"
-                  className="flex-1 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
-                  Guardar
-                </button>
-                <button type="button" onClick={() => setShowForm(false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className={`text-center py-6 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Registrá acciones que tomaste para poder medir su impacto en las métricas.</p>
-              <button onClick={() => setShowForm(true)}
-                className="mt-4 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
-                <Plus className="w-4 h-4 inline mr-1" />Agregar evento
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button type="submit"
+                className="px-6 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+                Guardar evento
               </button>
             </div>
-          )}
-        </div>
+          </form>
+        )}
+
+        {events.length === 0 && !showForm ? (
+          <div className={`text-center py-8 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+            <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No hay eventos registrados</p>
+            <p className="text-sm mt-1">Agregá hitos para medir el impacto de tus acciones</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {events.map(ev => {
+              const cat = getCategoryInfo(ev.category);
+              const isSelected = selectedEvent?.id === ev.id;
+              return (
+                <div key={ev.id}
+                  onClick={() => handleSelectEvent(ev)}
+                  className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all border ${
+                    isSelected
+                      ? isDark ? 'bg-slate-700 border-[#F5A623]/50' : 'bg-orange-50 border-[#F5A623]/50'
+                      : isDark ? 'bg-slate-700/30 border-transparent hover:bg-slate-700/60' : 'bg-gray-50 border-transparent hover:bg-gray-100'
+                  }`}>
+                  <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{ev.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'}`}>
+                        {cat.label}
+                      </span>
+                    </div>
+                    {ev.description && (
+                      <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{ev.description}</p>
+                    )}
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      {new Date(ev.eventDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(ev.id); }}
+                    className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
