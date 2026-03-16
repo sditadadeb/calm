@@ -160,29 +160,33 @@ export default function Timeline() {
     );
   };
 
+  const parseLocalDate = (str) => {
+    const p = str.split('-').map(Number);
+    return p.length === 2 ? new Date(p[0], p[1] - 1, 1) : new Date(p[0], p[1] - 1, p[2]);
+  };
+
+  const formatTick = (ts) => {
+    const d = new Date(ts);
+    return groupBy === 'month'
+      ? d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
+      : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  };
+
   const chartData = useMemo(() => {
-    return metrics.map(m => {
-      const parts = m.period.split('-').map(Number);
-      const d = groupBy === 'month'
-        ? new Date(parts[0], parts[1] - 1, 1)
-        : new Date(parts[0], parts[1] - 1, parts[2]);
-      return {
-        ...m,
-        label: groupBy === 'month'
-          ? d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
-          : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-      };
-    });
+    return metrics.map(m => ({
+      ...m,
+      ts: groupBy === 'month'
+        ? parseLocalDate(m.period).getTime()
+        : parseLocalDate(m.period).getTime()
+    }));
   }, [metrics, groupBy]);
 
-  const findEventLabel = (eventDate) => {
-    if (!chartData.length) return null;
-    let best = null;
-    for (const d of chartData) {
-      if (d.period <= eventDate) best = d.label;
-    }
-    return best;
-  };
+  const eventTimestamps = useMemo(() => {
+    return events.map(ev => ({
+      ...ev,
+      ts: parseLocalDate(ev.eventDate).getTime()
+    }));
+  }, [events]);
 
   const cardClass = `rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`;
   const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#F5A623]`;
@@ -236,11 +240,14 @@ export default function Timeline() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={380}>
-            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#E5E7EB'} />
-              <XAxis dataKey="label" tick={{ fill: isDark ? '#94A3B8' : '#6B7280', fontSize: 12 }} />
+              <XAxis dataKey="ts" type="number" scale="time" domain={['dataMin', 'dataMax']}
+                tickFormatter={formatTick}
+                tick={{ fill: isDark ? '#94A3B8' : '#6B7280', fontSize: 12 }} />
               <YAxis tick={{ fill: isDark ? '#94A3B8' : '#6B7280', fontSize: 12 }} />
               <Tooltip
+                labelFormatter={formatTick}
                 contentStyle={{
                   backgroundColor: isDark ? '#1E293B' : '#FFF',
                   border: `1px solid ${isDark ? '#334155' : '#E5E7EB'}`,
@@ -253,24 +260,20 @@ export default function Timeline() {
                 <Line key={m.key} type="monotone" dataKey={m.key} name={m.label}
                   stroke={m.color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               ))}
-              {events.map((ev, idx) => {
-                const xLabel = findEventLabel(ev.eventDate);
-                if (!xLabel) return null;
-                return (
-                  <ReferenceLine key={ev.id} x={xLabel}
-                    stroke={getCategoryInfo(ev.category).color}
-                    strokeDasharray="6 4" strokeWidth={2}
-                    label={{
-                      value: `▼ ${ev.title}`,
-                      position: 'insideTopRight',
-                      fill: getCategoryInfo(ev.category).color,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      offset: 10 + idx * 16
-                    }}
-                  />
-                );
-              })}
+              {eventTimestamps.map((ev, idx) => (
+                <ReferenceLine key={ev.id} x={ev.ts}
+                  stroke={getCategoryInfo(ev.category).color}
+                  strokeDasharray="6 4" strokeWidth={2}
+                  label={{
+                    value: `▼ ${ev.title}`,
+                    position: 'insideTopRight',
+                    fill: getCategoryInfo(ev.category).color,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    dy: -5 + idx * 16
+                  }}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         )}
