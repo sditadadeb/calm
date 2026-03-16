@@ -142,6 +142,15 @@ export default function Timeline() {
     }));
   }, [metrics, groupBy]);
 
+  const findEventLabel = (eventDate) => {
+    if (!chartData.length) return null;
+    let best = null;
+    for (const d of chartData) {
+      if (d.period <= eventDate) best = d.label;
+    }
+    return best;
+  };
+
   const cardClass = `rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`;
   const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#F5A623]`;
 
@@ -211,12 +220,24 @@ export default function Timeline() {
                 <Line key={m.key} type="monotone" dataKey={m.key} name={m.label}
                   stroke={m.color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               ))}
-              {events.map(ev => (
-                <ReferenceLine key={ev.id} x={
-                  chartData.find(d => d.period === ev.eventDate || d.period <= ev.eventDate)?.label
-                } stroke={getCategoryInfo(ev.category).color} strokeDasharray="5 5" strokeWidth={2}
-                  label={{ value: ev.title, position: 'top', fill: getCategoryInfo(ev.category).color, fontSize: 11 }} />
-              ))}
+              {events.map((ev, idx) => {
+                const xLabel = findEventLabel(ev.eventDate);
+                if (!xLabel) return null;
+                return (
+                  <ReferenceLine key={ev.id} x={xLabel}
+                    stroke={getCategoryInfo(ev.category).color}
+                    strokeDasharray="6 4" strokeWidth={2}
+                    label={{
+                      value: `▼ ${ev.title}`,
+                      position: 'insideTopRight',
+                      fill: getCategoryInfo(ev.category).color,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      offset: 10 + idx * 16
+                    }}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         )}
