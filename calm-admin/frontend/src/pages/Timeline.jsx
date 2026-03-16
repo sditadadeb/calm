@@ -162,7 +162,7 @@ export default function Timeline() {
           <select value={sellerId} onChange={e => setSellerId(e.target.value)}
             className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
             <option value="">Todos</option>
-            {sellers.map(s => <option key={s.userId} value={s.userId}>{s.userName}</option>)}
+            {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2 ml-auto">
