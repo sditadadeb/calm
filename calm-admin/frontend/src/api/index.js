@@ -118,6 +118,7 @@ export const clearRecommendationsAnalyses = () => api.delete('/recommendations/c
 // Timeline
 export const getTimelineEvents = () => api.get('/timeline/events');
 export const createTimelineEvent = (event) => api.post('/timeline/events', event);
+export const updateTimelineEvent = (id, event) => api.put(`/timeline/events/${id}`, event);
 export const deleteTimelineEvent = (id) => api.delete(`/timeline/events/${id}`);
 export const getTimelineMetrics = (groupBy = 'week', sellerId = null) => {
   const params = new URLSearchParams({ groupBy });

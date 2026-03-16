@@ -48,6 +48,18 @@ public class TimelineController {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventRepository.save(event));
     }
 
+    @PutMapping("/events/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TimelineEvent> updateEvent(@PathVariable Long id, @RequestBody TimelineEvent update) {
+        TimelineEvent existing = eventRepository.findById(id).orElse(null);
+        if (existing == null) return ResponseEntity.notFound().build();
+        if (update.getTitle() != null && !update.getTitle().isBlank()) existing.setTitle(update.getTitle());
+        if (update.getEventDate() != null) existing.setEventDate(update.getEventDate());
+        if (update.getCategory() != null) existing.setCategory(update.getCategory());
+        if (update.getDescription() != null) existing.setDescription(update.getDescription());
+        return ResponseEntity.ok(eventRepository.save(existing));
+    }
+
     @DeleteMapping("/events/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> deleteEvent(@PathVariable Long id) {

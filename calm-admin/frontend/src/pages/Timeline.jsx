@@ -3,10 +3,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend
 } from 'recharts';
-import { Plus, Trash2, Calendar, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
+import { Plus, Trash2, Calendar, ArrowUpRight, ArrowDownRight, Minus, Info, Pencil, Check, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import {
-  getTimelineEvents, createTimelineEvent, deleteTimelineEvent,
+  getTimelineEvents, createTimelineEvent, updateTimelineEvent, deleteTimelineEvent,
   getTimelineMetrics, getTimelineCompare, getSellers
 } from '../api';
 
@@ -63,6 +63,8 @@ export default function Timeline() {
   const [loadingCompare, setLoadingCompare] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', category: 'capacitacion', eventDate: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', category: '', eventDate: '' });
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -98,11 +100,36 @@ export default function Timeline() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleStartEdit = (ev, e) => {
+    e.stopPropagation();
+    setEditingId(ev.id);
+    setEditForm({ title: ev.title, description: ev.description || '', category: ev.category, eventDate: ev.eventDate });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.stopPropagation();
+    if (!editForm.title.trim() || !editForm.eventDate) return;
+    try {
+      await updateTimelineEvent(editingId, editForm);
+      setEditingId(null);
+      loadData();
+    } catch (err) {
+      console.error('Error updating event:', err);
+    }
+  };
+
+  const handleCancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingId(null);
+  };
+
+  const handleDelete = async (id, e) => {
+    if (e) e.stopPropagation();
     if (!confirm('¿Eliminar este evento?')) return;
     try {
       await deleteTimelineEvent(id);
       if (selectedEvent?.id === id) { setSelectedEvent(null); setComparison(null); }
+      if (editingId === id) setEditingId(null);
       loadData();
     } catch (err) {
       console.error('Error deleting event:', err);
@@ -134,12 +161,18 @@ export default function Timeline() {
   };
 
   const chartData = useMemo(() => {
-    return metrics.map(m => ({
-      ...m,
-      label: groupBy === 'month'
-        ? new Date(m.period + '-01').toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
-        : new Date(m.period).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-    }));
+    return metrics.map(m => {
+      const parts = m.period.split('-').map(Number);
+      const d = groupBy === 'month'
+        ? new Date(parts[0], parts[1] - 1, 1)
+        : new Date(parts[0], parts[1] - 1, parts[2]);
+      return {
+        ...m,
+        label: groupBy === 'month'
+          ? d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
+          : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+      };
+    });
   }, [metrics, groupBy]);
 
   const findEventLabel = (eventDate) => {
@@ -352,6 +385,51 @@ export default function Timeline() {
             {events.map(ev => {
               const cat = getCategoryInfo(ev.category);
               const isSelected = selectedEvent?.id === ev.id;
+              const isEditing = editingId === ev.id;
+              const evDateParts = ev.eventDate.split('-').map(Number);
+              const evDateLocal = new Date(evDateParts[0], evDateParts[1] - 1, evDateParts[2]);
+
+              if (isEditing) {
+                return (
+                  <div key={ev.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-[#F5A623]/50' : 'bg-orange-50 border-[#F5A623]/50'}`}
+                    onClick={e => e.stopPropagation()}>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Título</label>
+                        <input type="text" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                          className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Fecha</label>
+                        <input type="date" value={editForm.eventDate} onChange={e => setEditForm({ ...editForm, eventDate: e.target.value })}
+                          className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Categoría</label>
+                        <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className={inputClass}>
+                          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Descripción</label>
+                        <input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                          className={inputClass} />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-3">
+                      <button onClick={handleCancelEdit}
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-600' : 'text-gray-500 hover:bg-gray-200'}`}>
+                        <X className="w-4 h-4" />
+                      </button>
+                      <button onClick={handleSaveEdit}
+                        className="p-2 rounded-lg text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={ev.id}
                   onClick={() => handleSelectEvent(ev)}
@@ -372,13 +450,19 @@ export default function Timeline() {
                       <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{ev.description}</p>
                     )}
                     <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                      {new Date(ev.eventDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {evDateLocal.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(ev.id); }}
-                    className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}>
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={(e) => handleStartEdit(ev, e)}
+                      className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:bg-slate-600' : 'text-gray-400 hover:text-[#F5A623] hover:bg-gray-200'}`}>
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={(e) => handleDelete(ev.id, e)}
+                      className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
