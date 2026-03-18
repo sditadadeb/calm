@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { Filter, X, Search } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Filters({ onApply }) {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const { 
     filters, 
     setFilters, 
@@ -47,8 +49,8 @@ export default function Filters({ onApply }) {
             <Filter className="w-5 h-5 text-[#F5A623]" />
           </div>
           <div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Filtros</h3>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Refina tu búsqueda</p>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.title')}</h3>
+            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('filters.refineSearch')}</p>
           </div>
         </div>
         <button
@@ -56,20 +58,20 @@ export default function Filters({ onApply }) {
           className={`text-sm flex items-center gap-1 transition-colors ${isDark ? 'text-slate-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'}`}
         >
           <X className="w-4 h-4" />
-          Limpiar filtros
+          {t('filters.clearFilters')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Vendedor */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Vendedor</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.seller')}</label>
           <select
             value={filters.userId || ''}
             onChange={(e) => handleFilterChange('userId', e.target.value)}
             className={inputClasses}
           >
-            <option value="">Todos los vendedores</option>
+            <option value="">{t('filters.allSellers')}</option>
             {sellers.map((seller) => (
               <option key={seller.id} value={seller.id}>
                 {seller.name}
@@ -80,13 +82,13 @@ export default function Filters({ onApply }) {
 
         {/* Sucursal */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Sucursal</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.branch')}</label>
           <select
             value={filters.branchId || ''}
             onChange={(e) => handleFilterChange('branchId', e.target.value)}
             className={inputClasses}
           >
-            <option value="">Todas las sucursales</option>
+            <option value="">{t('filters.allBranches')}</option>
             {branches.map((branch) => (
               <option key={branch.id} value={branch.id}>
                 {branch.name}
@@ -97,24 +99,24 @@ export default function Filters({ onApply }) {
 
         {/* Resultado */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Resultado</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.result')}</label>
           <select
             value={filters.saleStatus || ''}
             onChange={(e) => handleFilterChange('saleStatus', e.target.value || null)}
             className={inputClasses}
           >
-            <option value="">Todos los resultados</option>
-            <option value="SALE_CONFIRMED">✓ Venta confirmada</option>
-            <option value="SALE_LIKELY">↗ Venta probable</option>
-            <option value="ADVANCE_NO_CLOSE">⚡ Avance sin cierre</option>
-            <option value="NO_SALE">✗ Sin venta</option>
-            <option value="UNINTERPRETABLE">? No interpretable</option>
+            <option value="">{t('filters.allResults')}</option>
+            <option value="SALE_CONFIRMED">{t('filters.saleConfirmed')}</option>
+            <option value="SALE_LIKELY">{t('filters.saleLikely')}</option>
+            <option value="ADVANCE_NO_CLOSE">{t('filters.advanceNoClose')}</option>
+            <option value="NO_SALE">{t('filters.noSale')}</option>
+            <option value="UNINTERPRETABLE">{t('filters.uninterpretable')}</option>
           </select>
         </div>
 
         {/* Fecha desde */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Desde</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.from')}</label>
           <input
             type="date"
             value={filters.dateFrom || ''}
@@ -125,7 +127,7 @@ export default function Filters({ onApply }) {
 
         {/* Fecha hasta */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Hasta</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.to')}</label>
           <input
             type="date"
             value={filters.dateTo || ''}
@@ -136,15 +138,15 @@ export default function Filters({ onApply }) {
 
         {/* Puntuación mínima */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Puntuación mín.</label>
+          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.minScore')}</label>
           <select
             value={filters.minScore || ''}
             onChange={(e) => handleFilterChange('minScore', e.target.value)}
             className={inputClasses}
           >
-            <option value="">Sin mínimo</option>
+            <option value="">{t('filters.noMinimum')}</option>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-              <option key={n} value={n}>≥ {n} puntos</option>
+              <option key={n} value={n}>≥ {n} {t('filters.points')}</option>
             ))}
           </select>
         </div>
@@ -155,14 +157,14 @@ export default function Filters({ onApply }) {
           onClick={handleClear} 
           className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
-          Limpiar
+          {t('filters.clear')}
         </button>
         <button 
           onClick={handleApply} 
           className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <Search className="w-4 h-4" />
-          Aplicar filtros
+          {t('filters.applyFilters')}
         </button>
       </div>
     </div>

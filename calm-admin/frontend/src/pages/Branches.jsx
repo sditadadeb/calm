@@ -11,10 +11,12 @@ import {
 } from 'recharts';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Branches() {
   const { dashboardMetrics, loading, fetchDashboardMetrics } = useStore();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchDashboardMetrics();
@@ -25,7 +27,7 @@ export default function Branches() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando sucursales...</p>
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.loading')}</p>
         </div>
       </div>
     );
@@ -54,7 +56,7 @@ export default function Branches() {
         <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursales activas</p>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.activeBranches')}</p>
               <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{branches.length}</p>
             </div>
             <div className="w-12 h-12 bg-[#F5A623]/20 rounded-xl flex items-center justify-center">
@@ -65,7 +67,7 @@ export default function Branches() {
         <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Mejor conversión</p>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.bestConversion')}</p>
               <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
                 {branches.length > 0 ? Math.max(...branches.map(b => b.conversionRate)).toFixed(1) : 0}%
               </p>
@@ -78,7 +80,7 @@ export default function Branches() {
         <div className={`rounded-2xl p-6 border border-l-4 border-l-blue-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Total atenciones</p>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.totalAttendances')}</p>
               <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
                 {branches.reduce((acc, b) => acc + b.totalInteractions, 0)}
               </p>
@@ -94,26 +96,26 @@ export default function Branches() {
       {branches.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Conversión por Sucursal</h3>
-            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Tasa de cierre de ventas</p>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('branches.conversionByBranch')}</h3>
+            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.closureRate')}</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={11} angle={-45} textAnchor="end" height={60} />
                 <YAxis stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, 'Conversión']} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, t('branches.conversion')]} />
                 <Bar dataKey="conversion" fill={isDark ? '#334155' : '#F5A623'} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Score por Sucursal</h3>
-            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Puntuación promedio de vendedores</p>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('branches.scoreByBranch')}</h3>
+            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.avgSellerScore')}</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={11} angle={-45} textAnchor="end" height={60} />
                 <YAxis stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} domain={[0, 10]} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value.toFixed(1), 'Score']} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [value.toFixed(1), t('branches.score')]} />
                 <Bar dataKey="score" fill="#22c55e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -127,22 +129,22 @@ export default function Branches() {
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
             <Building2 className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
           </div>
-          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No hay sucursales</h3>
-          <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Sincroniza datos desde S3</p>
+          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('branches.noBranches')}</h3>
+          <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('branches.syncData')}</p>
         </div>
       ) : (
         <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <table className="w-full">
             <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
               <tr>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Posición</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sucursal</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Atenciones</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Ventas</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sin Venta</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Conversión</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Score</th>
-                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.position')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.branch')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.totalAttendances')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.sales')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.noSale')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.conversion')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.score')}</th>
+                <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
@@ -207,7 +209,7 @@ export default function Branches() {
                       to={`/transcriptions?branchId=${branch.branchId}`}
                       className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
                     >
-                      <Eye className="w-3 h-3" /> Ver atenciones
+                      <Eye className="w-3 h-3" /> {t('branches.viewAttendances')}
                     </Link>
                   </td>
                 </tr>

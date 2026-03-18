@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import Filters from '../components/Filters';
 import ScoreBadge from '../components/ScoreBadge';
 import { checkNewTranscriptions } from '../api';
@@ -12,6 +13,7 @@ import { es } from 'date-fns/locale';
 export default function Transcriptions() {
   const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters, filters } = useStore();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
@@ -219,10 +221,10 @@ export default function Transcriptions() {
             <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
             <div className="flex-1">
               <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                Recalculando métricas...
+                {t('transcriptions.recalculating')}
               </p>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Actualizando dashboard, vendedores y sucursales
+                {t('transcriptions.updatingDashboard')}
               </p>
             </div>
           </div>
@@ -240,12 +242,12 @@ export default function Transcriptions() {
         {syncing ? (
           <>
             <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
-            <span>Verificando si existen nuevas atenciones...</span>
+            <span>{t('transcriptions.checkingNew')}</span>
           </>
         ) : (
           <>
             <FileText className="w-4 h-4" />
-            <span>{filteredTranscriptions.length} de {transcriptions.length} registros</span>
+            <span>{filteredTranscriptions.length} {t('common.of')} {transcriptions.length} {t('common.records')}</span>
           </>
         )}
       </div>
@@ -258,164 +260,164 @@ export default function Transcriptions() {
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-10 h-10 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripciones...</p>
+            <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('transcriptions.loadingTranscriptions')}</p>
           </div>
         ) : transcriptions.length === 0 ? (
           <div className="p-12 text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No se encontraron transcripciones</h3>
-            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Intenta ajustar los filtros o sincronizar desde S3</p>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('transcriptions.noTranscriptions')}</h3>
+            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('transcriptions.adjustFilters')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                 <tr>
-                  <SortableHeader label="ID" sortKey="recordingId" />
-                  <SortableHeader label="Vendedor" sortKey="userName" />
-                  <SortableHeader label="Sucursal" sortKey="branchName" />
-                  <SortableHeader label="Fecha" sortKey="recordingDate" />
-                  <SortableHeader label="Resultado" sortKey="saleCompleted" />
-                  <SortableHeader label="Puntuación" sortKey="sellerScore" />
-                  <SortableHeader label="Estado" sortKey="analyzed" />
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
+                  <SortableHeader label={t('transcriptions.id')} sortKey="recordingId" />
+                  <SortableHeader label={t('transcriptions.seller')} sortKey="userName" />
+                  <SortableHeader label={t('transcriptions.branch')} sortKey="branchName" />
+                  <SortableHeader label={t('transcriptions.date')} sortKey="recordingDate" />
+                  <SortableHeader label={t('transcriptions.result')} sortKey="saleCompleted" />
+                  <SortableHeader label={t('transcriptions.score')} sortKey="sellerScore" />
+                  <SortableHeader label={t('transcriptions.status')} sortKey="analyzed" />
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                {sortedTranscriptions.map((t, index) => (
+                {sortedTranscriptions.map((transcription, index) => (
                   <tr 
-                    key={t.recordingId}
+                    key={transcription.recordingId}
                     className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-[#F5A623]">#{t.recordingId}</span>
+                      <span className="font-mono text-sm font-medium text-[#F5A623]">#{transcription.recordingId}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{t.userName || 'Desconocido'}</p>
-                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {t.userId}</p>
+                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{transcription.userName || t('common.unknown')}</p>
+                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {transcription.userId}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t.branchName || '-'}</span>
+                      <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{transcription.branchName || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                         <Clock className="w-4 h-4" />
-                        <span className="text-sm">{formatDate(t.recordingDate)}</span>
+                        <span className="text-sm">{formatDate(transcription.recordingDate)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         {/* Sale Status Badge */}
-                        {t.saleStatus === 'SALE_CONFIRMED' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400" title="Venta confirmada con evidencia">
-                            <CheckCircle className="w-3 h-3" /> Venta
+                        {transcription.saleStatus === 'SALE_CONFIRMED' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400" title={t('transcriptions.saleConfirmed')}>
+                            <CheckCircle className="w-3 h-3" /> {t('transcriptions.sale')}
                           </span>
                         )}
-                        {t.saleStatus === 'SALE_LIKELY' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" title="Alta probabilidad de venta">
-                            <TrendingUp className="w-3 h-3" /> Probable
+                        {transcription.saleStatus === 'SALE_LIKELY' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" title={t('transcriptions.saleProbable')}>
+                            <TrendingUp className="w-3 h-3" /> {t('transcriptions.probable')}
                           </span>
                         )}
-                        {t.saleStatus === 'ADVANCE_NO_CLOSE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400" title="Avance comercial sin cierre">
-                            <AlertTriangle className="w-3 h-3" /> Avance
+                        {transcription.saleStatus === 'ADVANCE_NO_CLOSE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400" title={t('transcriptions.advanceNoClose')}>
+                            <AlertTriangle className="w-3 h-3" /> {t('transcriptions.advance')}
                           </span>
                         )}
-                        {t.saleStatus === 'NO_SALE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400" title="No hubo venta">
-                            <XCircle className="w-3 h-3" /> Sin venta
+                        {transcription.saleStatus === 'NO_SALE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400" title={t('transcriptions.noSaleResult')}>
+                            <XCircle className="w-3 h-3" /> {t('transcriptions.noSale')}
                           </span>
                         )}
-                        {t.saleStatus === 'UNINTERPRETABLE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/20 text-slate-400" title="Transcripción no interpretable">
-                            <HelpCircle className="w-3 h-3" /> No interp.
+                        {transcription.saleStatus === 'UNINTERPRETABLE' && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/20 text-slate-400" title={t('transcriptions.uninterpretable')}>
+                            <HelpCircle className="w-3 h-3" /> {t('transcriptions.notInterp')}
                           </span>
                         )}
                         {/* Fallback para transcripciones sin saleStatus */}
-                        {!t.saleStatus && t.saleCompleted === true && (
+                        {!transcription.saleStatus && transcription.saleCompleted === true && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-                            <CheckCircle className="w-3 h-3" /> Venta
+                            <CheckCircle className="w-3 h-3" /> {t('transcriptions.sale')}
                           </span>
                         )}
-                        {!t.saleStatus && t.saleCompleted === false && (
+                        {!transcription.saleStatus && transcription.saleCompleted === false && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
-                            <XCircle className="w-3 h-3" /> Sin venta
+                            <XCircle className="w-3 h-3" /> {t('transcriptions.noSale')}
                           </span>
                         )}
-                        {!t.saleStatus && t.saleCompleted === null && (
+                        {!transcription.saleStatus && transcription.saleCompleted === null && (
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>
-                            Pendiente
+                            {t('transcriptions.pending')}
                           </span>
                         )}
                         {/* Confidence indicator */}
-                        {t.analysisConfidence !== null && t.analysisConfidence !== undefined && (
-                          <div className="flex items-center gap-1" title={`Confianza: ${t.analysisConfidence}%`}>
+                        {transcription.analysisConfidence !== null && transcription.analysisConfidence !== undefined && (
+                          <div className="flex items-center gap-1" title={`Confianza: ${transcription.analysisConfidence}%`}>
                             <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                               <div 
                                 className={`h-full rounded-full ${
-                                  t.analysisConfidence >= 70 ? 'bg-green-500' : 
-                                  t.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                  transcription.analysisConfidence >= 70 ? 'bg-green-500' : 
+                                  transcription.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                                 }`}
-                                style={{ width: `${t.analysisConfidence}%` }}
+                                style={{ width: `${transcription.analysisConfidence}%` }}
                               />
                             </div>
                             <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                              {t.analysisConfidence}%
+                              {transcription.analysisConfidence}%
                             </span>
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <ScoreBadge score={t.sellerScore} size="small" />
+                      <ScoreBadge score={transcription.sellerScore} size="small" />
                     </td>
                     <td className="px-6 py-4">
-                      {t.analyzed ? (
+                      {transcription.analyzed ? (
                         <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
-                          <CheckCircle className="w-3 h-3" /> Analizado
+                          <CheckCircle className="w-3 h-3" /> {t('transcriptions.analyzed')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-yellow-400 text-xs font-medium">
-                          <Sparkles className="w-3 h-3" /> Pendiente
+                          <Sparkles className="w-3 h-3" /> {t('transcriptions.pending')}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/transcriptions/${t.recordingId}`}
+                          to={`/transcriptions/${transcription.recordingId}`}
                           className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
                         >
-                          <Eye className="w-3 h-3" /> Ver
+                          <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
-                        {!t.analyzed && (
+                        {!transcription.analyzed && (
                           <button
-                            onClick={(e) => handleAnalyze(t.recordingId, e)}
+                            onClick={(e) => handleAnalyze(transcription.recordingId, e)}
                             className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
                             disabled={loading}
                           >
-                            <Sparkles className="w-3 h-3" /> Analizar
+                            <Sparkles className="w-3 h-3" /> {t('transcriptions.analyze')}
                           </button>
                         )}
                         {isAdmin && (
                           <button
-                            onClick={(e) => handleDelete(t.recordingId, e)}
+                            onClick={(e) => handleDelete(transcription.recordingId, e)}
                             className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${
-                              deleting === t.recordingId 
+                              deleting === transcription.recordingId 
                                 ? 'bg-red-500/50 text-white cursor-not-allowed' 
                                 : isDark 
                                   ? 'bg-slate-700 text-red-400 hover:bg-red-500 hover:text-white' 
                                   : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
                             }`}
-                            disabled={deleting === t.recordingId}
-                            title="Eliminar transcripción"
+                            disabled={deleting === transcription.recordingId}
+                            title={t('transcriptions.deleteTranscription')}
                           >
-                            <Trash2 className={`w-3 h-3 ${deleting === t.recordingId ? 'animate-spin' : ''}`} />
+                            <Trash2 className={`w-3 h-3 ${deleting === transcription.recordingId ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                       </div>

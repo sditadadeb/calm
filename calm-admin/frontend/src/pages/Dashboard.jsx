@@ -27,14 +27,11 @@ import {
 } from 'recharts';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import MetricCard from '../components/MetricCard';
 
 // Colores CALM
 const COLORS = ['#F5A623', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
-
-// Días de la semana
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 // Colores para sucursales en scatter plot
 const BRANCH_COLORS = ['#F5A623', '#22c55e', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
@@ -42,6 +39,9 @@ const BRANCH_COLORS = ['#F5A623', '#22c55e', '#3b82f6', '#ef4444', '#8b5cf6', '#
 export default function Dashboard() {
   const { dashboardMetrics, transcriptions, loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const DAYS = t('dashboard.daysShort') || [];
+  const DAYS_FULL = t('dashboard.daysLong') || [];
 
   useEffect(() => {
     fetchDashboardMetrics();
@@ -62,7 +62,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando datos...</p>
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.loadingData')}</p>
         </div>
       </div>
     );
@@ -74,8 +74,8 @@ export default function Dashboard() {
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
           <FileText className="w-8 h-8 text-[#F5A623]" />
         </div>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Sin datos disponibles</h3>
-        <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Sincroniza desde S3 para comenzar</p>
+        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noData')}</h3>
+        <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('dashboard.syncToStart')}</p>
       </div>
     );
   }
@@ -189,30 +189,30 @@ export default function Dashboard() {
       {/* Main Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title="Total Atenciones"
+          title={t('dashboard.totalAttendances')}
           value={totalTranscriptions}
-          subtitle="Transcripciones"
+          subtitle={t('dashboard.transcriptions')}
           icon={FileText}
           variant="default"
         />
         <MetricCard
-          title="Ventas"
+          title={t('dashboard.sales')}
           value={totalSales}
           subtitle={`${conversionRate}% conversión`}
           icon={ShoppingCart}
           variant="success"
         />
         <MetricCard
-          title="Sin Venta"
+          title={t('dashboard.noSale')}
           value={totalNoSales}
-          subtitle="Oportunidades"
+          subtitle={t('dashboard.opportunities')}
           icon={XCircle}
           variant="danger"
         />
         <MetricCard
-          title="Score Promedio"
+          title={t('dashboard.avgScore')}
           value={averageSellerScore?.toFixed(1) || '-'}
-          subtitle="Calificación"
+          subtitle={t('dashboard.rating')}
           icon={Award}
           variant="warning"
         />
@@ -224,11 +224,11 @@ export default function Dashboard() {
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Top Vendedores</h3>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Comparativa de ventas</p>
+              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.topSellers')}</h3>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.salesComparison')}</p>
             </div>
             <Link to="/sellers" className="text-sm text-[#F5A623] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
-              Ver todos <ArrowRight className="w-4 h-4" />
+              {t('dashboard.viewAll')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           {sellerChartData.length > 0 ? (
@@ -237,13 +237,13 @@ export default function Dashboard() {
                 <XAxis type="number" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
                 <YAxis type="category" dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} width={80} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="ventas" name="Ventas" fill="#22c55e" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="sinVenta" name="Sin venta" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="ventas" name={t('dashboard.sales')} fill="#22c55e" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="sinVenta" name={t('dashboard.noSaleShort')} fill="#ef4444" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className={`h-64 flex items-center justify-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              Sin datos disponibles
+              {t('dashboard.noData')}
             </div>
           )}
         </div>
@@ -251,8 +251,8 @@ export default function Dashboard() {
         {/* No Sale Reasons Chart */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="mb-6">
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Razones de No Venta</h3>
-            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Análisis de objeciones</p>
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noSaleReasons')}</h3>
+            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.objectionAnalysis')}</p>
           </div>
           {noSaleReasonsData.length > 0 ? (
             <div className="flex items-center">
@@ -289,7 +289,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className={`h-64 flex items-center justify-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              Sin datos disponibles
+              {t('dashboard.noData')}
             </div>
           )}
         </div>
@@ -304,8 +304,8 @@ export default function Dashboard() {
               <Users className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Ranking Vendedores</h3>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Por tasa de conversión</p>
+              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.byConversionRate')}</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -342,8 +342,8 @@ export default function Dashboard() {
               <Building2 className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Rendimiento Sucursales</h3>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Por tasa de conversión</p>
+              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.byConversionRate')}</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -362,7 +362,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold capitalize truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</p>
-                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{branch.totalInteractions} atenciones</p>
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{branch.totalInteractions} {t('dashboard.attendances')}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-green-400">{branch.conversionRate}%</p>
@@ -382,8 +382,8 @@ export default function Dashboard() {
               <Clock className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Distribución de Tráfico</h2>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Patrones de atención por horario y día</p>
+              <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.attendancePatterns')}</p>
             </div>
           </div>
 
@@ -392,10 +392,10 @@ export default function Dashboard() {
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-[#F5A623]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Heatmap Semanal</h3>
+                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.weeklyHeatmap')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Intensidad de atenciones por día y hora
+                {t('dashboard.heatmapDesc')}
               </p>
               
               <div className="overflow-x-auto">
@@ -428,7 +428,7 @@ export default function Dashboard() {
                                 ? (isDark ? '#1e293b' : '#f1f5f9')
                                 : `rgba(245, 166, 35, ${0.2 + intensity * 0.8})`,
                             }}
-                            title={`${DAYS_FULL[dayIdx]} ${hour}:00 - ${value} atenciones`}
+                            title={`${DAYS_FULL[dayIdx]} ${hour}:00 - ${value} ${t('dashboard.attendances')}`}
                           />
                         );
                       })}
@@ -437,7 +437,7 @@ export default function Dashboard() {
                   
                   {/* Leyenda */}
                   <div className="flex items-center justify-end mt-4 gap-2">
-                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Menos</span>
+                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('dashboard.less')}</span>
                     <div className="flex gap-1">
                       {[0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
                         <div
@@ -447,7 +447,7 @@ export default function Dashboard() {
                         />
                       ))}
                     </div>
-                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Más</span>
+                    <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('dashboard.more')}</span>
                   </div>
                 </div>
               </div>
@@ -457,10 +457,10 @@ export default function Dashboard() {
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="w-5 h-5 text-[#F5A623]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Atenciones por Horario</h3>
+                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.attendancesByTime')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                X = Fecha | Y = Hora | Color = Sucursal | Borde verde = venta
+                {t('dashboard.scatterDesc')}
               </p>
               
               {scatterData.branches?.length > 0 ? (
@@ -508,10 +508,10 @@ export default function Dashboard() {
                                   {data.dayName} {data.dateStr}
                                 </p>
                                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                  Hora: {data.hour}:{data.minutes.toString().padStart(2, '0')}
+                                  {t('dashboard.time')}: {data.hour}:{data.minutes.toString().padStart(2, '0')}
                                 </p>
                                 <p className={`text-sm font-medium mt-1 ${data.sale ? 'text-green-400' : 'text-red-400'}`}>
-                                  {data.sale ? '✓ Venta realizada' : '✗ Sin venta'}
+                                  {data.sale ? t('dashboard.saleCompleted') : t('dashboard.noSaleCompleted')}
                                 </p>
                               </div>
                             );
@@ -558,17 +558,17 @@ export default function Dashboard() {
                     ))}
                     <div className="flex items-center gap-2 ml-4">
                       <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-green-500" />
-                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Venta</span>
+                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.sale')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-red-500" />
-                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Sin venta</span>
+                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.noSaleShort')}</span>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className={`h-48 flex items-center justify-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de fechas disponibles
+                  {t('dashboard.noDateData')}
                 </div>
               )}
             </div>

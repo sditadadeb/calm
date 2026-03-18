@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      setError(err.response?.data?.error || t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -48,12 +50,12 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-white mb-2">
             <span className="text-[#FF8C00]">calm</span> Admin
           </h1>
-          <p className="text-gray-400">Panel de Análisis de Ventas</p>
+          <p className="text-gray-400">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
-          <h2 className="text-xl font-semibold text-white mb-6 text-center">Iniciar Sesión</h2>
+          <h2 className="text-xl font-semibold text-white mb-6 text-center">{t('login.signIn')}</h2>
           
           {error && (
             <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
@@ -64,14 +66,14 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Usuario
+                {t('login.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
-                placeholder="Ingresá tu usuario"
+                placeholder={t('login.usernamePlaceholder')}
                 required
                 autoFocus
               />
@@ -79,14 +81,14 @@ const Login = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Contraseña
+                {t('login.password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
-                placeholder="Ingresá tu contraseña"
+                placeholder={t('login.passwordPlaceholder')}
                 required
               />
             </div>
@@ -102,10 +104,10 @@ const Login = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Ingresando...
+                  {t('login.signingIn')}
                 </span>
               ) : (
-                'Ingresar'
+                t('login.submit')
               )}
             </button>
           </form>
@@ -113,7 +115,7 @@ const Login = () => {
 
         {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-6">
-          © 2026 CALM - Panel de Administración
+          {t('login.footer')}
         </p>
       </div>
     </div>
@@ -121,4 +123,3 @@ const Login = () => {
 };
 
 export default Login;
-

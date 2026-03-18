@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getPromptConfig, updatePromptConfig, resetPromptConfig, getReanalyzeAllStreamUrl } from '../api';
 import { RefreshCw } from 'lucide-react';
 
@@ -29,6 +30,7 @@ const InfoIcon = ({ tooltip, isDark }) => {
 
 const Settings = () => {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [config, setConfig] = useState({
     systemPrompt: '',
     model: 'gpt-5.1-chat-latest',
@@ -39,7 +41,6 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   
-  // Re-analyze state
   const [reanalyzing, setReanalyzing] = useState(false);
   const [reanalyzeProgress, setReanalyzeProgress] = useState({ current: 0, total: 0, message: '' });
 
@@ -54,7 +55,7 @@ const Settings = () => {
       setConfig(response.data);
     } catch (error) {
       console.error('Error loading config:', error);
-      setMessage({ type: 'error', text: 'Error al cargar la configuración' });
+      setMessage({ type: 'error', text: t('settings.errorLoading') });
     } finally {
       setLoading(false);
     }
@@ -64,27 +65,27 @@ const Settings = () => {
     try {
       setSaving(true);
       await updatePromptConfig(config);
-      setMessage({ type: 'success', text: '¡Configuración guardada exitosamente!' });
+      setMessage({ type: 'success', text: t('settings.savedSuccess') });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error('Error saving config:', error);
-      setMessage({ type: 'error', text: 'Error al guardar la configuración' });
+      setMessage({ type: 'error', text: t('settings.errorSaving') });
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = async () => {
-    if (window.confirm('¿Estás seguro de restablecer el prompt al valor por defecto?')) {
+    if (window.confirm(t('settings.confirmReset'))) {
       try {
         setSaving(true);
         const response = await resetPromptConfig();
         setConfig(response.data);
-        setMessage({ type: 'success', text: 'Prompt restablecido al valor por defecto' });
+        setMessage({ type: 'success', text: t('settings.resetSuccess') });
         setTimeout(() => setMessage(null), 3000);
       } catch (error) {
         console.error('Error resetting config:', error);
-        setMessage({ type: 'error', text: 'Error al restablecer el prompt' });
+        setMessage({ type: 'error', text: t('settings.errorReset') });
       } finally {
         setSaving(false);
       }
@@ -92,12 +93,12 @@ const Settings = () => {
   };
 
   const handleReanalyzeAll = () => {
-    if (!window.confirm('¿Estás seguro de re-analizar TODAS las transcripciones con el prompt actual? Esto puede tomar varios minutos.')) {
+    if (!window.confirm(t('settings.confirmReanalyze'))) {
       return;
     }
 
     setReanalyzing(true);
-    setReanalyzeProgress({ current: 0, total: 0, message: 'Iniciando...' });
+    setReanalyzeProgress({ current: 0, total: 0, message: t('settings.starting') });
 
     const eventSource = new EventSource(getReanalyzeAllStreamUrl());
 
@@ -122,7 +123,7 @@ const Settings = () => {
       setReanalyzeProgress({ current: 0, total: 0, message: '' });
       setMessage({ 
         type: 'success', 
-        text: `Re-análisis completado: ${data.success} exitosos, ${data.errors} errores` 
+        text: `${t('settings.reanalyzeComplete')}: ${data.success} ${t('settings.successful')}, ${data.errors} ${t('settings.errors')}` 
       });
       setTimeout(() => setMessage(null), 5000);
     });
@@ -133,14 +134,12 @@ const Settings = () => {
       eventSource.close();
       setReanalyzing(false);
       setReanalyzeProgress({ current: 0, total: 0, message: '' });
-      setMessage({ type: 'error', text: errorData?.message || 'Error en el re-análisis. Revisá los logs del servidor.' });
+      setMessage({ type: 'error', text: errorData?.message || t('settings.reanalyzeError') });
     });
 
     eventSource.onerror = (err) => {
-      // Only show error if we haven't received a complete event
-      // (connection drop after completion is not an error)
       if (reanalyzeProgress.current > 0 && reanalyzeProgress.current < reanalyzeProgress.total) {
-        setMessage({ type: 'warning', text: `Conexión perdida en ${reanalyzeProgress.current}/${reanalyzeProgress.total}. El re-análisis continúa en el servidor.` });
+        setMessage({ type: 'warning', text: `${t('settings.connectionLost')} ${reanalyzeProgress.current}/${reanalyzeProgress.total}. ${t('settings.continuesOnServer')}` });
       }
       eventSource.close();
       setReanalyzing(false);
@@ -173,17 +172,17 @@ const Settings = () => {
       {/* Explicación de criterios */}
       <div className="bg-gradient-to-r from-[#F5A623]/10 to-[#FFBB54]/10 rounded-xl p-6 border border-[#F5A623]/20">
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          📊 Criterios de Evaluación del Score (1-10)
-          <InfoIcon isDark={isDark} tooltip="El score es generado por la IA analizando múltiples factores de la conversación de venta. Podés personalizar estos criterios modificando el prompt." />
+          📊 {t('settings.scoreCriteria')}
+          <InfoIcon isDark={isDark} tooltip={t('settings.scoreCriteriaTooltip')} />
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { score: '1-3', label: 'Deficiente', color: 'red', desc: 'No muestra interés, no conoce productos, no intenta ayudar al cliente' },
-            { score: '4-5', label: 'Básico', color: 'yellow', desc: 'Responde preguntas pero no propone, atención pasiva' },
-            { score: '6-7', label: 'Bueno', color: 'blue', desc: 'Explica productos, intenta cerrar, muestra interés' },
-            { score: '8-9', label: 'Excelente', color: 'green', desc: 'Maneja objeciones, usa técnicas de venta, conoce el producto' },
-            { score: '10', label: 'Excepcional', color: 'orange', desc: 'Cierra venta con upselling/cross-selling, experiencia memorable' },
+            { score: '1-3', label: t('settings.deficient'), color: 'red', desc: t('settings.deficientDesc') },
+            { score: '4-5', label: t('settings.basic'), color: 'yellow', desc: t('settings.basicDesc') },
+            { score: '6-7', label: t('settings.good'), color: 'blue', desc: t('settings.goodDesc') },
+            { score: '8-9', label: t('settings.excellent'), color: 'green', desc: t('settings.excellentDesc') },
+            { score: '10', label: t('settings.exceptional'), color: 'orange', desc: t('settings.exceptionalDesc') },
           ].map((item) => (
             <div key={item.score} className={`rounded-lg p-4 border-l-4 ${isDark ? 'bg-slate-800' : 'bg-white'} ${
               item.color === 'red' ? 'border-l-red-400' :
@@ -212,8 +211,8 @@ const Settings = () => {
       <div className={`rounded-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <div className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] p-4">
           <h2 className="text-lg font-semibold text-white flex items-center">
-            🤖 Prompt del Sistema
-            <InfoIcon isDark={isDark} tooltip="Este es el prompt que recibe ChatGPT antes de analizar cada transcripción. Define cómo debe evaluar y qué estructura de respuesta debe dar. Modificalo con cuidado para no romper el formato JSON esperado." />
+            🤖 {t('settings.systemPrompt')}
+            <InfoIcon isDark={isDark} tooltip={t('settings.systemPromptTooltip')} />
           </h2>
         </div>
         
@@ -221,28 +220,28 @@ const Settings = () => {
           <div>
             <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
               System Prompt
-              <InfoIcon isDark={isDark} tooltip="El System Prompt le dice a la IA quién es y cómo debe comportarse. Acá definís los criterios de evaluación, el formato de respuesta JSON, y las categorías de 'razón de no venta'." />
+              <InfoIcon isDark={isDark} tooltip={t('settings.systemPromptFieldTooltip')} />
             </label>
             <textarea
               value={config.systemPrompt}
               onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
               className={`${inputClasses} h-96 font-mono text-sm`}
-              placeholder="Ingresá el prompt del sistema..."
+              placeholder={t('settings.promptPlaceholder')}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                Modelo
-                <InfoIcon isDark={isDark} tooltip="gpt-5.1-instant: Rápido e inteligente (recomendado). gpt-4.1-mini: Económico. gpt-4.1: Más preciso para análisis complejos." />
+                {t('settings.model')}
+                <InfoIcon isDark={isDark} tooltip={t('settings.modelTooltip')} />
               </label>
               <select
                 value={config.model}
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
                 className={inputClasses}
               >
-                <option value="gpt-5.1-chat-latest">gpt-5.1-instant (Recomendado)</option>
+                <option value="gpt-5.1-chat-latest">gpt-5.1-instant ({t('settings.recommended')})</option>
                 <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                 <option value="gpt-4.1">gpt-4.1</option>
                 <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
@@ -251,8 +250,8 @@ const Settings = () => {
 
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                Temperatura
-                <InfoIcon isDark={isDark} tooltip="Controla la creatividad de las respuestas. 0 = determinístico, 1 = muy creativo. Para análisis de ventas, se recomienda 0.2-0.4 para respuestas consistentes." />
+                {t('settings.temperature')}
+                <InfoIcon isDark={isDark} tooltip={t('settings.temperatureTooltip')} />
               </label>
               <input
                 type="number"
@@ -268,7 +267,7 @@ const Settings = () => {
             <div>
               <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                 Max Tokens
-                <InfoIcon isDark={isDark} tooltip="Límite máximo de tokens (palabras/caracteres) en la respuesta. 2000 es suficiente para análisis completos. Aumentar si las respuestas se cortan." />
+                <InfoIcon isDark={isDark} tooltip={t('settings.maxTokensTooltip')} />
               </label>
               <input
                 type="number"
@@ -289,14 +288,14 @@ const Settings = () => {
             disabled={saving}
             className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-600' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'}`}
           >
-            Restablecer por defecto
+            {t('settings.resetDefault')}
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
             className="px-6 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
           >
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
+            {saving ? t('settings.saving') : t('settings.saveChanges')}
           </button>
         </div>
       </div>
@@ -304,13 +303,12 @@ const Settings = () => {
       {/* Re-analizar todas las transcripciones */}
       <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          🔄 Re-analizar Transcripciones
-          <InfoIcon isDark={isDark} tooltip="Después de modificar el prompt, podés re-analizar todas las transcripciones para que usen los nuevos criterios. Esto ejecutará el análisis de GPT en cada una." />
+          🔄 {t('settings.reanalyzeTitle')}
+          <InfoIcon isDark={isDark} tooltip={t('settings.reanalyzeTooltip')} />
         </h2>
         
         <p className={`mb-4 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-          Si modificaste el prompt, usá este botón para re-analizar todas las transcripciones con los nuevos criterios.
-          Esto sobrescribirá los análisis anteriores.
+          {t('settings.reanalyzeDesc')}
         </p>
         
         {reanalyzing && (
@@ -326,7 +324,7 @@ const Settings = () => {
               />
             </div>
             <p className={`text-sm mt-2 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
-              {reanalyzeProgress.current} de {reanalyzeProgress.total} transcripciones
+              {reanalyzeProgress.current} {t('settings.of')} {reanalyzeProgress.total} {t('settings.transcriptions')}
             </p>
           </div>
         )}
@@ -341,31 +339,31 @@ const Settings = () => {
           }`}
         >
           <RefreshCw className={`w-5 h-5 ${reanalyzing ? 'animate-spin' : ''}`} />
-          {reanalyzing ? 'Re-analizando...' : 'Re-analizar Todas las Transcripciones'}
+          {reanalyzing ? t('settings.reanalyzing') : t('settings.reanalyzeAll')}
         </button>
       </div>
 
       {/* Campos analizados */}
       <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          📋 Campos que Genera el Análisis
-          <InfoIcon isDark={isDark} tooltip="Estos son los campos que la IA devuelve después de analizar cada transcripción. Si modificás el prompt, asegurate de mantener esta estructura JSON." />
+          📋 {t('settings.analysisFields')}
+          <InfoIcon isDark={isDark} tooltip={t('settings.analysisFieldsTooltip')} />
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { icon: '✅', name: 'saleCompleted', desc: 'Si se concretó la venta o no (true/false)' },
-            { icon: '🏷️', name: 'saleStatus', desc: 'Estado detallado: SALE_CONFIRMED, SALE_LIKELY, ADVANCE_NO_CLOSE, NO_SALE, UNINTERPRETABLE' },
-            { icon: '📊', name: 'analysisConfidence', desc: 'Confianza del análisis (0-100%)' },
-            { icon: '📜', name: 'saleEvidence', desc: 'Cita textual que justifica el resultado' },
-            { icon: '❌', name: 'noSaleReason', desc: 'Motivo de no venta (precio, indecisión, etc.)' },
-            { icon: '🛏️', name: 'productsDiscussed', desc: 'Lista de productos mencionados' },
-            { icon: '🤔', name: 'customerObjections', desc: 'Objeciones planteadas por el cliente' },
-            { icon: '💡', name: 'improvementSuggestions', desc: 'Sugerencias para mejorar la atención' },
-            { icon: '📝', name: 'executiveSummary', desc: 'Resumen ejecutivo de la interacción' },
-            { icon: '⭐', name: 'sellerScore', desc: 'Puntuación del vendedor (1-10)' },
-            { icon: '💪', name: 'sellerStrengths', desc: 'Fortalezas identificadas del vendedor' },
-            { icon: '⚠️', name: 'sellerWeaknesses', desc: 'Áreas de mejora del vendedor' },
+            { icon: '✅', name: 'saleCompleted', desc: t('settings.field.saleCompleted') },
+            { icon: '🏷️', name: 'saleStatus', desc: t('settings.field.saleStatus') },
+            { icon: '📊', name: 'analysisConfidence', desc: t('settings.field.analysisConfidence') },
+            { icon: '📜', name: 'saleEvidence', desc: t('settings.field.saleEvidence') },
+            { icon: '❌', name: 'noSaleReason', desc: t('settings.field.noSaleReason') },
+            { icon: '🛏️', name: 'productsDiscussed', desc: t('settings.field.productsDiscussed') },
+            { icon: '🤔', name: 'customerObjections', desc: t('settings.field.customerObjections') },
+            { icon: '💡', name: 'improvementSuggestions', desc: t('settings.field.improvementSuggestions') },
+            { icon: '📝', name: 'executiveSummary', desc: t('settings.field.executiveSummary') },
+            { icon: '⭐', name: 'sellerScore', desc: t('settings.field.sellerScore') },
+            { icon: '💪', name: 'sellerStrengths', desc: t('settings.field.sellerStrengths') },
+            { icon: '⚠️', name: 'sellerWeaknesses', desc: t('settings.field.sellerWeaknesses') },
           ].map((field) => (
             <div key={field.name} className={`flex items-start gap-3 p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
               <span className="text-lg">{field.icon}</span>

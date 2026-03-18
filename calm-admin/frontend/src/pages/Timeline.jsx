@@ -5,29 +5,11 @@ import {
 } from 'recharts';
 import { Plus, Trash2, Calendar, ArrowUpRight, ArrowDownRight, Minus, Info, Pencil, Check, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   getTimelineEvents, createTimelineEvent, updateTimelineEvent, deleteTimelineEvent,
   getTimelineMetrics, getTimelineCompare, getSellers
 } from '../api';
-
-const CATEGORIES = [
-  { value: 'capacitacion', label: 'Capacitación', color: '#3B82F6' },
-  { value: 'proceso', label: 'Proceso', color: '#8B5CF6' },
-  { value: 'producto', label: 'Producto', color: '#10B981' },
-  { value: 'equipo', label: 'Equipo', color: '#F59E0B' },
-  { value: 'otro', label: 'Otro', color: '#6B7280' },
-];
-
-const METRIC_OPTIONS = [
-  { key: 'saleRate', label: 'Tasa de venta (%)', color: '#10B981' },
-  { key: 'avgScore', label: 'Score promedio', color: '#F5A623' },
-  { key: 'avgConfidence', label: 'Confianza promedio', color: '#3B82F6' },
-  { key: 'total', label: 'Cantidad de atenciones', color: '#8B5CF6' },
-];
-
-function getCategoryInfo(value) {
-  return CATEGORIES.find(c => c.value === value) || CATEGORIES[4];
-}
 
 function DeltaBadge({ before, after, suffix = '', invert = false }) {
   if (before == null || after == null || before === 0) return <span className="text-gray-400">-</span>;
@@ -52,6 +34,7 @@ function DeltaBadge({ before, after, suffix = '', invert = false }) {
 
 export default function Timeline() {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [sellers, setSellers] = useState([]);
@@ -66,6 +49,25 @@ export default function Timeline() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', description: '', category: '', eventDate: '' });
   const [loading, setLoading] = useState(true);
+
+  const CATEGORIES = useMemo(() => [
+    { value: 'capacitacion', label: t('timeline.training'), color: '#3B82F6' },
+    { value: 'proceso', label: t('timeline.process'), color: '#8B5CF6' },
+    { value: 'producto', label: t('timeline.product'), color: '#10B981' },
+    { value: 'equipo', label: t('timeline.team'), color: '#F59E0B' },
+    { value: 'otro', label: t('timeline.other'), color: '#6B7280' },
+  ], [t]);
+
+  const METRIC_OPTIONS = useMemo(() => [
+    { key: 'saleRate', label: t('timeline.saleRate'), color: '#10B981' },
+    { key: 'avgScore', label: t('timeline.avgScore'), color: '#F5A623' },
+    { key: 'avgConfidence', label: t('timeline.avgConfidence'), color: '#3B82F6' },
+    { key: 'total', label: t('timeline.attendanceCount'), color: '#8B5CF6' },
+  ], [t]);
+
+  function getCategoryInfo(value) {
+    return CATEGORIES.find(c => c.value === value) || CATEGORIES[4];
+  }
 
   const loadData = async () => {
     setLoading(true);
@@ -196,18 +198,18 @@ export default function Timeline() {
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Agrupar por</label>
+          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.groupBy')}</label>
           <select value={groupBy} onChange={e => setGroupBy(e.target.value)}
             className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
-            <option value="week">Semana</option>
-            <option value="month">Mes</option>
+            <option value="week">{t('timeline.week')}</option>
+            <option value="month">{t('timeline.month')}</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Vendedor</label>
+          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.seller')}</label>
           <select value={sellerId} onChange={e => setSellerId(e.target.value)}
             className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
-            <option value="">Todos</option>
+            <option value="">{t('timeline.all')}</option>
             {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
@@ -236,7 +238,7 @@ export default function Timeline() {
           </div>
         ) : chartData.length === 0 ? (
           <div className="h-80 flex items-center justify-center">
-            <p className={isDark ? 'text-slate-500' : 'text-gray-400'}>No hay datos suficientes para el gráfico</p>
+            <p className={isDark ? 'text-slate-500' : 'text-gray-400'}>{t('timeline.noChartData')}</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={380}>
@@ -285,10 +287,10 @@ export default function Timeline() {
           <div className="flex items-center gap-3 mb-4">
             <Info className="w-5 h-5 text-[#F5A623]" />
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Impacto: {selectedEvent.title}
+              {t('timeline.impact')} {selectedEvent.title}
             </h3>
             <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-              14 días antes vs 14 días después
+              {t('timeline.compareRange')}
             </span>
           </div>
           {loadingCompare ? (
@@ -298,28 +300,28 @@ export default function Timeline() {
           ) : comparison ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
-                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Atenciones</p>
+                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.attendances')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {comparison.before.total} → {comparison.after.total}
                 </p>
                 <DeltaBadge before={comparison.before.total} after={comparison.after.total} />
               </div>
               <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
-                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Tasa de venta</p>
+                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.saleRateLabel')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {comparison.before.saleRate}% → {comparison.after.saleRate}%
                 </p>
                 <DeltaBadge before={comparison.before.saleRate} after={comparison.after.saleRate} suffix="%" />
               </div>
               <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
-                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Score promedio</p>
+                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.scoreAvg')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {comparison.before.avgScore} → {comparison.after.avgScore}
                 </p>
                 <DeltaBadge before={comparison.before.avgScore} after={comparison.after.avgScore} suffix=" pts" />
               </div>
               <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
-                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Ventas</p>
+                <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.salesLabel')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {comparison.before.sales} → {comparison.after.sales}
                 </p>
@@ -327,7 +329,7 @@ export default function Timeline() {
               </div>
             </div>
           ) : (
-            <p className={isDark ? 'text-slate-500' : 'text-gray-400'}>Sin datos para comparar</p>
+            <p className={isDark ? 'text-slate-500' : 'text-gray-400'}>{t('timeline.noCompareData')}</p>
           )}
         </div>
       )}
@@ -335,11 +337,11 @@ export default function Timeline() {
       {/* Events */}
       <div className={cardClass}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Eventos registrados</h3>
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('timeline.registeredEvents')}</h3>
           <button onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
             <Plus className="w-4 h-4" />
-            {showForm ? 'Cancelar' : 'Nuevo evento'}
+            {showForm ? t('timeline.cancel') : t('timeline.newEvent')}
           </button>
         </div>
 
@@ -347,31 +349,31 @@ export default function Timeline() {
           <form onSubmit={handleCreate} className={`mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-700/40 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Título *</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.title')} *</label>
                 <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                  placeholder="Ej: Capacitación upselling" className={inputClass} required />
+                  placeholder={t('timeline.titlePlaceholder')} className={inputClass} required />
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Fecha *</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.date')} *</label>
                 <input type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })}
                   className={inputClass} required />
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Categoría</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.category')}</label>
                 <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={inputClass}>
                   {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Descripción</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.description')}</label>
                 <input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                  placeholder="Detalle opcional..." className={inputClass} />
+                  placeholder={t('timeline.descPlaceholder')} className={inputClass} />
               </div>
             </div>
             <div className="mt-3 flex justify-end">
               <button type="submit"
                 className="px-6 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
-                Guardar evento
+                {t('timeline.saveEvent')}
               </button>
             </div>
           </form>
@@ -380,8 +382,8 @@ export default function Timeline() {
         {events.length === 0 && !showForm ? (
           <div className={`text-center py-8 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No hay eventos registrados</p>
-            <p className="text-sm mt-1">Agregá hitos para medir el impacto de tus acciones</p>
+            <p>{t('timeline.noEvents')}</p>
+            <p className="text-sm mt-1">{t('timeline.addMilestones')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -398,23 +400,23 @@ export default function Timeline() {
                     onClick={e => e.stopPropagation()}>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Título</label>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.title')}</label>
                         <input type="text" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })}
                           className={inputClass} />
                       </div>
                       <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Fecha</label>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.date')}</label>
                         <input type="date" value={editForm.eventDate} onChange={e => setEditForm({ ...editForm, eventDate: e.target.value })}
                           className={inputClass} />
                       </div>
                       <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Categoría</label>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.category')}</label>
                         <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className={inputClass}>
                           {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Descripción</label>
+                        <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.description')}</label>
                         <input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                           className={inputClass} />
                       </div>

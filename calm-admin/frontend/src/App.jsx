@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
@@ -16,6 +17,7 @@ import Timeline from './pages/Timeline';
 
 function App() {
   return (
+    <LanguageProvider>
     <ThemeProvider>
       <Router>
         <Routes>
@@ -44,6 +46,7 @@ function App() {
         </Routes>
       </Router>
     </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

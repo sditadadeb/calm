@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, Filter, Calendar, User, Building2, CheckCircle, XCircle, FileText, ChevronRight, Loader2 } from 'lucide-react';
 import { searchTranscriptions, getSellers, getBranches } from '../api';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Search() {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const [query, setQuery] = useState('');
@@ -15,7 +17,6 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   
-  // Filtros
   const [showFilters, setShowFilters] = useState(false);
   const [sellers, setSellers] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -56,7 +57,6 @@ export default function Search() {
       const response = await searchTranscriptions(query.trim(), filters);
       let searchResults = response.data.results || [];
       
-      // Filter by logged-in user's sellerId
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       if (currentUser.sellerId) {
         searchResults = searchResults.filter(r => String(r.userId) === String(currentUser.sellerId));
@@ -95,9 +95,7 @@ export default function Search() {
     });
   };
   
-  // Renderiza el snippet con la palabra resaltada
   const renderSnippet = (snippet) => {
-    // El snippet viene con **palabra** para marcar coincidencias
     const parts = snippet.split(/\*\*(.*?)\*\*/g);
     
     return (
@@ -129,7 +127,7 @@ export default function Search() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar en todas las transcripciones..."
+                placeholder={t('searchPage.placeholder')}
                 className={`w-full pl-12 pr-4 py-3 rounded-lg border text-lg ${
                   isDark 
                     ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-[#F5A623]' 
@@ -147,7 +145,7 @@ export default function Search() {
               }`}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <SearchIcon className="w-5 h-5" />}
-              Buscar
+              {t('searchPage.search')}
             </button>
           </div>
           
@@ -163,7 +161,7 @@ export default function Search() {
               } ${hasActiveFilters ? 'text-[#F5A623]' : ''}`}
             >
               <Filter className="w-4 h-4" />
-              Filtros
+              {t('searchPage.filters')}
               {hasActiveFilters && (
                 <span className="bg-[#F5A623] text-white text-xs px-1.5 py-0.5 rounded-full">
                   {[filters.userId, filters.branchId, filters.saleCompleted !== null].filter(Boolean).length}
@@ -177,7 +175,7 @@ export default function Search() {
                 onClick={clearFilters}
                 className="text-sm text-[#F5A623] hover:underline"
               >
-                Limpiar filtros
+                {t('searchPage.clearFilters')}
               </button>
             )}
           </div>
@@ -189,7 +187,7 @@ export default function Search() {
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <User className="w-4 h-4 inline mr-1" />
-                  Vendedor
+                  {t('searchPage.seller')}
                 </label>
                 <select
                   value={filters.userId || ''}
@@ -200,7 +198,7 @@ export default function Search() {
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
-                  <option value="">Todos</option>
+                  <option value="">{t('common.all')}</option>
                   {sellers.map((s) => (
                     <option key={s.id || s.userId} value={s.id || s.userId}>
                       {s.name || s.userName}
@@ -213,7 +211,7 @@ export default function Search() {
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <Building2 className="w-4 h-4 inline mr-1" />
-                  Sucursal
+                  {t('searchPage.branch')}
                 </label>
                 <select
                   value={filters.branchId || ''}
@@ -224,7 +222,7 @@ export default function Search() {
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
-                  <option value="">Todas</option>
+                  <option value="">{t('common.allFem')}</option>
                   {branches.map((b) => (
                     <option key={b.id || b.branchId} value={b.id || b.branchId}>
                       {b.name || b.branchName}
@@ -237,7 +235,7 @@ export default function Search() {
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <CheckCircle className="w-4 h-4 inline mr-1" />
-                  Resultado
+                  {t('searchPage.result')}
                 </label>
                 <select
                   value={filters.saleCompleted === null ? '' : filters.saleCompleted.toString()}
@@ -251,9 +249,9 @@ export default function Search() {
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
-                  <option value="">Todos</option>
-                  <option value="true">Con venta</option>
-                  <option value="false">Sin venta</option>
+                  <option value="">{t('common.all')}</option>
+                  <option value="true">{t('searchPage.withSale')}</option>
+                  <option value="false">{t('searchPage.noSale')}</option>
                 </select>
               </div>
             </div>
@@ -266,10 +264,10 @@ export default function Search() {
         <div className={`flex items-center gap-4 px-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           <span className="font-medium">
             {totalResults === 0 ? (
-              'No se encontraron resultados'
+              t('searchPage.noResults')
             ) : (
               <>
-                <span className="text-[#F5A623]">{totalResults}</span> transcripción{totalResults !== 1 && 'es'} encontrada{totalResults !== 1 && 's'}
+                <span className="text-[#F5A623]">{totalResults}</span> {totalResults !== 1 ? t('searchPage.transcriptions') : t('searchPage.transcription')} {totalResults !== 1 ? t('searchPage.foundPlural') : t('searchPage.found')}
               </>
             )}
           </span>
@@ -277,7 +275,7 @@ export default function Search() {
             <>
               <span>•</span>
               <span>
-                <span className="text-[#F5A623]">{totalMatches}</span> coincidencia{totalMatches !== 1 && 's'} totales
+                <span className="text-[#F5A623]">{totalMatches}</span> {totalMatches !== 1 ? t('searchPage.matches') : t('searchPage.match')}
               </span>
             </>
           )}
@@ -314,20 +312,18 @@ export default function Search() {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  {/* Match count */}
                   <span className={`text-sm px-2 py-1 rounded ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'}`}>
-                    {result.matchCount} coincidencia{result.matchCount !== 1 && 's'}
+                    {result.matchCount} {result.matchCount !== 1 ? t('searchPage.matches') : t('searchPage.match')}
                   </span>
                   
-                  {/* Sale status */}
                   {result.saleCompleted !== null && (
                     result.saleCompleted ? (
                       <span className="flex items-center gap-1 text-sm px-2 py-1 rounded bg-green-500/20 text-green-400">
-                        <CheckCircle className="w-4 h-4" /> Venta
+                        <CheckCircle className="w-4 h-4" /> {t('searchPage.withSale')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-sm px-2 py-1 rounded bg-red-500/20 text-red-400">
-                        <XCircle className="w-4 h-4" /> Sin venta
+                        <XCircle className="w-4 h-4" /> {t('searchPage.noSale')}
                       </span>
                     )
                   )}
@@ -340,11 +336,11 @@ export default function Search() {
               <div className={`flex items-center gap-4 mb-4 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 <span className="flex items-center gap-1">
                   <User className="w-4 h-4" />
-                  {result.userName || 'Sin asignar'}
+                  {result.userName || t('searchPage.unassigned')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Building2 className="w-4 h-4" />
-                  {result.branchName || 'Sin sucursal'}
+                  {result.branchName || t('searchPage.noBranch')}
                 </span>
                 {result.sellerScore && (
                   <span className="flex items-center gap-1">
@@ -378,11 +374,10 @@ export default function Search() {
         <div className={`text-center py-16 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           <SearchIcon className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            Buscar en transcripciones
+            {t('searchPage.searchIn')}
           </h3>
           <p className="max-w-md mx-auto">
-            Ingresá una palabra o frase para buscar en todas las conversaciones.
-            Por ejemplo: "precio", "descuento", "competencia", "financiación".
+            {t('searchPage.searchDesc')}
           </p>
         </div>
       )}
@@ -392,17 +387,17 @@ export default function Search() {
         <div className={`text-center py-16 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           <XCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            Sin resultados
+            {t('searchPage.noResultsTitle')}
           </h3>
           <p>
-            No se encontraron transcripciones que contengan "{query}".
+            {t('searchPage.noResults')}
           </p>
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
               className="mt-4 text-[#F5A623] hover:underline"
             >
-              Probar sin filtros
+              {t('searchPage.tryWithoutFilters')}
             </button>
           )}
         </div>

@@ -136,45 +136,46 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
 }
 import ScoreBadge from '../components/ScoreBadge';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getTranscription, getAudioUrl, getAudioStreamUrl } from '../api';
 
 
-// Mapeo de saleStatus a labels y colores
+// Mapeo de saleStatus a iconos y colores (labels se traducen en el componente)
 const SALE_STATUS_CONFIG = {
   SALE_CONFIRMED: {
-    label: 'Venta Confirmada',
+    labelKey: 'detail.saleConfirmed',
+    descKey: 'detail.saleConfirmedDesc',
     icon: CheckCircle,
     bgClass: 'bg-green-500/20',
     textClass: 'text-green-400',
-    description: 'Venta explícitamente confirmada con evidencia clara'
   },
   SALE_LIKELY: {
-    label: 'Venta Probable',
+    labelKey: 'detail.saleProbable',
+    descKey: 'detail.saleProbableDesc',
     icon: TrendingUp,
     bgClass: 'bg-emerald-500/20',
     textClass: 'text-emerald-400',
-    description: 'Alta probabilidad de venta, sin confirmación explícita grabada'
   },
   ADVANCE_NO_CLOSE: {
-    label: 'Avance Comercial',
+    labelKey: 'detail.commercialAdvance',
+    descKey: 'detail.commercialAdvanceDesc',
     icon: AlertTriangle,
     bgClass: 'bg-yellow-500/20',
     textClass: 'text-yellow-400',
-    description: 'Cliente interesado pero sin cierre en esta interacción'
   },
   NO_SALE: {
-    label: 'Sin Venta',
+    labelKey: 'detail.noSale',
+    descKey: 'detail.noSaleDesc',
     icon: XCircle,
     bgClass: 'bg-red-500/20',
     textClass: 'text-red-400',
-    description: 'No se concretó la venta'
   },
   UNINTERPRETABLE: {
-    label: 'No Interpretable',
+    labelKey: 'detail.uninterpretable',
+    descKey: 'detail.uninterpretableDesc',
     icon: HelpCircle,
     bgClass: 'bg-slate-500/20',
     textClass: 'text-slate-400',
-    description: 'Transcripción no permite determinar resultado'
   }
 };
 
@@ -182,6 +183,7 @@ export default function TranscriptionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [transcription, setTranscription] = useState(null);
   const [error, setError] = useState(null);
@@ -211,7 +213,7 @@ export default function TranscriptionDetail() {
         setTranscription(response.data);
       } catch (err) {
         console.error('Error fetching transcription:', err);
-        setError('Error al cargar la transcripción');
+        setError(t('detail.loadError'));
       } finally {
         setLoading(false);
       }
@@ -356,7 +358,7 @@ export default function TranscriptionDetail() {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!confirm('¿Eliminar este comentario?')) return;
+    if (!confirm(t('detail.deleteCommentConfirm'))) return;
     try {
       await api.delete(`/transcriptions/${id}/comments/${commentId}`);
       setComments(comments.filter(c => c.id !== commentId));
@@ -397,9 +399,10 @@ export default function TranscriptionDetail() {
     }
   };
 
-  // Obtener configuración del status
+  // Obtener configuración del status (con labels traducidos)
   const getStatusConfig = (status) => {
-    return SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG.NO_SALE;
+    const cfg = SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG.NO_SALE;
+    return { ...cfg, label: t(cfg.labelKey), description: t(cfg.descKey) };
   };
 
   if (loading) {
@@ -407,7 +410,7 @@ export default function TranscriptionDetail() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripción...</p>
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('detail.loading')}</p>
         </div>
       </div>
     );
@@ -418,20 +421,20 @@ export default function TranscriptionDetail() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || 'Transcripción no encontrada'}</p>
+          <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || t('detail.notFound')}</p>
           <button
             onClick={() => navigate('/transcriptions')}
             className="mt-4 px-4 py-2 bg-[#F5A623] text-white rounded-lg hover:opacity-90"
           >
-            Volver al listado
+            {t('detail.backToList')}
           </button>
         </div>
       </div>
     );
   }
 
-  const t = transcription;
-  const statusConfig = getStatusConfig(t.saleStatus);
+  const trans = transcription;
+  const statusConfig = getStatusConfig(trans.saleStatus);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -443,7 +446,7 @@ export default function TranscriptionDetail() {
           className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623]' : 'text-gray-500 hover:text-[#F5A623]'}`}
         >
           <ArrowLeft className="w-4 h-4" />
-          Volver al listado
+          {t('detail.backToList')}
         </button>
         
         {/* Flechas de navegación */}
@@ -460,7 +463,7 @@ export default function TranscriptionDetail() {
                   ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                   : 'bg-gray-50 text-gray-300 cursor-not-allowed'
             }`}
-            title="Anterior"
+            title={t('common.previous')}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -483,7 +486,7 @@ export default function TranscriptionDetail() {
                   ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                   : 'bg-gray-50 text-gray-300 cursor-not-allowed'
             }`}
-            title="Siguiente"
+            title={t('common.next')}
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -495,7 +498,7 @@ export default function TranscriptionDetail() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xl font-bold text-[#F5A623]">{t.recordingId}</span>
+              <span className="font-mono text-xl font-bold text-[#F5A623]">{trans.recordingId}</span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                 <StatusIcon className="w-4 h-4" /> {statusConfig.label}
               </span>
@@ -504,46 +507,46 @@ export default function TranscriptionDetail() {
             <div className={`flex flex-wrap items-center gap-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                <span>{t.userName || 'Sin vendedor'}</span>
+                <span>{trans.userName || t('detail.noSeller')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
-                <span>{t.branchName || 'Sin sucursal'}</span>
+                <span>{trans.branchName || t('detail.noBranch')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                <span>{formatDate(t.recordingDate)}</span>
+                <span>{formatDate(trans.recordingDate)}</span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
             <div>
-              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Score de Atención</p>
-              <ScoreBadge score={t.sellerScore} />
+              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('detail.attentionScore')}</p>
+              <ScoreBadge score={trans.sellerScore} />
             </div>
             
             {/* Analysis Confidence */}
-            {t.analysisConfidence !== null && t.analysisConfidence !== undefined && (
+            {trans.analysisConfidence !== null && trans.analysisConfidence !== undefined && (
               <div className="flex items-center gap-2">
                 <Shield className={`w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
                 <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Confianza del análisis:
+                  {t('detail.analysisConfidence')}:
                 </span>
                 <div className={`h-2 w-20 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                   <div 
                     className={`h-full rounded-full ${
-                      t.analysisConfidence >= 70 ? 'bg-green-500' : 
-                      t.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      trans.analysisConfidence >= 70 ? 'bg-green-500' : 
+                      trans.analysisConfidence >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                     }`}
-                    style={{ width: `${t.analysisConfidence}%` }}
+                    style={{ width: `${trans.analysisConfidence}%` }}
                   />
                 </div>
                 <span className={`text-sm font-semibold ${
-                  t.analysisConfidence >= 70 ? 'text-green-500' : 
-                  t.analysisConfidence >= 50 ? 'text-yellow-500' : 'text-red-500'
+                  trans.analysisConfidence >= 70 ? 'text-green-500' : 
+                  trans.analysisConfidence >= 50 ? 'text-yellow-500' : 'text-red-500'
                 }`}>
-                  {t.analysisConfidence}%
+                  {trans.analysisConfidence}%
                 </span>
               </div>
             )}
@@ -557,7 +560,7 @@ export default function TranscriptionDetail() {
           <div className="space-y-2">
             <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="text-sm">Descargando audio... {audioProgress}%</span>
+              <span className="text-sm">{t('detail.downloadingAudio')} {audioProgress}%</span>
             </div>
             <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
               <div 
@@ -575,7 +578,7 @@ export default function TranscriptionDetail() {
         ) : (
           <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             <VolumeX className="w-5 h-5" />
-            <span className="text-sm">Audio no disponible para esta transcripción</span>
+            <span className="text-sm">{t('detail.audioNotAvailable')}</span>
           </div>
         )}
       </div>
@@ -583,67 +586,67 @@ export default function TranscriptionDetail() {
       {/* Analysis Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Executive Summary */}
-        {t.executiveSummary && (
+        {trans.executiveSummary && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-[#F5A623] rounded-lg">
                 <FileText className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen Ejecutivo</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.executiveSummary')}</h3>
             </div>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t.executiveSummary}</p>
+            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{trans.executiveSummary}</p>
           </div>
         )}
 
         {/* Sale Evidence */}
-        {t.saleEvidence && (
+        {trans.saleEvidence && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${
-            t.saleCompleted 
+            trans.saleCompleted 
               ? (isDark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-100')
               : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-100')
           }`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${t.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-slate-600' : 'bg-gray-400')}`}>
+              <div className={`p-2 rounded-lg ${trans.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-slate-600' : 'bg-gray-400')}`}>
                 <Quote className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                Evidencia de {t.saleCompleted ? 'Venta' : 'Resultado'}
+                {trans.saleCompleted ? t('detail.evidenceOfSale') : t('detail.evidenceOfResult')}
               </h3>
             </div>
             <p className={`italic text-lg ${
-              t.saleCompleted 
+              trans.saleCompleted 
                 ? (isDark ? 'text-green-300' : 'text-green-700')
                 : (isDark ? 'text-slate-300' : 'text-gray-600')
             }`}>
-              "{t.saleEvidence}"
+              "{trans.saleEvidence}"
             </p>
           </div>
         )}
 
         {/* No Sale Reason */}
-        {!t.saleCompleted && t.noSaleReason && (
+        {!trans.saleCompleted && trans.noSaleReason && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-500 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>Razón de No Venta</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('detail.noSaleReason')}</h3>
             </div>
-            <p className={`font-medium text-lg ${isDark ? 'text-red-400' : 'text-red-600'}`}>{t.noSaleReason}</p>
+            <p className={`font-medium text-lg ${isDark ? 'text-red-400' : 'text-red-600'}`}>{trans.noSaleReason}</p>
           </div>
         )}
 
         {/* Products Discussed */}
-        {t.productsDiscussed && t.productsDiscussed.length > 0 && t.productsDiscussed[0] !== '' && (
+        {trans.productsDiscussed && trans.productsDiscussed.length > 0 && trans.productsDiscussed[0] !== '' && (
           <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-500 rounded-lg">
                 <Target className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Productos Discutidos</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.productsDiscussed')}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
-              {t.productsDiscussed.map((prod, i) => (
+              {trans.productsDiscussed.map((prod, i) => (
                 <span key={i} className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
                   {prod}
                 </span>
@@ -653,16 +656,16 @@ export default function TranscriptionDetail() {
         )}
 
         {/* Customer Objections */}
-        {t.customerObjections && t.customerObjections.length > 0 && t.customerObjections[0] !== '' && (
+        {trans.customerObjections && trans.customerObjections.length > 0 && trans.customerObjections[0] !== '' && (
           <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-orange-500 rounded-lg">
                 <MessageSquare className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Objeciones del Cliente</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.customerObjections')}</h3>
             </div>
             <ul className="space-y-2">
-              {t.customerObjections.map((obj, i) => (
+              {trans.customerObjections.map((obj, i) => (
                 <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <span className="text-orange-500 mt-1">•</span>
                   {obj}
@@ -673,16 +676,16 @@ export default function TranscriptionDetail() {
         )}
 
         {/* Seller Strengths */}
-        {t.sellerStrengths && t.sellerStrengths.length > 0 && t.sellerStrengths[0] !== '' && (
+        {trans.sellerStrengths && trans.sellerStrengths.length > 0 && trans.sellerStrengths[0] !== '' && (
           <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500 rounded-lg">
                 <ThumbsUp className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Fortalezas del Vendedor</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.sellerStrengths')}</h3>
             </div>
             <ul className="space-y-2">
-              {t.sellerStrengths.map((f, i) => (
+              {trans.sellerStrengths.map((f, i) => (
                 <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                   {f}
@@ -693,16 +696,16 @@ export default function TranscriptionDetail() {
         )}
 
         {/* Seller Weaknesses */}
-        {t.sellerWeaknesses && t.sellerWeaknesses.length > 0 && t.sellerWeaknesses[0] !== '' && (
+        {trans.sellerWeaknesses && trans.sellerWeaknesses.length > 0 && trans.sellerWeaknesses[0] !== '' && (
           <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-500 rounded-lg">
                 <ThumbsDown className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Áreas de Mejora</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.areasOfImprovement')}</h3>
             </div>
             <ul className="space-y-2">
-              {t.sellerWeaknesses.map((d, i) => (
+              {trans.sellerWeaknesses.map((d, i) => (
                 <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                   <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                   {d}
@@ -713,16 +716,16 @@ export default function TranscriptionDetail() {
         )}
 
         {/* Improvement Suggestions */}
-        {t.improvementSuggestions && t.improvementSuggestions.length > 0 && t.improvementSuggestions[0] !== '' && (
+        {trans.improvementSuggestions && trans.improvementSuggestions.length > 0 && trans.improvementSuggestions[0] !== '' && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-amber-500 rounded-lg">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
-              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>Sugerencias de Mejora</h3>
+              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>{t('detail.improvementSuggestions')}</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {t.improvementSuggestions.map((s, i) => (
+              {trans.improvementSuggestions.map((s, i) => (
                 <div key={i} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-amber-800/50' : 'bg-white border-amber-200'}`}>
                   <p className={isDark ? 'text-slate-300' : 'text-gray-700'}>{s}</p>
                 </div>
@@ -733,17 +736,17 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Full Transcription */}
-      {t.transcriptionText && (
+      {trans.transcriptionText && (
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-3 mb-4">
             <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
             </div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Transcripción Completa</h3>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.fullTranscription')}</h3>
           </div>
           <div className={`rounded-xl p-6 max-h-96 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
             <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-              {t.transcriptionText}
+              {trans.transcriptionText}
             </pre>
           </div>
         </div>
@@ -756,16 +759,16 @@ export default function TranscriptionDetail() {
             <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
           </div>
           <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            Comentarios {comments.length > 0 && `(${comments.length})`}
+            {t('detail.comments')} {comments.length > 0 && `(${comments.length})`}
           </h3>
         </div>
 
         {/* Comment list */}
         <div className="space-y-3 mb-4">
           {commentsLoading ? (
-            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cargando comentarios...</p>
+            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('detail.loadingComments')}</p>
           ) : comments.length === 0 ? (
-            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Sin comentarios aún</p>
+            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('detail.noComments')}</p>
           ) : (
             comments.map((c) => (
               <div key={c.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
@@ -783,7 +786,7 @@ export default function TranscriptionDetail() {
                     <button
                       onClick={() => handleDeleteComment(c.id)}
                       className={`text-xs px-2 py-1 rounded transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-                      title="Eliminar comentario"
+                      title={t('detail.deleteComment')}
                     >
                       ✕
                     </button>
@@ -802,7 +805,7 @@ export default function TranscriptionDetail() {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-            placeholder="Escribí un comentario..."
+            placeholder={t('detail.commentPlaceholder')}
             className={`flex-1 px-4 py-2 rounded-lg border text-sm ${
               isDark 
                 ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500 focus:border-[#F5A623]' 
@@ -814,7 +817,7 @@ export default function TranscriptionDetail() {
             disabled={!newComment.trim()}
             className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
           >
-            Enviar
+            {t('common.send')}
           </button>
         </div>
       </div>

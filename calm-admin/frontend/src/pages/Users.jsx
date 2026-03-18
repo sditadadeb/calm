@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Trash2, Shield, User, Link2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import api, { getSellers } from '../api';
 
 export default function Users() {
   const { isDark } = useTheme();
+  const { t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export default function Users() {
       const response = await api.get('/users');
       setUsers(response.data);
     } catch (err) {
-      setError('Error al cargar usuarios');
+      setError(t('users.errorLoading'));
     } finally {
       setLoading(false);
     }
@@ -45,24 +47,24 @@ export default function Users() {
 
     try {
       await api.post('/users', newUser);
-      setSuccess('Usuario creado exitosamente');
+      setSuccess(t('users.createSuccess'));
       setNewUser({ username: '', password: '', role: 'USER', sellerId: '', sellerName: '' });
       setShowForm(false);
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al crear usuario');
+      setError(err.response?.data?.error || t('users.errorCreating'));
     }
   };
 
   const handleDeleteUser = async (id, username) => {
-    if (!confirm(`¿Estás seguro de eliminar al usuario "${username}"?`)) return;
+    if (!confirm(`${t('users.confirmDelete')} "${username}"?`)) return;
 
     try {
       await api.delete(`/users/${id}`);
-      setSuccess('Usuario eliminado');
+      setSuccess(t('users.deleteSuccess'));
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al eliminar usuario');
+      setError(err.response?.data?.error || t('users.errorDeleting'));
     }
   };
 
@@ -71,10 +73,10 @@ export default function Users() {
     
     try {
       await api.patch(`/users/${id}/role`, { role: newRole });
-      setSuccess('Rol actualizado');
+      setSuccess(t('users.roleUpdated'));
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al actualizar rol');
+      setError(err.response?.data?.error || t('users.errorUpdatingRole'));
     }
   };
 
@@ -101,10 +103,10 @@ export default function Users() {
         sellerName = seller ? (seller.name || seller.userName) : null;
       }
       await api.patch(`/users/${userId}/seller`, { sellerId, sellerName });
-      setSuccess('Vendedor actualizado');
+      setSuccess(t('users.sellerUpdated'));
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al actualizar vendedor');
+      setError(err.response?.data?.error || t('users.errorUpdatingSeller'));
     }
   };
 
@@ -131,7 +133,7 @@ export default function Users() {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
         >
           <UserPlus className="w-5 h-5" />
-          Nuevo Usuario
+          {t('users.newUser')}
         </button>
       </div>
 
@@ -150,12 +152,12 @@ export default function Users() {
       {/* Create User Form */}
       {showForm && (
         <div className={`rounded-xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>Crear Nuevo Usuario</h2>
+          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('users.createNewUser')}</h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Nombre de usuario
+                  {t('users.username')}
                 </label>
                 <input
                   type="text"
@@ -167,7 +169,7 @@ export default function Users() {
               </div>
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Contraseña
+                  {t('users.password')}
                 </label>
                 <input
                   type="password"
@@ -180,29 +182,29 @@ export default function Users() {
               </div>
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Rol
+                  {t('users.role')}
                 </label>
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className={inputClasses}
                 >
-                  <option value="USER">Usuario (solo lectura)</option>
-                  <option value="ADMIN">Administrador (acceso completo)</option>
+                  <option value="USER">{t('users.roleUser')}</option>
+                  <option value="ADMIN">{t('users.roleAdmin')}</option>
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-2">
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Vendedor asociado
+                  {t('users.associatedSeller')}
                 </label>
                 <select
                   value={newUser.sellerId}
                   onChange={(e) => handleSellerChange(e.target.value)}
                   className={inputClasses}
                 >
-                  <option value="">Todos (ve todas las transcripciones)</option>
+                  <option value="">{t('users.allSellers')}</option>
                   {sellers.map((s) => (
                     <option key={s.id || s.userId} value={s.id || s.userId}>
                       {s.name || s.userName}
@@ -210,7 +212,7 @@ export default function Users() {
                   ))}
                 </select>
                 <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Si se asocia un vendedor, el usuario solo verá sus transcripciones
+                  {t('users.sellerAssocDesc')}
                 </p>
               </div>
             </div>
@@ -219,14 +221,14 @@ export default function Users() {
                 type="submit"
                 className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
               >
-                Crear Usuario
+                {t('users.createUser')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
-                Cancelar
+                {t('users.cancel')}
               </button>
             </div>
           </form>
@@ -239,19 +241,19 @@ export default function Users() {
           <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
             <tr>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Usuario
+                {t('users.user')}
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Rol
+                {t('users.role')}
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Vendedor
+                {t('users.seller')}
               </th>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Último acceso
+                {t('users.lastAccess')}
               </th>
               <th className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Acciones
+                {t('common.actions')}
               </th>
             </tr>
           </thead>
@@ -280,7 +282,7 @@ export default function Users() {
                         ? 'bg-blue-500/20 text-blue-400'
                         : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {user.role === 'ADMIN' ? 'Admin' : user.role === 'VIEWER' ? 'Viewer' : 'Usuario'}
+                    {user.role === 'ADMIN' ? 'Admin' : user.role === 'VIEWER' ? 'Viewer' : t('users.userRole')}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -289,7 +291,7 @@ export default function Users() {
                     onChange={(e) => handleUpdateSeller(user.id, e.target.value)}
                     className={`text-sm px-2 py-1 rounded-lg border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
                   >
-                    <option value="">Todos</option>
+                    <option value="">{t('common.all')}</option>
                     {sellers.map((s) => (
                       <option key={s.id || s.userId} value={s.id || s.userId}>
                         {s.name || s.userName}
@@ -298,21 +300,21 @@ export default function Users() {
                   </select>
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleString('es-AR') : 'Nunca'}
+                  {user.lastLogin ? new Date(user.lastLogin).toLocaleString('es-AR') : t('users.never')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleToggleRole(user.id, user.role)}
                       className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10' : 'text-gray-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10'}`}
-                      title={user.role === 'ADMIN' ? 'Convertir a Usuario' : 'Convertir a Admin'}
+                      title={user.role === 'ADMIN' ? t('users.convertToUser') : t('users.convertToAdmin')}
                     >
                       <Shield className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteUser(user.id, user.username)}
                       className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-                      title="Eliminar usuario"
+                      title={t('users.deleteUser')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -327,11 +329,11 @@ export default function Users() {
       {/* Info */}
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
         <p className="text-sm text-blue-400">
-          <strong>Roles:</strong><br />
-          • <strong>Admin:</strong> Acceso completo (sync, configuración, gestión de usuarios)<br />
-          • <strong>Usuario:</strong> Visualización de datos<br />
-          • <strong>Viewer:</strong> Solo lectura<br /><br />
-          <strong>Vendedor asociado:</strong> Si un usuario tiene un vendedor asociado, solo verá las transcripciones de ese vendedor. "Todos" muestra todas.
+          <strong>{t('users.roles')}:</strong><br />
+          • <strong>Admin:</strong> {t('users.adminDesc')}<br />
+          • <strong>{t('users.userRole')}:</strong> {t('users.userDesc')}<br />
+          • <strong>Viewer:</strong> {t('users.viewerDesc')}<br /><br />
+          <strong>{t('users.associatedSeller')}:</strong> {t('users.sellerAssocInfo')}
         </p>
       </div>
     </div>

@@ -1,4 +1,8 @@
+import { useLanguage } from '../context/LanguageContext';
+
 export default function ScoreBadge({ score, size = 'default' }) {
+  const { t } = useLanguage();
+
   if (score === null || score === undefined) {
     return <span className="text-gray-400">-</span>;
   }
@@ -12,11 +16,11 @@ export default function ScoreBadge({ score, size = 'default' }) {
   };
 
   const getScoreLabel = (score) => {
-    if (score >= 9) return 'Excelente';
-    if (score >= 7) return 'Bueno';
-    if (score >= 5) return 'Regular';
-    if (score >= 3) return 'Bajo';
-    return 'Crítico';
+    if (score >= 9) return t('score.excellent');
+    if (score >= 7) return t('score.good');
+    if (score >= 5) return t('score.regular');
+    if (score >= 3) return t('score.low');
+    return t('score.critical');
   };
 
   const colors = getScoreColor(score);

@@ -17,48 +17,47 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useState, useEffect } from 'react';
-
-// Configuración de páginas con subtítulos
-const pageConfig = {
-  '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
-  '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
-  '/search': { name: 'Buscar', subtitle: 'Buscar en todas las conversaciones', icon: Search },
-  '/sellers': { name: 'Vendedores', subtitle: 'Rendimiento del equipo comercial', icon: Users },
-  '/branches': { name: 'Sucursales', subtitle: 'Performance por punto de venta', icon: Building2 },
-  '/recommendations': { name: 'Recomendaciones', subtitle: 'Insights y acciones de mejora', icon: Lightbulb },
-  '/timeline': { name: 'Línea de Tiempo', subtitle: 'Impacto de acciones en métricas', icon: TrendingUp },
-  '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
-  '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
-};
-
-// Navegación base
-const baseNavigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
-  { name: 'Buscar', href: '/search', icon: Search },
-  { name: 'Vendedores', href: '/sellers', icon: Users },
-  { name: 'Sucursales', href: '/branches', icon: Building2 },
-  { name: 'Recomendaciones', href: '/recommendations', icon: Lightbulb },
-];
-
-// Navegación solo para ADMIN
-const adminNavigation = [
-  { name: 'Línea de Tiempo', href: '/timeline', icon: TrendingUp },
-  { name: 'Usuarios', href: '/users', icon: UserPlus },
-  { name: 'Configuración', href: '/settings', icon: Settings },
-];
 
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { loading, fetchDashboardMetrics, fetchTranscriptions, dashboardMetrics } = useStore();
   const { isDark, toggleTheme } = useTheme();
+  const { t, lang, switchLang } = useLanguage();
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0, phase: '' });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
+
+  const pageConfig = {
+    '/': { name: t('nav.dashboard'), subtitle: t('nav.dashboardSub'), icon: LayoutDashboard },
+    '/transcriptions': { name: t('nav.transcriptions'), subtitle: t('nav.transcriptionsSub'), icon: FileText },
+    '/search': { name: t('nav.search'), subtitle: t('nav.searchSub'), icon: Search },
+    '/sellers': { name: t('nav.sellers'), subtitle: t('nav.sellersSub'), icon: Users },
+    '/branches': { name: t('nav.branches'), subtitle: t('nav.branchesSub'), icon: Building2 },
+    '/recommendations': { name: t('nav.recommendations'), subtitle: t('nav.recommendationsSub'), icon: Lightbulb },
+    '/timeline': { name: t('nav.timeline'), subtitle: t('nav.timelineSub'), icon: TrendingUp },
+    '/users': { name: t('nav.users'), subtitle: t('nav.usersSub'), icon: UserPlus },
+    '/settings': { name: t('nav.settings'), subtitle: t('nav.settingsSub'), icon: Settings },
+  };
+
+  const baseNavigation = [
+    { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('nav.transcriptions'), href: '/transcriptions', icon: FileText },
+    { name: t('nav.search'), href: '/search', icon: Search },
+    { name: t('nav.sellers'), href: '/sellers', icon: Users },
+    { name: t('nav.branches'), href: '/branches', icon: Building2 },
+    { name: t('nav.recommendations'), href: '/recommendations', icon: Lightbulb },
+  ];
+
+  const adminNavigation = [
+    { name: t('nav.timeline'), href: '/timeline', icon: TrendingUp },
+    { name: t('nav.users'), href: '/users', icon: UserPlus },
+    { name: t('nav.settings'), href: '/settings', icon: Settings },
+  ];
 
   useEffect(() => {
     if (!dashboardMetrics) {
@@ -147,13 +146,13 @@ export default function Layout({ children }) {
             </div>
             <span className={`text-xl font-light ${isDark ? 'text-white' : 'text-gray-800'}`}>Admin</span>
           </div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Panel de Administración</p>
+          <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('nav.adminPanel')}</p>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
           <p className={`text-xs font-semibold uppercase tracking-wider mb-4 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-            Menú
+            {t('nav.menu')}
           </p>
           <div className="space-y-1">
             {baseNavigation.map((item) => {
@@ -180,7 +179,7 @@ export default function Layout({ children }) {
               <>
                 <div className={`border-t my-4 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}></div>
                 <p className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Admin
+                  {t('nav.admin')}
                 </p>
                 {adminNavigation.map((item) => {
                   const isActive = location.pathname === item.href;
@@ -214,8 +213,8 @@ export default function Layout({ children }) {
                       {syncing 
                         ? (syncProgress.total > 0 
                             ? `${syncProgress.current}/${syncProgress.total}` 
-                            : 'Conectando...')
-                        : 'Sincronizar S3'}
+                            : t('nav.connecting'))
+                        : t('nav.syncS3')}
                     </span>
                   </button>
                   {syncing && syncProgress.total > 0 && (
@@ -270,11 +269,11 @@ export default function Layout({ children }) {
                   {/* Metrics */}
                   <div className="hidden md:flex items-center gap-8">
                     <div className="text-center">
-                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Atenciones</p>
+                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.attendances')}</p>
                       <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</p>
                     </div>
                     <div className="text-center">
-                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Conversión</p>
+                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.conversion')}</p>
                       <p className="text-2xl font-bold text-[#F5A623]">{dashboardMetrics?.conversionRate || '--'}%</p>
                     </div>
                   </div>
@@ -283,19 +282,31 @@ export default function Layout({ children }) {
                   <button
                     onClick={toggleTheme}
                     className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    title={isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                    title={isDark ? t('nav.lightTheme') : t('nav.darkTheme')}
                   >
                     {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   </button>
 
+                  {/* Language */}
+                  <div className={`flex items-center rounded-lg overflow-hidden border ${isDark ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <button onClick={() => switchLang('es')}
+                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                      ES
+                    </button>
+                    <button onClick={() => switchLang('en')}
+                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                      EN
+                    </button>
+                  </div>
+
                   {/* User & Logout */}
                   <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
                     <User className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-medium hidden sm:block ${isDark ? 'text-white' : 'text-gray-700'}`}>{user.username || 'Usuario'}</span>
+                    <span className={`text-sm font-medium hidden sm:block ${isDark ? 'text-white' : 'text-gray-700'}`}>{user.username || t('nav.user')}</span>
                     <button
                       onClick={handleLogout}
                       className={`p-1.5 rounded transition-colors ${isDark ? 'text-slate-400 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}
-                      title="Cerrar sesión"
+                      title={t('nav.signOut')}
                     >
                       <LogOut className="w-4 h-4" />
                     </button>
