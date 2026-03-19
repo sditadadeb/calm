@@ -9,6 +9,7 @@ databases:
 services:
   - type: web
     name: carrefour-admin-api
+    plan: free
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
@@ -23,6 +24,8 @@ services:
         generateValue: true
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:+UseSerialGC -XX:MaxRAMPercentage=70 -Dfile.encoding=UTF-8
       - key: ADMIN_USERNAME
         value: Admin
       - key: ADMIN_PASSWORD
@@ -65,13 +68,16 @@ services:
 
   - type: web
     name: carrefour-admin-frontend
+    plan: free
     runtime: static
     rootDir: ./frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
         sync: false
+      - key: NODE_VERSION
+        value: 20
     routes:
       - type: rewrite
         source: /*

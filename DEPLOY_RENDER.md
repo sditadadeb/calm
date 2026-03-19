@@ -67,6 +67,8 @@ En el backend, en variables de entorno, poner:
 
 ## Notas
 
-- **Plan Free**: el backend puede dormirse tras ~15 min sin uso; el primer request puede tardar ~30 s.
+- **Plan Free**: el backend puede dormirse tras ~15 min sin uso; el primer request puede tardar ~30-60 s.
+- **Para evitar "se cayó" por sleep**: configurar un ping cada 10-14 minutos a `https://<tu-backend>.onrender.com/actuator/health` (por ejemplo con [cron-job.org](https://cron-job.org/) o [UptimeRobot](https://uptimerobot.com/)).
+- **Memoria Free Tier**: el blueprint ya incluye `JAVA_TOOL_OPTIONS` para limitar consumo y evitar reinicios por OOM.
 - **JWT_SECRET**: en producción usar un valor largo y aleatorio (`openssl rand -base64 64`).
 - **Credenciales**: no subas `application-local.properties` ni claves al repo.

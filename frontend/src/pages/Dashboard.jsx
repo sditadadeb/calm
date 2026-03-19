@@ -1,85 +1,283 @@
 import { useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  Award,
-  Users,
-  Building2,
-  ArrowRight,
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  CheckCircle,
   Clock,
-  Calendar,
-  TrendingUp
+  FileText,
+  Headphones,
+  MessageCircle,
+  Target,
+  TrendingUp,
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  ScatterChart,
-  Scatter,
-  ZAxis
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import MetricCard from '../components/MetricCard';
 
-// Colores Carrefour
-const COLORS = ['#004F9F', '#003A79', '#E30613', '#6b7280', '#d1d5db'];
+const COLORS = ['#38bdf8', '#22c55e', '#f59e0b', '#f97316', '#ef4444', '#a78bfa', '#f472b6', '#14b8a6'];
+const HEATMAP_HOURS = Array.from({ length: 24 }, (_, h) => h);
+const WEEK_DAYS = [
+  { idx: 1, short: 'Lun', full: 'Lunes' },
+  { idx: 2, short: 'Mar', full: 'Martes' },
+  { idx: 3, short: 'Mié', full: 'Miércoles' },
+  { idx: 4, short: 'Jue', full: 'Jueves' },
+  { idx: 5, short: 'Vie', full: 'Viernes' },
+  { idx: 6, short: 'Sáb', full: 'Sábado' },
+  { idx: 0, short: 'Dom', full: 'Domingo' },
+];
 
-// Días de la semana
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const normalize = (value) =>
+  (value || '')
+    .toString()
+    .toLowerCase()
+    .replaceAll('á', 'a')
+    .replaceAll('é', 'e')
+    .replaceAll('í', 'i')
+    .replaceAll('ó', 'o')
+    .replaceAll('ú', 'u')
+    .trim();
 
-// Colores para sucursales en scatter plot
-const BRANCH_COLORS = ['#004F9F', '#22c55e', '#3b82f6', '#E30613', '#8b5cf6', '#ec4899', '#14b8a6'];
+const isYes = (value) => ['si', 'sí', 'true', 'yes'].includes(normalize(value));
+
+const isApiKeyPendingLabel = (value) => {
+  const n = normalize(value);
+  return n.includes('analisis pendiente') && n.includes('api key') && n.includes('no configurada');
+};
+
+const REASON_NOISE_TERMS = [
+  'saludo',
+  'inicio de interaccion',
+  'inicios de interaccion',
+  'transcripcion insuficiente',
+  'transcripción insuficiente',
+  'sin contexto',
+  'sin informacion',
+  'sin información',
+  'audio deficiente',
+  'no se entiende',
+  'inaudible',
+];
+
+const OBJECTION_NOISE_TERMS = new Set([
+  'no',
+  'si',
+  'sí',
+  'ok',
+  'bueno',
+  'hola',
+  'hola hola',
+  'o sea',
+  'osea',
+  'ah',
+  'aja',
+  'mm',
+  'mmm',
+  'eh',
+  'em',
+  'dale',
+  'listo',
+  'perfecto',
+  'gracias',
+  'ninguna',
+  'ninguno',
+  'n/a',
+  'na',
+  '-',
+]);
+
+const COMMERCIAL_OBJECTION_HINTS = [
+  'precio',
+  'costo',
+  'cuota',
+  'interes',
+  'interés',
+  'tasa',
+  'comision',
+  'comisión',
+  'cargo',
+  'deuda',
+  'mora',
+  'cancel',
+  'baja',
+  'fraude',
+  'beneficio',
+  'promocion',
+  'promoción',
+  'seguro',
+  'tarjeta',
+  'limite',
+  'límite',
+  'refinanci',
+  'demora',
+  'incumplimiento',
+  'reclamo',
+];
+
+const toTitle = (text) =>
+  text
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+const classifyBajaType = (rawValue) => {
+  const norm = normalize(rawValue);
+  if (!norm) return null;
+  const hasBajaIntent = ['baja', 'dar de baja', 'cancel', 'cancelacion', 'cancelación'].some((term) => norm.includes(term));
+  if (!hasBajaIntent) return null;
+
+  const effectiveHints = [
+    'baja efectiva',
+    'baja confirmada',
+    'baja realizada',
+    'ya se dio de baja',
+    'se dio de baja',
+    'dado de baja',
+    'producto dado de baja',
+    'cancelado',
+    'cancelada',
+    'cancelacion efectiva',
+    'cancelación efectiva',
+  ];
+  if (effectiveHints.some((hint) => norm.includes(hint))) return 'Baja efectiva';
+
+  return 'Intención de baja';
+};
+
+const cleanCommercialReason = (rawReason) => {
+  const raw = (rawReason || '').toString().trim();
+  const norm = normalize(raw);
+  if (!norm || norm === 'sin clasificar') return null;
+  if (isApiKeyPendingLabel(raw)) return null;
+  if (REASON_NOISE_TERMS.some((noise) => norm.includes(noise))) return null;
+
+  if (norm.includes('fraude')) return 'Fraude';
+  if (norm.includes('mora') || norm.includes('deuda') || norm.includes('cobranz')) return 'Deuda / Mora';
+  const bajaType = classifyBajaType(raw);
+  if (bajaType) return bajaType;
+  if (norm.includes('refinanci')) return 'Refinanciación';
+  if (norm.includes('promocion') || norm.includes('beneficio')) return 'Promociones y beneficios';
+  if (norm.includes('reclamo')) return 'Reclamo';
+  if (norm.includes('consulta')) return 'Consulta';
+  if (norm.includes('operativ')) return 'Gestión operativa';
+
+  return toTitle(norm.replace(/\s+/g, ' '));
+};
+
+const cleanCommercialObjection = (rawObjection) => {
+  const raw = (rawObjection || '').toString().trim();
+  const norm = normalize(raw).replace(/[^\w\s]/g, '').trim();
+  if (!norm || OBJECTION_NOISE_TERMS.has(norm)) return null;
+
+  // Frases de relleno o continuidad conversacional sin valor comercial.
+  if (norm.includes('hola') || norm.includes('o sea') || norm.includes('osea')) return null;
+
+  const wordCount = norm.split(/\s+/).filter(Boolean).length;
+  const words = norm.split(/\s+/).filter(Boolean);
+  const uniqueWords = new Set(words);
+
+  // Repeticiones tipo "hola hola", "no no", etc.
+  if (uniqueWords.size === 1 && words.length > 1) return null;
+
+  // Muy corto + sin señal comercial => ruido.
+  const hasCommercialHint = COMMERCIAL_OBJECTION_HINTS.some((hint) => norm.includes(hint));
+  if (!hasCommercialHint && (wordCount <= 2 || norm.length < 14)) return null;
+
+  return toTitle(norm.replace(/\s+/g, ' '));
+};
+
+const hasAudioIssues = (t) => {
+  const text = normalize(t?.transcriptionText);
+  if (!text) return false;
+  const keywords = [
+    'no se escucha',
+    'no te escucho',
+    'te escucho cortado',
+    'se corta',
+    'con interferencia',
+    'mala señal',
+    'se entrecorta',
+    'ruido',
+    'sin audio',
+    'microfono',
+  ];
+  return keywords.some((k) => text.includes(k)) || Number(t?.analysisConfidence || 100) < 45;
+};
+
+function safeArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
 
 export default function Dashboard() {
   const { dashboardMetrics, transcriptions, loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Siempre cargar datos al entrar al Dashboard
     fetchDashboardMetrics();
     fetchTranscriptions();
   }, [fetchDashboardMetrics, fetchTranscriptions]);
 
-  const computedCxMetrics = useMemo(() => {
-    const analyzed = (transcriptions || []).filter((t) => t?.analysisPayload);
-    if (analyzed.length === 0) return null;
+  const analyzedTranscriptions = useMemo(
+    () => (transcriptions || []).filter((t) => t?.analyzed === true),
+    [transcriptions]
+  );
 
-    const norm = (v) => (v || '').toString().toLowerCase()
-      .replaceAll('á', 'a')
-      .replaceAll('é', 'e')
-      .replaceAll('í', 'i')
-      .replaceAll('ó', 'o')
-      .replaceAll('ú', 'u')
-      .trim();
+  const businessMetrics = useMemo(() => {
+    const total = analyzedTranscriptions.length;
+    if (!total) {
+      return {
+        total,
+        opportunityPct: 0,
+        missedOpportunityPct: 0,
+        audioIssueCount: 0,
+        audioIssuePct: 0,
+        commercialResolutionPct: 0,
+        sentimentAvg: 0,
+        topMotivos: [],
+        topObjeciones: [],
+        priorityList: [],
+      };
+    }
 
+    let opportunity = 0;
+    let missedOpportunity = 0;
+    let audioIssues = 0;
+    let commercialResolved = 0;
     let sentimentSum = 0;
     let sentimentCount = 0;
-    let frictionCount = 0;
-    let abandonoAltoCount = 0;
-    let qualitySum = 0;
-    let qualityCount = 0;
-    let protocoloOkCount = 0;
-    let escalamientoYesCount = 0;
-    let legalMidHighCount = 0;
-    let cxRiskSum = 0;
-    const topMotivos = {};
+    const motivoMap = {};
+    const objecionesMap = {};
 
-    analyzed.forEach((t) => {
-      try {
-        const payload = JSON.parse(t.analysisPayload);
+    const priorityList = analyzedTranscriptions
+      .map((t) => {
+        let payload = {};
+        try {
+          payload = t.analysisPayload ? JSON.parse(t.analysisPayload) : {};
+        } catch (_) {
+          payload = {};
+        }
+
         const ec = payload?.experiencia_cliente || {};
         const ac = payload?.analisis_contenido || {};
-        const qa = payload?.calidad_agente || {};
+
+        const intent = normalize(ac.intencion_comercial_detectada || ac['intención comercial detectada']);
+        const opLost = isYes(ac.oportunidad_comercial_desaprovechada || ac['oportunidad comercial desaprovechada']);
+        const riskAbandono = normalize(ec.riesgo_abandono_baja || ec['riesgo de abandono o baja']);
+        const friccion = ec.evidencia_friccion === true || normalize(ec.evidencia_friccion) === 'true';
+        const audio = hasAudioIssues(t);
+        const motiveRaw = (ac.motivo_principal_contacto || t.motivoPrincipal || t.noSaleReason || 'Sin clasificar').toString().trim();
+        const motive = cleanCommercialReason(motiveRaw) || 'Otro motivo comercial';
+        const nextAction = (t.followUpRecommendation || 'Recontactar con propuesta de valor clara').toString();
+
+        if (intent && intent !== 'ninguna') opportunity += 1;
+        if (opLost) missedOpportunity += 1;
+        if (audio) audioIssues += 1;
+        if (t.saleCompleted === true) commercialResolved += 1;
 
         const scoreSent = Number(ec.score_sentimiento_general);
         if (!Number.isNaN(scoreSent)) {
@@ -87,623 +285,393 @@ export default function Dashboard() {
           sentimentCount += 1;
         }
 
-        if (ec.evidencia_friccion === true || norm(ec.evidencia_friccion) === 'true') {
-          frictionCount += 1;
+        if (cleanCommercialReason(motiveRaw)) {
+          motivoMap[motive] = (motivoMap[motive] || 0) + 1;
         }
-        const abandono = norm(ec.riesgo_abandono_baja || ec['riesgo de abandono o baja']);
-        if (abandono === 'alto') abandonoAltoCount += 1;
+        safeArray(t.customerObjections).forEach((obj) => {
+          const cleaned = cleanCommercialObjection(obj);
+          if (!cleaned) return;
+          const key = normalize(cleaned);
+          if (!objecionesMap[key]) {
+            objecionesMap[key] = { name: cleaned, value: 0 };
+          }
+          objecionesMap[key].value += 1;
+          if (cleaned.length > objecionesMap[key].name.length) {
+            objecionesMap[key].name = cleaned;
+          }
+        });
 
-        const scoreCalidad = Number(qa.score_general_calidad_agente);
-        if (!Number.isNaN(scoreCalidad)) {
-          qualitySum += scoreCalidad;
-          qualityCount += 1;
-        }
+        const priorityScore =
+          (riskAbandono === 'alto' ? 4 : 0) +
+          (opLost ? 3 : 0) +
+          (friccion ? 2 : 0) +
+          (audio ? 1 : 0) +
+          (intent && intent !== 'ninguna' ? 2 : 0);
 
-        const saluda = ['si', 'sí'].includes(norm(qa.agente_saluda_correctamente || qa['el agente saluda correctamente']));
-        const identifica = ['si', 'sí'].includes(norm(qa.se_identifica || qa['se identifica']));
-        const cierre = ['si', 'sí'].includes(norm(qa.hace_cierre_formal_adecuado || qa['hace cierre formal adecuado']));
-        if (saluda && identifica && cierre) protocoloOkCount += 1;
+        return {
+          recordingId: t.recordingId,
+          recordingDate: t.recordingDate,
+          motivo: motive,
+          riskAbandono,
+          opLost,
+          hasOpportunity: intent && intent !== 'ninguna',
+          audio,
+          priorityScore,
+          nextAction,
+        };
+      })
+      .sort((a, b) => b.priorityScore - a.priorityScore)
+      .slice(0, 12);
 
-        const escalamiento = norm(ac.requirio_escalamiento || ac['requirió escalamiento']);
-        if (['si', 'sí'].includes(escalamiento)) escalamientoYesCount += 1;
+    const topMotivos = Object.entries(motivoMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, value]) => ({ name, value }));
 
-        const riesgoLegal = norm(ac.riesgo_legal_reputacional || ac['nivel de riesgo legal o reputacional']);
-        if (['medio', 'alto'].includes(riesgoLegal)) legalMidHighCount += 1;
+    const topObjeciones = Object.values(objecionesMap)
+      .filter((item) => item.value >= 3)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6)
+      .map((item) => ({ name: item.name, value: item.value }));
 
-        const motivo = (ac.motivo_principal_contacto || t.motivoPrincipal || 'Sin clasificar').toString().trim();
-        topMotivos[motivo] = (topMotivos[motivo] || 0) + 1;
+    return {
+      total,
+      opportunityPct: (opportunity * 100) / total,
+      missedOpportunityPct: (missedOpportunity * 100) / total,
+      audioIssueCount: audioIssues,
+      audioIssuePct: (audioIssues * 100) / total,
+      commercialResolutionPct: (commercialResolved * 100) / total,
+      sentimentAvg: sentimentCount ? sentimentSum / sentimentCount : 0,
+      topMotivos,
+      topObjeciones,
+      priorityList,
+    };
+  }, [analyzedTranscriptions]);
 
-        const fin = norm(ec.sentimiento_final_cliente);
-        const cxRisk = (ec.evidencia_friccion ? 2 : 0)
-          + (abandono === 'alto' ? 3 : 0)
-          + (['medio', 'alto'].includes(riesgoLegal) ? 3 : 0)
-          + (fin === 'negativo' ? 2 : 0);
-        cxRiskSum += cxRisk;
-      } catch (_) {
-        // Ignorar payloads inválidos
+  const temporalHeatmap = useMemo(() => {
+    const matrix = {};
+    WEEK_DAYS.forEach((d) => {
+      matrix[d.idx] = {};
+      HEATMAP_HOURS.forEach((h) => { matrix[d.idx][h] = 0; });
+    });
+
+    const dayTotals = {};
+    const hourTotals = {};
+    WEEK_DAYS.forEach((d) => { dayTotals[d.idx] = 0; });
+    HEATMAP_HOURS.forEach((h) => { hourTotals[h] = 0; });
+
+    analyzedTranscriptions.forEach((t) => {
+      if (!t?.recordingDate) return;
+      const date = new Date(t.recordingDate);
+      if (Number.isNaN(date.getTime())) return;
+      const day = date.getDay();
+      const hour = date.getHours();
+      if (matrix[day] && typeof matrix[day][hour] === 'number') {
+        matrix[day][hour] += 1;
+        dayTotals[day] += 1;
+        hourTotals[hour] += 1;
       }
     });
 
-    const total = analyzed.length || 1;
-    const topMotivosSorted = Object.fromEntries(
-      Object.entries(topMotivos).sort((a, b) => b[1] - a[1]).slice(0, 10)
-    );
+    const maxCell = Math.max(1, ...WEEK_DAYS.flatMap((d) => HEATMAP_HOURS.map((h) => matrix[d.idx][h])));
 
-    return {
-      averageSentimentScore: sentimentCount ? sentimentSum / sentimentCount : 0,
-      frictionIndex: (frictionCount * 100) / total,
-      abandonmentRiskHighPct: (abandonoAltoCount * 100) / total,
-      averageAgentQualityScore: qualityCount ? qualitySum / qualityCount : 0,
-      protocolCompliancePct: (protocoloOkCount * 100) / total,
-      escalationRate: (escalamientoYesCount * 100) / total,
-      legalRiskIndex: (legalMidHighCount * 100) / total,
-      cxRiskScoreAvg: cxRiskSum / total,
-      topMotivosContacto: topMotivosSorted,
-    };
-  }, [transcriptions]);
+    const peakDay = WEEK_DAYS.reduce((best, d) =>
+      dayTotals[d.idx] > (best.total ?? -1)
+        ? { idx: d.idx, name: d.full, total: dayTotals[d.idx] }
+        : best
+    , { idx: 1, name: 'Lunes', total: 0 });
+
+    const peakHour = HEATMAP_HOURS.reduce((best, h) =>
+      hourTotals[h] > (best.total ?? -1)
+        ? { hour: h, total: hourTotals[h] }
+        : best
+    , { hour: 0, total: 0 });
+
+    return { matrix, maxCell, peakDay, peakHour };
+  }, [analyzedTranscriptions]);
+
+  const applyObjectionFilter = (name) => {
+    const params = new URLSearchParams();
+    params.set('view', 'objection');
+    params.set('objection', name);
+    navigate(`/transcriptions?${params.toString()}`);
+  };
 
   if (loading && !dashboardMetrics) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando datos...</p>
+          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando tablero comercial...</p>
         </div>
       </div>
     );
   }
-
-  if (!dashboardMetrics) {
-    return (
-      <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-gray-100'}`}>
-          <FileText className="w-8 h-8 text-[#004F9F]" />
-        </div>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Sin datos disponibles</h3>
-        <p className={isDark ? 'text-zinc-400' : 'text-gray-500'}>Sincroniza desde S3 para comenzar</p>
-      </div>
-    );
-  }
-
-  const { 
-    totalTranscriptions, 
-    totalSales, 
-    totalNoSales, 
-    conversionRate,
-    averageSellerScore,
-    sellerMetrics,
-    branchMetrics,
-    noSaleReasons,
-    cxMetrics
-  } = dashboardMetrics;
-
-  const effectiveCxMetrics = cxMetrics || computedCxMetrics || {};
-  const sentimentAvg = effectiveCxMetrics.averageSentimentScore ?? 0;
-  const frictionIndex = effectiveCxMetrics.frictionIndex ?? 0;
-  const abandonmentRiskHighPct = effectiveCxMetrics.abandonmentRiskHighPct ?? 0;
-  const agentQualityAvg = effectiveCxMetrics.averageAgentQualityScore ?? averageSellerScore ?? 0;
-  const cxRiskScoreAvg = effectiveCxMetrics.cxRiskScoreAvg ?? 0;
-  const protocolCompliancePct = effectiveCxMetrics.protocolCompliancePct ?? 0;
-  const escalationRate = effectiveCxMetrics.escalationRate ?? 0;
-  const legalRiskIndex = effectiveCxMetrics.legalRiskIndex ?? 0;
-
-  const sellerChartData = sellerMetrics?.slice(0, 5).map(s => ({
-    name: s.userName?.split(' ')[0] || 'N/A',
-    resuelto: s.sales,
-    noResuelto: s.noSales,
-  })) || [];
-
-  const noSaleReasonsData = effectiveCxMetrics?.topMotivosContacto
-    ? Object.entries(effectiveCxMetrics.topMotivosContacto).map(([name, value]) => ({ name, value }))
-    : noSaleReasons
-      ? Object.entries(noSaleReasons).map(([name, value]) => ({ name, value }))
-    : [];
-
-  // Procesar datos para Heatmap semanal (días vs horas)
-  const heatmapData = (() => {
-    const matrix = {};
-    // Inicializar matriz 7 días x 24 horas
-    for (let day = 0; day < 7; day++) {
-      matrix[day] = {};
-      for (let hour = 0; hour < 24; hour++) {
-        matrix[day][hour] = 0;
-      }
-    }
-    // Contar transcripciones (solo si hay datos)
-    if (transcriptions && transcriptions.length > 0) {
-      transcriptions.forEach(t => {
-        if (t.recordingDate) {
-          const date = new Date(t.recordingDate);
-          const day = date.getDay(); // 0-6
-          const hour = date.getHours(); // 0-23
-          matrix[day][hour]++;
-        }
-      });
-    }
-    return matrix;
-  })();
-
-  // Obtener el máximo para escala de colores del heatmap
-  const maxHeatmapValue = Math.max(
-    1,
-    ...Object.values(heatmapData).flatMap(hours => Object.values(hours))
-  );
-
-  // Procesar datos para Scatter plot temporal (X = fecha, Y = hora)
-  const scatterData = (() => {
-    // Verificar que hay datos antes de procesar
-    if (!transcriptions || transcriptions.length === 0) {
-      return { branches: [], dates: [], dateToX: {} };
-    }
-    
-    const branches = [...new Set(transcriptions.map(t => t.branchName).filter(Boolean))];
-    
-    // Obtener todas las fechas únicas para el eje X
-    const allDates = [...new Set(
-      transcriptions
-        .filter(t => t.recordingDate)
-        .map(t => new Date(t.recordingDate).toDateString())
-    )].sort((a, b) => new Date(a) - new Date(b));
-    
-    const dateToX = {};
-    allDates.forEach((d, i) => { dateToX[d] = i; });
-    
-    return {
-      branches: branches.map((branch, idx) => ({
-        branch,
-        color: BRANCH_COLORS[idx % BRANCH_COLORS.length],
-        data: transcriptions
-          .filter(t => t.branchName === branch && t.recordingDate)
-          .map(t => {
-            const date = new Date(t.recordingDate);
-            const dateStr = date.toDateString();
-            return {
-              x: dateToX[dateStr], // Fecha en X
-              y: date.getHours() + date.getMinutes() / 60, // Hora en Y
-              hour: date.getHours(),
-              minutes: date.getMinutes(),
-              dayName: DAYS_FULL[date.getDay()],
-              dateStr: date.toLocaleDateString('es-AR'),
-              branch,
-              branchColor: BRANCH_COLORS[idx % BRANCH_COLORS.length],
-              sale: t.saleCompleted
-            };
-          }) || []
-      })),
-      dates: allDates,
-      dateToX
-    };
-  })();
 
   const tooltipStyle = {
-    background: isDark ? '#1e293b' : '#ffffff',
+    background: isDark ? '#0f172a' : '#ffffff',
     border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
     borderRadius: '12px',
-    color: isDark ? '#fff' : '#374151'
+    color: isDark ? '#fff' : '#374151',
   };
 
   return (
     <div className="space-y-6">
-      {/* Main Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Sentimiento Promedio"
-          value={sentimentAvg?.toFixed(2) || '0.00'}
-          subtitle="Escala 1 a 5"
-          icon={FileText}
-          variant="default"
-        />
-        <MetricCard
-          title="Índice de Fricción"
-          value={`${frictionIndex?.toFixed(1) || '0.0'}%`}
-          subtitle="Conversaciones con fricción"
-          icon={CheckCircle}
-          variant="success"
-        />
-        <MetricCard
-          title="Riesgo Abandono Alto"
-          value={`${abandonmentRiskHighPct?.toFixed(1) || '0.0'}%`}
-          subtitle="Conversaciones críticas"
-          icon={XCircle}
-          variant="danger"
-        />
-        <MetricCard
-          title="Calidad del Agente"
-          value={agentQualityAvg?.toFixed(2) || '0.00'}
-          subtitle="Promedio (1 a 5)"
-          icon={Award}
-          variant="warning"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="CX Risk Score"
-          value={cxRiskScoreAvg?.toFixed(2) || '0.00'}
-          subtitle="Promedio de riesgo"
-          icon={Clock}
-          variant="default"
-        />
-        <MetricCard
-          title="Cumplimiento Protocolo"
-          value={`${protocolCompliancePct?.toFixed(1) || '0.0'}%`}
-          subtitle="Saludo + identificación + cierre"
-          icon={Users}
-          variant="success"
-        />
-        <MetricCard
-          title="Tasa Escalamiento"
-          value={`${escalationRate?.toFixed(1) || '0.0'}%`}
-          subtitle="Casos escalados"
-          icon={TrendingUp}
-          variant="warning"
-        />
-        <MetricCard
-          title="Índice Riesgo Legal"
-          value={`${legalRiskIndex?.toFixed(1) || '0.0'}%`}
-          subtitle="Riesgo medio/alto"
-          icon={XCircle}
-          variant="danger"
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Sellers Chart */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Top Agentes</h3>
-              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Comparativa por resolución</p>
-            </div>
-            <Link to="/sellers" className="text-sm text-[#004F9F] font-semibold flex items-center gap-1 hover:text-[#003A79]">
-              Ver todos <ArrowRight className="w-4 h-4" />
-            </Link>
+      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Radar comercial Carrefour Banco</h2>
+            <p className={`${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+              Vista ejecutiva para ventas, retención y oportunidades de cross-sell.
+            </p>
           </div>
-          {sellerChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={sellerChartData} layout="vertical">
-                <XAxis type="number" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
-                <YAxis type="category" dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} width={80} />
+          <span className={`text-sm px-3 py-2 rounded-lg border ${isDark ? 'bg-zinc-950 border-zinc-700 text-zinc-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+            Base analizada: {businessMetrics.total} conversaciones
+          </span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto pb-1">
+        <div className="grid grid-cols-4 gap-6 min-w-[1100px]">
+          <Link to="/transcriptions?view=cross-sell" className="block">
+            <MetricCard
+              title="Oportunidad Cross-Sell"
+              value={`${businessMetrics.opportunityPct.toFixed(1)}%`}
+              subtitle="Conversaciones con potencial comercial (ver casos)"
+              infoText="Porcentaje de conversaciones con intención comercial detectada distinta de 'ninguna'."
+              icon={Target}
+              variant="success"
+            />
+          </Link>
+          <Link to="/transcriptions?view=audio-issues" className="block">
+            <MetricCard
+              title="Calidad de Audio"
+              value={`${businessMetrics.audioIssueCount}/${businessMetrics.total}`}
+              subtitle="Conversaciones con problemas de audio (ver casos)"
+              infoText="Casos detectados por señales de ruido/corte en el texto y/o baja confianza del análisis."
+              icon={Headphones}
+              variant="warning"
+            />
+          </Link>
+          <MetricCard
+            title="Sentimiento Promedio"
+            value={businessMetrics.sentimentAvg.toFixed(2)}
+            subtitle="Escala 1 a 5"
+            infoText="Promedio del score de sentimiento general."
+            icon={MessageCircle}
+            variant="success"
+          />
+          <MetricCard
+            title="Oportunidad Perdida"
+            value={`${businessMetrics.missedOpportunityPct.toFixed(1)}%`}
+            subtitle="Cross-sell no aprovechado"
+            infoText="Conversaciones donde se detectó oportunidad comercial desaprovechada."
+            icon={TrendingUp}
+            variant="warning"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <div className={`rounded-xl border px-4 py-3 min-w-[240px] ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+            Calidad de llamadas
+          </p>
+          <p className="text-xl font-bold text-emerald-500 mt-1">{businessMetrics.commercialResolutionPct.toFixed(1)}%</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Conversaciones con cierre positivo</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>Top 10 razones de llamada</h3>
+          <p className={`text-sm mb-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Dónde concentrar campañas y scripts comerciales</p>
+          {businessMetrics.topMotivos.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={businessMetrics.topMotivos}>
+                <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#9ca3af'} fontSize={11} interval={0} angle={-20} textAnchor="end" height={70} />
+                <YAxis stroke={isDark ? '#94a3b8' : '#9ca3af'} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="resuelto" name="Resuelto" fill="#22c55e" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="noResuelto" name="No resuelto" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="#004F9F" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className={`h-64 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-              Sin datos disponibles
-            </div>
+            <div className={`h-52 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Sin datos suficientes</div>
           )}
         </div>
 
-        {/* No Sale Reasons Chart */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-          <div className="mb-6">
-              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Top motivos de contacto</h3>
-              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Distribución principal de casos</p>
-          </div>
-          {noSaleReasonsData.length > 0 ? (
-            <div className="flex items-center">
-              <ResponsiveContainer width="50%" height={280}>
+        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>Top objeciones del cliente</h3>
+          <p className={`text-sm mb-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Qué frena la venta y cómo priorizar entrenamiento (clic para ver conversaciones)</p>
+          {businessMetrics.topObjeciones.length > 0 ? (
+            <div className="flex items-center gap-4">
+              <ResponsiveContainer width="50%" height={260}>
                 <PieChart>
                   <Pie
-                    data={noSaleReasonsData}
+                    data={businessMetrics.topObjeciones}
+                    dataKey="value"
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
+                    innerRadius={50}
+                    outerRadius={95}
+                    paddingAngle={3}
+                    onClick={(entry) => applyObjectionFilter(entry?.name)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {noSaleReasonsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {businessMetrics.topObjeciones.map((entry, index) => (
+                      <Cell
+                        key={`obj-${entry.name}-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                        stroke={isDark ? '#1f2937' : '#ffffff'}
+                        strokeWidth={1}
+                      />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="w-1/2 space-y-3">
-                {noSaleReasonsData.slice(0, 5).map((item, index) => (
-                  <div key={`${item.name || 'motivo'}-${index}`} className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className={`text-sm truncate flex-1 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>{item.name}</span>
+              <div className="flex-1 space-y-2">
+                {businessMetrics.topObjeciones.map((item, idx) => (
+                  <button
+                    key={`${item.name}-${idx}`}
+                    type="button"
+                    onClick={() => applyObjectionFilter(item.name)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                    <span className={`text-sm truncate flex-1 text-left ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{item.name}</span>
                     <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.value}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className={`h-64 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-              Sin datos disponibles
-            </div>
+            <div className={`h-52 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Sin objeciones estructuradas todavía</div>
           )}
         </div>
       </div>
 
-      {/* Rankings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Sellers Ranking */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#004F9F]/20 rounded-xl">
-              <Users className="w-5 h-5 text-[#004F9F]" />
-            </div>
-            <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Ranking Agentes</h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Por tasa de resolución</p>
-            </div>
+      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#004F9F]" />
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Cola de acción comercial priorizada</h3>
           </div>
-          <div className="space-y-3">
-            {sellerMetrics?.slice(0, 5).map((seller, index) => (
-              <div 
-                key={`${seller.userId ?? 'seller'}-${seller.userName ?? 'sin-nombre'}-${index}`}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800' : 'bg-gray-50 hover:bg-gray-100'}`}
+          <Link
+            to="/transcriptions"
+            className="text-sm font-semibold text-[#004F9F] hover:text-[#003A79]"
+          >
+            Ver lista completa
+          </Link>
+        </div>
+        <p className={`text-sm mb-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+          Conversaciones con mayor potencial de recuperación de venta o prevención de fuga.
+        </p>
+        {businessMetrics.priorityList.length > 0 ? (
+          <div className="space-y-2">
+            {businessMetrics.priorityList.map((item, index) => (
+              <div
+                key={`${item.recordingId}-${index}`}
+                className={`grid grid-cols-1 lg:grid-cols-5 gap-3 rounded-xl p-3 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#004F9F] to-[#003A79] text-white' :
-                  index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
-                  isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {index + 1}
+                <div className="lg:col-span-2">
+                  <Link
+                    to={`/transcriptions/${item.recordingId}`}
+                    className={`font-mono text-sm font-semibold hover:underline ${isDark ? 'text-[#7db7ff]' : 'text-[#004F9F]'}`}
+                  >
+                    #{item.recordingId}
+                  </Link>
+                  <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{item.motivo}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{seller.userName}</p>
-                  <p className={`text-xs truncate ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{seller.branchName}</p>
+                <div className="lg:col-span-2">
+                  <p className={`text-sm ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{item.nextAction}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-400">{seller.conversionRate}%</p>
-                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{seller.sales}/{seller.totalInteractions}</p>
+                <div className="flex flex-wrap gap-2 items-start">
+                  {item.hasOpportunity && <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Cross-sell</span>}
+                  {item.opLost && <span className="px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-400">Desaprovechada</span>}
+                  {item.riskAbandono === 'alto' && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-400">Fuga alta</span>}
+                  {item.audio && <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-300">Audio</span>}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <div className={`h-24 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Sin prioridades por el momento</div>
+        )}
+      </div>
 
-        {/* Branch Performance */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#004F9F]/20 rounded-xl">
-              <Building2 className="w-5 h-5 text-[#004F9F]" />
+      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>Recomendaciones para vender más y retener</h3>
+            <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+              Esta sección ahora está en una pestaña dedicada para mejor seguimiento comercial.
+            </p>
+          </div>
+          <Link
+            to="/sales-recommendations"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors whitespace-nowrap"
+          >
+            Abrir pestaña
+          </Link>
+        </div>
+      </div>
+
+      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Heatmap de atenciones por día y hora</h3>
+            <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+              Identifica cuándo se concentra la demanda para ajustar staffing y campañas.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className={`px-3 py-2 rounded-lg border ${isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+              <span className="text-xs uppercase tracking-wide opacity-70">Día pico</span>
+              <p className="font-semibold">{temporalHeatmap.peakDay.name} ({temporalHeatmap.peakDay.total})</p>
             </div>
-            <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Rendimiento Sucursales</h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Por tasa de resolución</p>
+            <div className={`px-3 py-2 rounded-lg border ${isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+              <span className="text-xs uppercase tracking-wide opacity-70">Hora pico</span>
+              <p className="font-semibold">{String(temporalHeatmap.peakHour.hour).padStart(2, '0')}:00 ({temporalHeatmap.peakHour.total})</p>
             </div>
           </div>
-          <div className="space-y-3">
-            {branchMetrics?.slice(0, 5).map((branch, index) => (
-              <div 
-                key={`${branch.branchId ?? 'branch'}-${branch.branchName ?? 'sin-sucursal'}-${index}`}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800' : 'bg-gray-50 hover:bg-gray-100'}`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#004F9F] to-[#003A79] text-white' :
-                  index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
-                  isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {index + 1}
+        </div>
+
+        <div className="overflow-x-auto">
+          <div className="min-w-[980px]">
+            <div className="flex mb-2">
+              <div className="w-12" />
+              {HEATMAP_HOURS.map((h) => (
+                <div key={`hh-${h}`} className={`w-8 text-center text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                  {h}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`font-semibold capitalize truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</p>
-                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{branch.totalInteractions} atenciones</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-400">{branch.conversionRate}%</p>
-                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Score: {branch.averageScore?.toFixed(1) || '-'}</p>
-                </div>
+              ))}
+            </div>
+
+            {WEEK_DAYS.map((d) => (
+              <div key={`row-${d.idx}`} className="flex items-center mb-1">
+                <div className={`w-12 text-xs font-medium ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>{d.short}</div>
+                {HEATMAP_HOURS.map((h) => {
+                  const value = temporalHeatmap.matrix[d.idx]?.[h] || 0;
+                  const intensity = value / temporalHeatmap.maxCell;
+                  return (
+                    <div
+                      key={`cell-${d.idx}-${h}`}
+                      className="w-8 h-6 rounded-sm mx-[1px]"
+                      style={{
+                        backgroundColor: value === 0
+                          ? (isDark ? '#111827' : '#f3f4f6')
+                          : `rgba(0, 79, 159, ${0.20 + intensity * 0.80})`,
+                      }}
+                      title={`${d.full} ${String(h).padStart(2, '0')}:00 → ${value} atenciones`}
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
       </div>
-
-      {/* Traffic Distribution Section */}
-      {transcriptions?.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#004F9F]/20 rounded-xl">
-              <Clock className="w-5 h-5 text-[#004F9F]" />
-            </div>
-            <div>
-              <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Distribución de Tráfico</h2>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Patrones de atención por horario y día</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Heatmap Semanal */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-[#004F9F]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Heatmap Semanal</h3>
-              </div>
-              <p className={`text-xs mb-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                Intensidad de atenciones por día y hora
-              </p>
-              
-              <div className="overflow-x-auto">
-                <div className="min-w-[500px]">
-                  {/* Header con horas */}
-                  <div className="flex mb-1">
-                    <div className="w-10"></div>
-                    {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map(hour => (
-                      <div key={hour} className={`flex-1 text-center text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-                        {hour}h
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Filas por día */}
-                  {DAYS.map((day, dayIdx) => (
-                    <div key={day} className="flex items-center mb-1">
-                      <div className={`w-10 text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                        {day}
-                      </div>
-                      {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map(hour => {
-                        const value = heatmapData[dayIdx]?.[hour] || 0;
-                        const intensity = value / maxHeatmapValue;
-                        return (
-                          <div
-                            key={hour}
-                            className="flex-1 h-6 mx-0.5 rounded cursor-pointer transition-transform hover:scale-110"
-                            style={{
-                              backgroundColor: value === 0 
-                                ? (isDark ? '#111111' : '#f1f5f9')
-                                : `rgba(0, 79, 159, ${0.2 + intensity * 0.8})`,
-                            }}
-                            title={`${DAYS_FULL[dayIdx]} ${hour}:00 - ${value} atenciones`}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
-                  
-                  {/* Leyenda */}
-                  <div className="flex items-center justify-end mt-4 gap-2">
-                    <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Menos</span>
-                    <div className="flex gap-1">
-                      {[0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
-                        <div
-                          key={i}
-                          className="w-4 h-4 rounded"
-                          style={{ backgroundColor: `rgba(0, 79, 159, ${intensity})` }}
-                        />
-                      ))}
-                    </div>
-                    <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Más</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Scatter Plot Temporal */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-[#004F9F]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Atenciones por Horario</h3>
-              </div>
-              <p className={`text-xs mb-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                X = Fecha | Y = Hora | Color = Sucursal | Borde verde = resuelto
-              </p>
-              
-              {scatterData.branches?.length > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 40 }}>
-                      <XAxis 
-                        type="number" 
-                        dataKey="x" 
-                        domain={[-0.5, scatterData.dates.length - 0.5]}
-                        ticks={scatterData.dates.map((_, i) => i)}
-                        tickFormatter={(tick) => {
-                          const dateStr = scatterData.dates[tick];
-                          if (!dateStr) return '';
-                          const d = new Date(dateStr);
-                          return `${d.getDate()}/${d.getMonth()+1}`;
-                        }}
-                        stroke={isDark ? '#71717a' : '#9ca3af'}
-                        fontSize={10}
-                        angle={-45}
-                        textAnchor="end"
-                        height={50}
-                      />
-                      <YAxis 
-                        type="number" 
-                        dataKey="y" 
-                        domain={[7, 21]}
-                        ticks={[8, 10, 12, 14, 16, 18, 20]}
-                        tickFormatter={(tick) => `${tick}h`}
-                        stroke={isDark ? '#71717a' : '#9ca3af'}
-                        fontSize={10}
-                        width={35}
-                      />
-                      <ZAxis range={[60, 60]} />
-                      <Tooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload?.[0]) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className={`p-3 rounded-lg shadow-lg border ${isDark ? 'bg-black border-zinc-800' : 'bg-white border-gray-200'}`}>
-                                <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                  {data.branch}
-                                </p>
-                                <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                                  {data.dayName} {data.dateStr}
-                                </p>
-                                <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                                  Hora: {data.hour}:{data.minutes.toString().padStart(2, '0')}
-                                </p>
-                                <p className={`text-sm font-medium mt-1 ${data.sale ? 'text-green-400' : 'text-red-400'}`}>
-                                  {data.sale ? '✓ Resuelto' : '✗ No resuelto'}
-                                </p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      {scatterData.branches.map((branch) => (
-                        <Scatter
-                          key={branch.branch}
-                          name={branch.branch}
-                          data={branch.data}
-                          shape={(props) => {
-                            const { cx, cy, payload } = props;
-                            return (
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={6}
-                                fill={payload.branchColor}
-                                fillOpacity={0.8}
-                                stroke={payload.sale ? '#22c55e' : '#ef4444'}
-                                strokeWidth={2}
-                              />
-                            );
-                          }}
-                        />
-                      ))}
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                  
-                  {/* Leyenda de sucursales */}
-                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-800">
-                    {scatterData.branches.map((branch) => (
-                      <div key={branch.branch} className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full border-2 border-gray-400"
-                          style={{ backgroundColor: branch.color }}
-                        />
-                        <span className={`text-xs ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
-                          {branch.branch} ({branch.data.length})
-                        </span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 ml-4">
-                      <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-green-500" />
-                      <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Resuelto</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-red-500" />
-                      <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>No resuelto</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className={`h-48 flex items-center justify-center ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-                  Sin datos de fechas disponibles
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

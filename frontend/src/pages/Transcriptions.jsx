@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import Filters from '../components/Filters';
@@ -13,22 +13,20 @@ export default function Transcriptions() {
     transcriptions,
     loading,
     recalculating,
-    syncSummary,
     fetchTranscriptions,
-    autoSyncTranscriptions,
-    analyzeTranscription,
     deleteTranscription,
     setFilters
   } = useStore();
   const { isDark } = useTheme();
   const [searchParams] = useSearchParams();
   const searchParamsKey = searchParams.toString();
-  const AUTO_SYNC_CACHE_KEY = 'transcriptions_last_auto_sync_at';
-  const AUTO_SYNC_INTERVAL_MS = 120000;
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
-  const [syncingOnLoad, setSyncingOnLoad] = useState(false);
-  const didInitialAutoSync = useRef(false);
+  const viewMode = searchParams.get('view');
+  const crossSellOnly = viewMode === 'cross-sell';
+  const audioIssuesOnly = viewMode === 'audio-issues';
+  const objectionOnly = viewMode === 'objection';
+  const objectionParam = (searchParams.get('objection') || '').trim();
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -84,12 +82,172 @@ export default function Transcriptions() {
     });
   }, [transcriptions, sortConfig]);
 
+  const normalize = (value) =>
+    (value || '')
+      .toString()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .trim();
+
+  const normalizeLoose = (value) =>
+    normalize(value)
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const isApiKeyPendingLabel = (value) => {
+    const n = normalize(value);
+    return n.includes('analisis pendiente') && n.includes('api key') && n.includes('no configurada');
+  };
+
+  const classifyBajaType = (rawValue) => {
+    const norm = normalize(rawValue);
+    if (!norm) return null;
+    const hasBajaIntent = ['baja', 'dar de baja', 'cancel', 'cancelacion', 'cancelación'].some((term) => norm.includes(term));
+    if (!hasBajaIntent) return null;
+
+    const effectiveHints = [
+      'baja efectiva',
+      'baja confirmada',
+      'baja realizada',
+      'ya se dio de baja',
+      'se dio de baja',
+      'dado de baja',
+      'producto dado de baja',
+      'cancelado',
+      'cancelada',
+      'cancelacion efectiva',
+      'cancelación efectiva',
+    ];
+    if (effectiveHints.some((hint) => norm.includes(hint))) return 'Baja efectiva';
+    return 'Intención de baja';
+  };
+
+  const formatMotivoPrincipal = (value) => {
+    if (isApiKeyPendingLabel(value)) return '-';
+    const bajaType = classifyBajaType(value);
+    if (bajaType) return bajaType;
+    return value || '-';
+  };
+
+  const isCrossSellOpportunity = (transcription) => {
+    let intent = '';
+    try {
+      const payload = transcription?.analysisPayload ? JSON.parse(transcription.analysisPayload) : {};
+      const ac = payload?.analisis_contenido || {};
+      intent = (
+        ac.intencion_comercial_detectada ||
+        ac['intención comercial detectada'] ||
+        ''
+      ).toString().trim();
+    } catch (_) {
+      intent = '';
+    }
+    const normalized = normalize(intent);
+    return normalized && normalized !== 'ninguna';
+  };
+
+  const hasAudioIssues = (t) => {
+    const text = normalize(t?.transcriptionText);
+    const keywords = [
+      'no se escucha',
+      'no te escucho',
+      'te escucho cortado',
+      'se corta',
+      'con interferencia',
+      'mala señal',
+      'se entrecorta',
+      'ruido',
+      'sin audio',
+      'microfono',
+    ];
+    const byKeyword = keywords.some((k) => text.includes(k));
+    const byConfidence = Number(t?.analysisConfidence || 100) < 45;
+    return byKeyword || byConfidence;
+  };
+
+  const hasObjectionMatch = (transcription, objection) => {
+    const target = normalizeLoose(objection);
+    if (!target) return false;
+    const objections = Array.isArray(transcription?.customerObjections) ? transcription.customerObjections : [];
+    return objections.some((item) => {
+      const current = normalizeLoose(item);
+      return current && (current.includes(target) || target.includes(current));
+    });
+  };
+
+  const crossSellMetaById = useMemo(() => {
+    const map = new Map();
+    (transcriptions || []).forEach((t) => {
+      let intent = '';
+      try {
+        const payload = t?.analysisPayload ? JSON.parse(t.analysisPayload) : {};
+        const ac = payload?.analisis_contenido || {};
+        intent = (
+          ac.intencion_comercial_detectada ||
+          ac['intención comercial detectada'] ||
+          ''
+        ).toString().trim();
+      } catch (_) {
+        intent = '';
+      }
+
+      const normIntent = normalize(intent);
+      const hasOpportunity = isCrossSellOpportunity(t);
+      map.set(t.recordingId, {
+        hasOpportunity,
+        intentLabel: hasOpportunity ? intent : null,
+      });
+    });
+    return map;
+  }, [transcriptions]);
+
+  const displayedTranscriptions = useMemo(() => {
+    if (objectionOnly && objectionParam) {
+      return sortedTranscriptions.filter((t) => hasObjectionMatch(t, objectionParam));
+    }
+    if (audioIssuesOnly) return sortedTranscriptions.filter((t) => hasAudioIssues(t));
+    if (!crossSellOnly) return sortedTranscriptions;
+    return sortedTranscriptions.filter((t) => crossSellMetaById.get(t.recordingId)?.hasOpportunity);
+  }, [objectionOnly, objectionParam, audioIssuesOnly, crossSellOnly, sortedTranscriptions, crossSellMetaById]);
+
+  const crossSellSummary = useMemo(() => {
+    const source = (transcriptions || []).filter((t) => crossSellMetaById.get(t.recordingId)?.hasOpportunity);
+    const byIntent = {};
+    const byMotivo = {};
+
+    source.forEach((t) => {
+      const intentLabel = crossSellMetaById.get(t.recordingId)?.intentLabel || 'Oportunidad comercial';
+      byIntent[intentLabel] = (byIntent[intentLabel] || 0) + 1;
+
+      const motivo = formatMotivoPrincipal((t.motivoPrincipal || 'Sin clasificar').toString().trim());
+      byMotivo[motivo] = (byMotivo[motivo] || 0) + 1;
+    });
+
+    const topIntent = Object.entries(byIntent)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    const topMotivos = Object.entries(byMotivo)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    return {
+      total: source.length,
+      topIntent,
+      topMotivos,
+    };
+  }, [transcriptions, crossSellMetaById]);
+
   // Componente para header ordenable
   const SortableHeader = ({ label, sortKey, className = '' }) => {
     const isActive = sortConfig.key === sortKey;
     return (
       <th 
-        className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none hover:bg-opacity-80 transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} ${className}`}
+        className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${isDark ? 'text-zinc-300 hover:text-white' : 'text-gray-500 hover:text-gray-800'} ${className}`}
         onClick={() => handleSort(sortKey)}
       >
         <div className="flex items-center gap-1">
@@ -107,9 +265,6 @@ export default function Transcriptions() {
   };
 
   useEffect(() => {
-    if (didInitialAutoSync.current) return;
-    didInitialAutoSync.current = true;
-
     const urlFilters = {};
     
     const userId = searchParams.get('userId');
@@ -136,26 +291,19 @@ export default function Transcriptions() {
 
     let cancelled = false;
     const run = async () => {
-      try {
-        if (Object.keys(urlFilters).length > 0) {
-          setFilters(urlFilters);
-        }
-
-        const lastSyncAt = Number(sessionStorage.getItem(AUTO_SYNC_CACHE_KEY) || 0);
-        const shouldSync = Date.now() - lastSyncAt > AUTO_SYNC_INTERVAL_MS;
-
-        if (shouldSync) {
-          setSyncingOnLoad(true);
-          await autoSyncTranscriptions();
-          sessionStorage.setItem(AUTO_SYNC_CACHE_KEY, String(Date.now()));
-        }
-      } catch (error) {
-        console.error('Error en sync automático:', error);
-      } finally {
-        if (!cancelled) {
-          setSyncingOnLoad(false);
-        }
-      }
+      // Reset y aplica solo filtros en URL para evitar estado previo arrastrado.
+      setFilters({
+        userId: null,
+        branchId: null,
+        saleCompleted: null,
+        resultadoLlamada: null,
+        motivoPrincipal: null,
+        dateFrom: null,
+        dateTo: null,
+        minScore: null,
+        maxScore: null,
+      });
+      if (Object.keys(urlFilters).length > 0) setFilters(urlFilters);
 
       if (!cancelled) {
         fetchTranscriptions();
@@ -166,17 +314,7 @@ export default function Transcriptions() {
     return () => {
       cancelled = true;
     };
-  }, [searchParamsKey, autoSyncTranscriptions, fetchTranscriptions, setFilters]);
-
-  const handleAnalyze = async (recordingId, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await analyzeTranscription(recordingId);
-    } catch (error) {
-      alert('Error al analizar: ' + error.message);
-    }
-  };
+  }, [searchParamsKey, fetchTranscriptions, setFilters]);
 
   const handleDelete = async (recordingId, e) => {
     e.preventDefault();
@@ -234,93 +372,192 @@ export default function Transcriptions() {
         </div>
       )}
 
-      {/* Sync automático al entrar a Transcripciones */}
-      {(syncingOnLoad || syncSummary) && (
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <RefreshCw className={`w-5 h-5 text-[#004F9F] ${syncingOnLoad ? 'animate-spin' : ''}`} />
-            <div className="flex-1">
-              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                {syncingOnLoad ? 'Sincronizando transcripciones nuevas...' : 'Sync automático completado'}
+      {/* Info */}
+      <div className={`inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border ${isDark ? 'text-zinc-300 bg-zinc-900 border-zinc-700' : 'text-gray-500 bg-white border-gray-200'}`}>
+        <FileText className="w-4 h-4 text-[#004F9F]" />
+        <span>
+          {displayedTranscriptions.length} conversaciones
+          {audioIssuesOnly
+            ? ' con problemas de audio'
+            : objectionOnly
+              ? ` con objeción "${objectionParam}"`
+            : crossSellOnly
+              ? ' con oportunidad cross-sell'
+              : ' analizadas listas para gestión comercial'}
+        </span>
+      </div>
+
+      {objectionOnly && objectionParam && (
+        <div className={`rounded-2xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Vista por objeción</p>
+              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                Conversaciones que contienen la objeción: <strong>{objectionParam}</strong>
               </p>
-              {!syncingOnLoad && syncSummary && (
-                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Nuevas importadas: {syncSummary.imported ?? 0} | Analizadas: {syncSummary.analyzed ?? 0}
-                </p>
+            </div>
+            <Link
+              to="/transcriptions"
+              className={`text-sm px-3 py-1.5 rounded-lg border ${
+                isDark
+                  ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Ver todas
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {audioIssuesOnly && (
+        <div className={`rounded-2xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Vista problemas de audio</p>
+              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                Casos detectados por menciones de corte/ruido o baja confianza del análisis.
+              </p>
+            </div>
+            <Link
+              to="/transcriptions"
+              className={`text-sm px-3 py-1.5 rounded-lg border ${
+                isDark
+                  ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Ver todas
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {crossSellOnly && (
+        <div className={`rounded-2xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Vista Cross-Sell</p>
+              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                Agrupación de conversaciones con oportunidad comercial detectada.
+              </p>
+            </div>
+            <Link
+              to="/transcriptions"
+              className={`text-sm px-3 py-1.5 rounded-lg border ${
+                isDark
+                  ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Ver todas
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className={`rounded-xl p-3 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>Tipos de oportunidad</p>
+              {crossSellSummary.topIntent.length > 0 ? (
+                <div className="space-y-2">
+                  {crossSellSummary.topIntent.map(([label, count]) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className={`text-sm truncate pr-3 ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{label}</span>
+                      <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>Sin oportunidades detectadas.</p>
+              )}
+            </div>
+            <div className={`rounded-xl p-3 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>Motivos asociados</p>
+              {crossSellSummary.topMotivos.length > 0 ? (
+                <div className="space-y-2">
+                  {crossSellSummary.topMotivos.map(([label, count]) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className={`text-sm truncate pr-3 ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>{label}</span>
+                      <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>Sin motivos relevantes.</p>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Info */}
-      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-        <FileText className="w-4 h-4" />
-        <span>{transcriptions.length} registros</span>
-      </div>
-
       {/* Filters */}
       <Filters onApply={fetchTranscriptions} />
 
       {/* Table */}
-      <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-2xl border overflow-hidden shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-10 h-10 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
             <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripciones...</p>
           </div>
-        ) : transcriptions.length === 0 ? (
+        ) : displayedTranscriptions.length === 0 ? (
           <div className="p-12 text-center">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
               <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No se encontraron transcripciones</h3>
-            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>Intenta ajustar los filtros o sincronizar desde S3</p>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No se encontraron conversaciones</h3>
+            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+              {crossSellOnly
+                ? 'No hay conversaciones con oportunidad cross-sell en este conjunto.'
+                : audioIssuesOnly
+                  ? 'No hay conversaciones con problemas de audio en este conjunto.'
+                  : objectionOnly
+                    ? 'No hay conversaciones con esa objeción en este conjunto.'
+                : 'Intenta ajustar los filtros.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
+              <thead className={isDark ? 'bg-zinc-950/90 border-b border-zinc-700' : 'bg-gray-50'}>
                 <tr>
                   <SortableHeader label="ID" sortKey="recordingId" />
-                  <SortableHeader label="Agente" sortKey="userName" />
-                  <SortableHeader label="Sucursal" sortKey="branchName" />
                   <SortableHeader label="Fecha" sortKey="recordingDate" />
                   <SortableHeader label="Motivo" sortKey="motivoPrincipal" />
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-gray-500'}`}>Cross-Sell</th>
                   <SortableHeader label="Resultado" sortKey="resultadoLlamada" />
                   <SortableHeader label="Riesgo" sortKey="senalesRiesgo" />
                   <SortableHeader label="Puntuación" sortKey="sellerScore" />
-                  <SortableHeader label="Estado" sortKey="analyzed" />
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Acciones</th>
+                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-zinc-300' : 'text-gray-500'}`}>Acciones</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                {sortedTranscriptions.map((t, index) => (
+              <tbody className={`divide-y ${isDark ? 'divide-zinc-800' : 'divide-gray-200'}`}>
+                {displayedTranscriptions.map((t, index) => (
                   <tr 
                     key={t.recordingId}
-                    className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
+                    className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-zinc-800/80' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="px-6 py-4">
                       <span className="font-mono text-sm font-medium text-[#004F9F]">#{t.recordingId}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <div>
-                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{t.userName || 'Desconocido'}</p>
-                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {t.userId}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t.branchName || '-'}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                      <div className={`flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
                         <Clock className="w-4 h-4" />
                         <span className="text-sm">{formatDate(t.recordingDate)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-sm truncate max-w-[140px] block ${isDark ? 'text-slate-300' : 'text-gray-600'}`} title={t.motivoPrincipal || ''}>{t.motivoPrincipal || '-'}</span>
+                      <span className={`text-sm truncate max-w-[140px] block ${isDark ? 'text-zinc-300' : 'text-gray-600'}`} title={formatMotivoPrincipal(t.motivoPrincipal)}>
+                        {formatMotivoPrincipal(t.motivoPrincipal)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {crossSellMetaById.get(t.recordingId)?.hasOpportunity ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
+                          {crossSellMetaById.get(t.recordingId)?.intentLabel || 'Oportunidad'}
+                        </span>
+                      ) : (
+                        <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Sin oportunidad</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
@@ -348,10 +585,10 @@ export default function Transcriptions() {
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400"><XCircle className="w-3 h-3" /> No resuelto</span>
                         )}
                         {!t.resultadoLlamada && t.saleCompleted === null && !t.analyzed && (
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>Pendiente</span>
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-zinc-700 text-zinc-200' : 'bg-gray-100 text-gray-500'}`}>Pendiente</span>
                         )}
                         {t.confianzaMotivo != null && (
-                          <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t.confianzaMotivo}%</span>
+                          <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>{t.confianzaMotivo}%</span>
                         )}
                       </div>
                     </td>
@@ -359,40 +596,20 @@ export default function Transcriptions() {
                       {t.senalesRiesgo ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400" title="Señales de urgencia/riesgo"><AlertTriangle className="w-3 h-3" /> Sí</span>
                       ) : (
-                        <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>-</span>
+                        <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>-</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <ScoreBadge score={t.sellerScore} size="small" />
                     </td>
                     <td className="px-6 py-4">
-                      {t.analyzed ? (
-                        <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
-                          <CheckCircle className="w-3 h-3" /> Analizado
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-yellow-400 text-xs font-medium">
-                          <Sparkles className="w-3 h-3" /> Pendiente
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${t.recordingId}`}
-                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#004F9F] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#004F9F] hover:text-white'}`}
+                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-[#004F9F] hover:border-[#004F9F] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#004F9F] hover:text-white'}`}
                         >
                           <Eye className="w-3 h-3" /> Ver
                         </Link>
-                        {!t.analyzed && (
-                          <button
-                            onClick={(e) => handleAnalyze(t.recordingId, e)}
-                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#004F9F] to-[#003A79] text-white rounded-lg hover:opacity-90 transition-opacity"
-                            disabled={loading}
-                          >
-                            <Sparkles className="w-3 h-3" /> Analizar
-                          </button>
-                        )}
                         {isAdmin && (
                           <button
                             onClick={(e) => handleDelete(t.recordingId, e)}
@@ -400,7 +617,7 @@ export default function Transcriptions() {
                               deleting === t.recordingId 
                                 ? 'bg-red-500/50 text-white cursor-not-allowed' 
                                 : isDark 
-                                  ? 'bg-slate-700 text-red-400 hover:bg-red-500 hover:text-white' 
+                                  ? 'bg-zinc-800 border border-zinc-700 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white' 
                                   : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
                             }`}
                             disabled={deleting === t.recordingId}

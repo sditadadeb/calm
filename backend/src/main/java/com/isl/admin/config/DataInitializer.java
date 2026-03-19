@@ -44,34 +44,25 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Create admin user if not exists
-        if (!userRepository.existsByUsername(adminUsername)) {
-            User admin = new User();
-            admin.setUsername(adminUsername);
-            admin.setPassword(passwordEncoder.encode(adminPassword));
-            admin.setRole("ADMIN");
-            admin.setEnabled(true);
-            userRepository.save(admin);
-            log.info("✅ Usuario admin creado: {}", adminUsername);
-            log.info("⚠️  IMPORTANTE: Cambiá la contraseña por defecto en producción!");
-        } else {
-            log.info("Usuario admin ya existe");
-        }
-
-        // Create viewer user if not exists
-        if (!userRepository.existsByUsername(viewerUsername)) {
-            User viewer = new User();
-            viewer.setUsername(viewerUsername);
-            viewer.setPassword(passwordEncoder.encode(viewerPassword));
-            viewer.setRole("VIEWER");
-            viewer.setEnabled(true);
-            userRepository.save(viewer);
-            log.info("✅ Usuario viewer creado: {}", viewerUsername);
-        } else {
-            log.info("Usuario viewer ya existe");
-        }
+        ensureUser(adminUsername, adminPassword, "ADMIN");
+        ensureUser(viewerUsername, viewerPassword, "VIEWER");
 
         ensurePromptAndModelDefaults();
+    }
+
+    private void ensureUser(String username, String rawPassword, String role) {
+        User user = userRepository.findByUsername(username).orElseGet(User::new);
+        boolean isNew = user.getId() == null;
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setRole(role);
+        user.setEnabled(true);
+        userRepository.save(user);
+        if (isNew) {
+            log.info("✅ Usuario {} creado: {}", role.toLowerCase(), username);
+        } else {
+            log.info("✅ Usuario {} actualizado: {}", role.toLowerCase(), username);
+        }
     }
 
     private void ensurePromptAndModelDefaults() {

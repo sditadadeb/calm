@@ -19,13 +19,44 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     List<Transcription> findByBranchId(Long branchId);
     
     List<Transcription> findBySaleCompleted(Boolean saleCompleted);
+
+    List<Transcription> findByAnalyzedTrueOrderByRecordingDateDesc();
     
     @Query("SELECT t FROM Transcription t WHERE " +
+           "t.analyzed = true AND " +
            "(:userId IS NULL OR t.userId = :userId) AND " +
            "(:branchId IS NULL OR t.branchId = :branchId) AND " +
            "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) AND " +
            "(:resultadoLlamada IS NULL OR LOWER(t.resultadoLlamada) = LOWER(:resultadoLlamada)) AND " +
-           "(:motivoPrincipal IS NULL OR LOWER(t.motivoPrincipal) = LOWER(:motivoPrincipal)) AND " +
+           "(:motivoPrincipal IS NULL OR (" +
+           "   (LOWER(:motivoPrincipal) = '__intencion_baja__' AND (" +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%dar de baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancel%' " +
+           "   ) AND NOT (" +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja efectiva%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja confirmada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja realizada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%se dio de baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%dado de baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelado%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelacion efectiva%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelación efectiva%' " +
+           "   )) OR " +
+           "   (LOWER(:motivoPrincipal) = '__baja_efectiva__' AND (" +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja efectiva%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja confirmada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%baja realizada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%se dio de baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%dado de baja%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelado%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelada%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelacion efectiva%' OR " +
+           "       LOWER(COALESCE(t.motivoPrincipal, '')) LIKE '%cancelación efectiva%' " +
+           "   )) OR " +
+           "   (LOWER(:motivoPrincipal) <> '__intencion_baja__' AND LOWER(:motivoPrincipal) <> '__baja_efectiva__' AND LOWER(COALESCE(t.motivoPrincipal, '')) LIKE LOWER(CONCAT('%', :motivoPrincipal, '%'))) " +
+           ")) AND " +
            "(:dateFrom IS NULL OR t.recordingDate >= :dateFrom) AND " +
            "(:dateTo IS NULL OR t.recordingDate <= :dateTo) AND " +
            "(:minScore IS NULL OR t.sellerScore >= :minScore) AND " +
@@ -100,6 +131,7 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     
     // Búsqueda de texto en transcripciones
     @Query("SELECT t FROM Transcription t WHERE " +
+           "t.analyzed = true AND " +
            "LOWER(t.transcriptionText) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
            "(:userId IS NULL OR t.userId = :userId) AND " +
            "(:branchId IS NULL OR t.branchId = :branchId) AND " +

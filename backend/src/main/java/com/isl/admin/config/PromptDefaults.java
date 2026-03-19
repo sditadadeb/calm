@@ -51,7 +51,8 @@ Identifica:
     - gestión operativa
     - fraude
     - mora/deuda
-    - baja de producto
+    - intención de baja
+    - baja efectiva
     - promoción/beneficios
     - otro
 

@@ -185,7 +185,7 @@ public class TranscriptionService {
                     filter.getMaxScore()
             );
         } else {
-            transcriptions = repository.findAll();
+            transcriptions = repository.findByAnalyzedTrueOrderByRecordingDateDesc();
         }
         
         return transcriptions.stream()
@@ -200,7 +200,7 @@ public class TranscriptionService {
     }
 
     public DashboardMetricsDTO getDashboardMetrics() {
-        long total = repository.count();
+        long total = repository.countAnalyzed();
         long analyzed = repository.countAnalyzed();
         long pendingAnalysis = repository.countPendingAnalysis();
         long sales = repository.countSales();
@@ -422,16 +422,12 @@ public class TranscriptionService {
         syncTranscriptions();
         long afterCount = repository.count();
         long imported = afterCount - beforeCount;
-        
-        // Analyze unprocessed transcriptions
-        log.info("Starting analysis of unprocessed transcriptions...");
-        int analyzed = analyzeUnprocessedTranscriptions();
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("previousCount", beforeCount);
         result.put("newCount", afterCount);
         result.put("imported", imported);
-        result.put("analyzed", analyzed);
+        result.put("analyzed", 0);
         result.put("timestamp", LocalDateTime.now());
         
         return result;
@@ -518,31 +514,13 @@ public class TranscriptionService {
                 
                 sendEvent(emitter, "import_complete", null, "Importación completada: " + importedCount, importedCount, totalToImport);
                 
-                // Phase 2: Analyze
-                List<Transcription> unanalyzed = repository.findByAnalyzedFalse();
-                int totalToAnalyze = unanalyzed.size();
-                
-                sendEvent(emitter, "analyze_start", null, "Analizando " + totalToAnalyze + " transcripciones...", 0, totalToAnalyze);
-                
-                int analyzedCount = 0;
-                for (Transcription transcription : unanalyzed) {
-                    try {
-                        analyzeTranscription(transcription.getRecordingId());
-                        analyzedCount++;
-                        sendEvent(emitter, "analyze_progress", transcription.getRecordingId(), 
-                                "Analizando: " + transcription.getUserName(), analyzedCount, totalToAnalyze);
-                    } catch (Exception e) {
-                        log.error("Error analyzing {}: {}", transcription.getRecordingId(), e.getMessage());
-                    }
-                }
-                
                 // Complete
                 Map<String, Object> result = new HashMap<>();
                 result.put("imported", importedCount);
-                result.put("analyzed", analyzedCount);
+                result.put("analyzed", 0);
                 result.put("timestamp", LocalDateTime.now().toString());
                 
-                sendEvent(emitter, "complete", null, "Sincronización completada", analyzedCount, totalToAnalyze);
+                sendEvent(emitter, "complete", null, "Sincronización completada", importedCount, totalToImport);
                 emitter.send(SseEmitter.event().name("result").data(result));
                 closed[0] = true;
                 emitter.complete();
@@ -816,6 +794,8 @@ public class TranscriptionService {
         return filter.getUserId() != null ||
                filter.getBranchId() != null ||
                filter.getSaleCompleted() != null ||
+               (filter.getResultadoLlamada() != null && !filter.getResultadoLlamada().isBlank()) ||
+               (filter.getMotivoPrincipal() != null && !filter.getMotivoPrincipal().isBlank()) ||
                filter.getDateFrom() != null ||
                filter.getDateTo() != null ||
                filter.getMinScore() != null ||

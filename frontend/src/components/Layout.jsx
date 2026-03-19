@@ -2,15 +2,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
-  Users, 
-  Building2, 
   Settings,
   LogOut,
   User,
   UserPlus,
   Sun,
   Moon,
-  Search
+  Search,
+  Lightbulb
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
@@ -18,11 +17,10 @@ import { useEffect } from 'react';
 
 // Configuración de páginas con subtítulos
 const pageConfig = {
-  '/': { name: 'Dashboard', subtitle: 'Análisis de Interacciones con IA', icon: LayoutDashboard },
-  '/transcriptions': { name: 'Transcripciones', subtitle: 'Historial de conversaciones', icon: FileText },
-  '/search': { name: 'Buscar', subtitle: 'Buscar en todas las conversaciones', icon: Search },
-  '/sellers': { name: 'Agentes', subtitle: 'Rendimiento por agente', icon: Users },
-  '/branches': { name: 'Sucursales', subtitle: 'Performance por sucursal', icon: Building2 },
+  '/': { name: 'Dashboard Comercial', subtitle: 'Inteligencia de conversaciones para ventas', icon: LayoutDashboard },
+  '/transcriptions': { name: 'Conversaciones', subtitle: 'Base analizada para gestión comercial', icon: FileText },
+  '/search': { name: 'Buscar', subtitle: 'Exploración comercial de conversaciones analizadas', icon: Search },
+  '/sales-recommendations': { name: 'Recomendaciones', subtitle: 'Acciones para vender más y retener', icon: Lightbulb },
   '/users': { name: 'Usuarios', subtitle: 'Gestión de accesos', icon: UserPlus },
   '/settings': { name: 'Configuración', subtitle: 'Ajustes del sistema', icon: Settings },
 };
@@ -30,10 +28,9 @@ const pageConfig = {
 // Navegación base
 const baseNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Transcripciones', href: '/transcriptions', icon: FileText },
+  { name: 'Conversaciones', href: '/transcriptions', icon: FileText },
   { name: 'Buscar', href: '/search', icon: Search },
-  { name: 'Agentes', href: '/sellers', icon: Users },
-  { name: 'Sucursales', href: '/branches', icon: Building2 },
+  { name: 'Recomendaciones', href: '/sales-recommendations', icon: Lightbulb },
 ];
 
 // Navegación solo para ADMIN
@@ -96,7 +93,7 @@ export default function Layout({ children }) {
                   to={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive 
-                      ? 'bg-[#004F9F] text-white shadow-lg shadow-[#004F9F]/30' 
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30' 
                       : isDark 
                         ? 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -122,7 +119,7 @@ export default function Layout({ children }) {
                       to={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                         isActive 
-                          ? 'bg-[#004F9F] text-white shadow-lg shadow-[#004F9F]/30' 
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30' 
                           : isDark 
                             ? 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -152,7 +149,7 @@ export default function Layout({ children }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-xl ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-gray-100'}`}>
-                    <PageIcon className="w-6 h-6 text-[#004F9F]" />
+                    <PageIcon className="w-6 h-6 text-emerald-500" />
                   </div>
                   <div>
                     <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentPage.name}</h1>
@@ -177,7 +174,7 @@ export default function Layout({ children }) {
                     </div>
                     <div className="text-center">
                       <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Resolución</p>
-                      <p className="text-2xl font-bold text-[#004F9F]">{dashboardMetrics?.conversionRate || '--'}%</p>
+                      <p className="text-2xl font-bold text-emerald-500">{dashboardMetrics?.conversionRate || '--'}%</p>
                     </div>
                   </div>
                   

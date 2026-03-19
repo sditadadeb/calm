@@ -62,7 +62,8 @@ const useStore = create((set, get) => ({
     try {
       const { filters } = get();
       const response = await api.getTranscriptions(filters);
-      set({ transcriptions: response.data, loading: false });
+      const analyzedOnly = (response.data || []).filter((t) => t?.analyzed === true);
+      set({ transcriptions: analyzedOnly, loading: false });
     } catch (error) {
       set({ error: error.message, loading: false });
     }

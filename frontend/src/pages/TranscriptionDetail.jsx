@@ -104,30 +104,30 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
       
       <button
         onClick={togglePlay}
-        className="p-3 rounded-full bg-[#004F9F] hover:bg-[#003A79] text-white transition-colors"
+        className="p-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
       >
         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
       </button>
 
-      <span className={`text-sm font-mono w-12 text-right ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+      <span className={`text-sm font-mono w-12 text-right ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
         {formatTime(currentTime)}
       </span>
 
       <div 
-        className={`flex-1 h-2 rounded-full cursor-pointer relative ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}
+        className={`flex-1 h-2 rounded-full cursor-pointer relative ${isDark ? 'bg-zinc-700' : 'bg-gray-200'}`}
         onClick={handleSeek}
       >
         <div 
-          className="h-full bg-[#004F9F] rounded-full"
+          className="h-full bg-emerald-600 rounded-full"
           style={{ width: `${progress}%` }}
         />
         <div 
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#004F9F]"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-emerald-600"
           style={{ left: `calc(${progress}% - 8px)` }}
         />
       </div>
 
-      <span className={`text-sm font-mono w-12 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+      <span className={`text-sm font-mono w-12 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
         {formatTime(duration)}
       </span>
     </div>
@@ -143,8 +143,8 @@ const RESULTADO_LLAMADA_CONFIG = {
   resuelto: { label: 'Resuelto', icon: CheckCircle, bgClass: 'bg-green-500/20', textClass: 'text-green-400' },
   parcial: { label: 'Parcial', icon: TrendingUp, bgClass: 'bg-yellow-500/20', textClass: 'text-yellow-400' },
   'no resuelto': { label: 'No resuelto', icon: XCircle, bgClass: 'bg-red-500/20', textClass: 'text-red-400' },
-  derivado: { label: 'Derivado', icon: AlertTriangle, bgClass: 'bg-blue-500/20', textClass: 'text-blue-400' },
-  'falta info': { label: 'Falta info', icon: HelpCircle, bgClass: 'bg-slate-500/20', textClass: 'text-slate-400' },
+  derivado: { label: 'Derivado', icon: AlertTriangle, bgClass: 'bg-amber-500/20', textClass: 'text-amber-400' },
+  'falta info': { label: 'Falta info', icon: HelpCircle, bgClass: 'bg-zinc-500/20', textClass: 'text-zinc-400' },
 };
 // Legacy saleStatus (por si no hay resultadoLlamada)
 const SALE_STATUS_CONFIG = {
@@ -152,7 +152,7 @@ const SALE_STATUS_CONFIG = {
   SALE_LIKELY: { label: 'Probable', icon: TrendingUp, bgClass: 'bg-emerald-500/20', textClass: 'text-emerald-400' },
   ADVANCE_NO_CLOSE: { label: 'Parcial', icon: AlertTriangle, bgClass: 'bg-yellow-500/20', textClass: 'text-yellow-400' },
   NO_SALE: { label: 'No resuelto', icon: XCircle, bgClass: 'bg-red-500/20', textClass: 'text-red-400' },
-  UNINTERPRETABLE: { label: 'No interpretable', icon: HelpCircle, bgClass: 'bg-slate-500/20', textClass: 'text-slate-400' },
+  UNINTERPRETABLE: { label: 'No interpretable', icon: HelpCircle, bgClass: 'bg-zinc-500/20', textClass: 'text-zinc-400' },
   resuelto: RESULTADO_LLAMADA_CONFIG.resuelto,
   parcial: RESULTADO_LLAMADA_CONFIG.parcial,
   'no resuelto': RESULTADO_LLAMADA_CONFIG['no resuelto'],
@@ -343,8 +343,8 @@ export default function TranscriptionDetail() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#004F9F] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cargando transcripción...</p>
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className={`mt-4 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Cargando transcripción...</p>
         </div>
       </div>
     );
@@ -355,10 +355,10 @@ export default function TranscriptionDetail() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || 'Transcripción no encontrada'}</p>
+          <p className={`${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>{error || 'Transcripción no encontrada'}</p>
           <button
             onClick={() => navigate('/transcriptions')}
-            className="mt-4 px-4 py-2 bg-[#004F9F] text-white rounded-lg hover:opacity-90"
+            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:opacity-90"
           >
             Volver al listado
           </button>
@@ -395,13 +395,63 @@ export default function TranscriptionDetail() {
       .replace(/conversación de venta/gi, 'atención');
   };
 
+  const isApiKeyPendingLabel = (value) => {
+    const n = (value || '')
+      .toString()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .trim();
+    return n.includes('analisis pendiente') && n.includes('api key') && n.includes('no configurada');
+  };
+
+  const normalize = (value) =>
+    (value || '')
+      .toString()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u')
+      .trim();
+
+  const classifyBajaType = (rawValue) => {
+    const norm = normalize(rawValue);
+    if (!norm) return null;
+    const hasBajaIntent = ['baja', 'dar de baja', 'cancel', 'cancelacion', 'cancelación'].some((term) => norm.includes(term));
+    if (!hasBajaIntent) return null;
+    const effectiveHints = [
+      'baja efectiva',
+      'baja confirmada',
+      'baja realizada',
+      'ya se dio de baja',
+      'se dio de baja',
+      'dado de baja',
+      'producto dado de baja',
+      'cancelado',
+      'cancelada',
+      'cancelacion efectiva',
+      'cancelación efectiva',
+    ];
+    if (effectiveHints.some((hint) => norm.includes(hint))) return 'Baja efectiva';
+    return 'Intención de baja';
+  };
+
+  const formatMotivoPrincipal = (value) => {
+    if (isApiKeyPendingLabel(value)) return '-';
+    return classifyBajaType(value) || value || '-';
+  };
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Navigation Bar */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/transcriptions')}
-          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#004F9F]' : 'text-gray-500 hover:text-[#004F9F]'}`}
+          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-zinc-400 hover:text-emerald-500' : 'text-gray-500 hover:text-emerald-600'}`}
         >
           <ArrowLeft className="w-4 h-4" />
           Volver al listado
@@ -415,10 +465,10 @@ export default function TranscriptionDetail() {
             className={`p-2 rounded-lg transition-colors ${
               hasPrevious 
                 ? isDark 
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  ? 'bg-zinc-800 hover:bg-zinc-700 text-white' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 : isDark
-                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
                   : 'bg-gray-50 text-gray-300 cursor-not-allowed'
             }`}
             title="Anterior"
@@ -427,7 +477,7 @@ export default function TranscriptionDetail() {
           </button>
           
           {allIds.length > 0 && (
-            <span className={`text-sm px-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <span className={`text-sm px-2 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
               {currentIndex + 1} / {allIds.length}
             </span>
           )}
@@ -438,10 +488,10 @@ export default function TranscriptionDetail() {
             className={`p-2 rounded-lg transition-colors ${
               hasNext 
                 ? isDark 
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                  ? 'bg-zinc-800 hover:bg-zinc-700 text-white' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 : isDark
-                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
                   : 'bg-gray-50 text-gray-300 cursor-not-allowed'
             }`}
             title="Siguiente"
@@ -452,17 +502,17 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Header Card */}
-      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xl font-bold text-[#004F9F]">{t.recordingId}</span>
+              <span className="font-mono text-xl font-bold text-emerald-500">{t.recordingId}</span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                 <StatusIcon className="w-4 h-4" /> {statusConfig.label}
               </span>
             </div>
             
-            <div className={`flex flex-wrap items-center gap-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <div className={`flex flex-wrap items-center gap-6 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span>{t.userName || 'Sin agente'}</span>
@@ -480,18 +530,18 @@ export default function TranscriptionDetail() {
 
           <div className="flex flex-col items-end gap-3">
             <div>
-              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Score de Atención</p>
+              <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Score de Atención</p>
               <ScoreBadge score={t.sellerScore} />
             </div>
             
             {/* Analysis Confidence */}
             {t.analysisConfidence !== null && t.analysisConfidence !== undefined && (
               <div className="flex items-center gap-2">
-                <Shield className={`w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
-                <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                <Shield className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`} />
+                <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
                   Confianza del análisis:
                 </span>
-                <div className={`h-2 w-20 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                <div className={`h-2 w-20 rounded-full overflow-hidden ${isDark ? 'bg-zinc-700' : 'bg-gray-200'}`}>
                   <div 
                     className={`h-full rounded-full ${
                       t.analysisConfidence >= 70 ? 'bg-green-500' : 
@@ -512,17 +562,17 @@ export default function TranscriptionDetail() {
         </div>
         {/* Motivo y resultado de atención */}
         {(t.motivoPrincipal || t.resultadoLlamada) && (
-          <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <div className={`mt-4 pt-4 border-t ${isDark ? 'border-zinc-800' : 'border-gray-200'}`}>
             <div className="flex flex-wrap gap-4">
               {t.motivoPrincipal && (
                 <div>
-                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Motivo principal</p>
-                  <p className={`font-medium ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>{t.motivoPrincipal}</p>
+                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Motivo principal</p>
+                  <p className={`font-medium ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{formatMotivoPrincipal(t.motivoPrincipal)}</p>
                 </div>
               )}
               {t.resultadoLlamada && (
                 <div>
-                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Resultado</p>
+                  <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Resultado</p>
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-semibold ${statusConfig?.bgClass || ''} ${statusConfig?.textClass || ''}`}>
                     {StatusIcon && <StatusIcon className="w-4 h-4" />} {statusConfig?.label || t.resultadoLlamada}
                   </span>
@@ -540,16 +590,16 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Audio Player */}
-      <div className={`rounded-2xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`rounded-2xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
         {audioLoading ? (
           <div className="space-y-2">
-            <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center gap-3 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
               <Loader2 className="w-5 h-5 animate-spin" />
               <span className="text-sm">Descargando audio... {audioProgress}%</span>
             </div>
-            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-zinc-700' : 'bg-gray-200'}`}>
               <div 
-                className="h-full bg-[#004F9F] transition-all duration-300"
+                className="h-full bg-emerald-500 transition-all duration-300"
                 style={{ width: `${audioProgress}%` }}
               />
             </div>
@@ -561,7 +611,7 @@ export default function TranscriptionDetail() {
             isDark={isDark} 
           />
         ) : (
-          <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <div className={`flex items-center gap-3 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
             <VolumeX className="w-5 h-5" />
             <span className="text-sm">Audio no disponible para esta transcripción</span>
           </div>
@@ -571,31 +621,31 @@ export default function TranscriptionDetail() {
       {/* Analysis Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {(experienciaCliente || analisisContenido || calidadAgente) && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>Análisis estructurado CX</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Experiencia Cliente</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Sentimiento inicial: {experienciaCliente?.sentimiento_inicial_cliente || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Sentimiento final: {experienciaCliente?.sentimiento_final_cliente || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Score sentimiento: {experienciaCliente?.score_sentimiento_general ?? '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Fricción: {String(experienciaCliente?.evidencia_friccion ?? '-')}</p>
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Experiencia Cliente</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Sentimiento inicial: {experienciaCliente?.sentimiento_inicial_cliente || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Sentimiento final: {experienciaCliente?.sentimiento_final_cliente || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Score sentimiento: {experienciaCliente?.score_sentimiento_general ?? '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Fricción: {String(experienciaCliente?.evidencia_friccion ?? '-')}</p>
               </div>
 
-              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Contenido</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Motivo: {analisisContenido?.motivo_principal_contacto || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Submotivo: {analisisContenido?.submotivo || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Categoría: {analisisContenido?.categoria_general || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Complejidad: {analisisContenido?.nivel_complejidad_caso || '-'}</p>
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Contenido</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Motivo: {formatMotivoPrincipal(analisisContenido?.motivo_principal_contacto || '-')}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Submotivo: {analisisContenido?.submotivo || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Categoría: {analisisContenido?.categoria_general || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Complejidad: {analisisContenido?.nivel_complejidad_caso || '-'}</p>
               </div>
 
-              <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
-                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Calidad Agente</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Empatía: {calidadAgente?.muestra_empatia || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Claridad: {calidadAgente?.claridad_explicaciones || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Solución concreta: {calidadAgente?.ofrece_solucion_concreta || '-'}</p>
-                <p className={isDark ? 'text-slate-200' : 'text-gray-700'}>Score calidad: {calidadAgente?.score_general_calidad_agente ?? '-'}</p>
+              <div className={`rounded-xl p-4 border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Calidad Agente</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Empatía: {calidadAgente?.muestra_empatia || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Claridad: {calidadAgente?.claridad_explicaciones || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Solución concreta: {calidadAgente?.ofrece_solucion_concreta || '-'}</p>
+                <p className={isDark ? 'text-zinc-200' : 'text-gray-700'}>Score calidad: {calidadAgente?.score_general_calidad_agente ?? '-'}</p>
               </div>
             </div>
           </div>
@@ -603,14 +653,14 @@ export default function TranscriptionDetail() {
 
         {/* Executive Summary */}
         {t.executiveSummary && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#004F9F] rounded-lg">
+              <div className="p-2 bg-emerald-600 rounded-lg">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen Ejecutivo</h3>
             </div>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{forDisplay(t.executiveSummary)}</p>
+            <p className={`leading-relaxed ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>{forDisplay(t.executiveSummary)}</p>
           </div>
         )}
 
@@ -619,10 +669,10 @@ export default function TranscriptionDetail() {
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${
             t.resultadoLlamada === 'resuelto' || t.saleCompleted
               ? (isDark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-100')
-              : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-100')
+              : (isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-50 border-gray-100')
           }`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${t.resultadoLlamada === 'resuelto' || t.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-slate-600' : 'bg-gray-400')}`}>
+              <div className={`p-2 rounded-lg ${t.resultadoLlamada === 'resuelto' || t.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-zinc-600' : 'bg-gray-400')}`}>
                 <Quote className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Evidencia del resultado</h3>
@@ -630,7 +680,7 @@ export default function TranscriptionDetail() {
             <p className={`italic text-lg ${
               t.resultadoLlamada === 'resuelto' || t.saleCompleted
                 ? (isDark ? 'text-green-300' : 'text-green-700')
-                : (isDark ? 'text-slate-300' : 'text-gray-600')
+                : (isDark ? 'text-zinc-300' : 'text-gray-600')
             }`}>
               "{forDisplay(t.evidenciaResultado || t.saleEvidence)}"
             </p>
@@ -639,21 +689,21 @@ export default function TranscriptionDetail() {
 
         {/* Insights desde analysisPayload (calidad de atención) */}
         {payloadData && (payloadData.resumenEjecutivo || (payloadData.insightsAccionables && payloadData.insightsAccionables.length)) && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#004F9F] rounded-lg">
+              <div className="p-2 bg-emerald-600 rounded-lg">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Resumen e insights</h3>
             </div>
             {payloadData.resumenEjecutivo && (
-              <p className={`mb-4 leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{payloadData.resumenEjecutivo}</p>
+              <p className={`mb-4 leading-relaxed ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>{payloadData.resumenEjecutivo}</p>
             )}
             {payloadData.insightsAccionables && payloadData.insightsAccionables.length > 0 && (
               <ul className="space-y-2">
                 {payloadData.insightsAccionables.map((insight, i) => (
-                  <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                    <span className="text-[#004F9F] mt-1">•</span>
+                  <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
+                    <span className="text-emerald-500 mt-1">•</span>
                     {insight}
                   </li>
                 ))}
@@ -662,14 +712,14 @@ export default function TranscriptionDetail() {
           </div>
         )}
         {payloadData?.proximosPasos && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500 rounded-lg">
+              <div className="p-2 bg-emerald-600 rounded-lg">
                 <Target className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Próximos pasos</h3>
             </div>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{payloadData.proximosPasos}</p>
+            <p className={`leading-relaxed ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>{payloadData.proximosPasos}</p>
           </div>
         )}
         {payloadData?.friccionesBrechas && payloadData.friccionesBrechas.length > 0 && (
@@ -682,7 +732,7 @@ export default function TranscriptionDetail() {
             </div>
             <ul className="space-y-2">
               {payloadData.friccionesBrechas.map((f, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
                   <span className="text-amber-500 mt-1">•</span>
                   {f}
                 </li>
@@ -692,7 +742,7 @@ export default function TranscriptionDetail() {
         )}
 
         {/* No Sale Reason (legacy) */}
-        {!t.saleCompleted && t.noSaleReason && (
+        {!t.saleCompleted && t.noSaleReason && !isApiKeyPendingLabel(t.noSaleReason) && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-500 rounded-lg">
@@ -706,16 +756,16 @@ export default function TranscriptionDetail() {
 
         {/* Products Discussed */}
         {t.productsDiscussed && t.productsDiscussed.length > 0 && t.productsDiscussed[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500 rounded-lg">
+              <div className="p-2 bg-emerald-600 rounded-lg">
                 <Target className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Temas tratados</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {t.productsDiscussed.map((prod, i) => (
-                <span key={i} className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+                <span key={i} className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
                   {forDisplay(prod)}
                 </span>
               ))}
@@ -725,7 +775,7 @@ export default function TranscriptionDetail() {
 
         {/* Customer Objections */}
         {t.customerObjections && t.customerObjections.length > 0 && t.customerObjections[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-500 rounded-lg">
                 <MessageSquare className="w-5 h-5 text-white" />
@@ -734,7 +784,7 @@ export default function TranscriptionDetail() {
             </div>
             <ul className="space-y-2">
               {t.customerObjections.map((obj, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
                   <span className="text-red-500 mt-1">•</span>
                   {forDisplay(obj)}
                 </li>
@@ -745,7 +795,7 @@ export default function TranscriptionDetail() {
 
         {/* Seller Strengths */}
         {t.sellerStrengths && t.sellerStrengths.length > 0 && t.sellerStrengths[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-green-500 rounded-lg">
                 <ThumbsUp className="w-5 h-5 text-white" />
@@ -754,7 +804,7 @@ export default function TranscriptionDetail() {
             </div>
             <ul className="space-y-2">
               {t.sellerStrengths.map((f, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                   {forDisplay(f)}
                 </li>
@@ -765,7 +815,7 @@ export default function TranscriptionDetail() {
 
         {/* Seller Weaknesses */}
         {t.sellerWeaknesses && t.sellerWeaknesses.length > 0 && t.sellerWeaknesses[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-500 rounded-lg">
                 <ThumbsDown className="w-5 h-5 text-white" />
@@ -774,7 +824,7 @@ export default function TranscriptionDetail() {
             </div>
             <ul className="space-y-2">
               {t.sellerWeaknesses.map((d, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
                   <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                   {forDisplay(d)}
                 </li>
@@ -787,15 +837,15 @@ export default function TranscriptionDetail() {
 
       {/* Full Transcription */}
       {t.transcriptionText && (
-        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-              <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-zinc-800' : 'bg-gray-100'}`}>
+              <MessageSquare className={`w-5 h-5 ${isDark ? 'text-zinc-400' : 'text-gray-600'}`} />
             </div>
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Transcripción Completa</h3>
           </div>
-          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${isDark ? 'bg-zinc-950' : 'bg-gray-50'}`}>
+            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
               {t.transcriptionText}
             </pre>
           </div>
