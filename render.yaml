@@ -9,7 +9,6 @@ databases:
 services:
   - type: web
     name: carrefour-admin-api
-    plan: free
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
@@ -68,7 +67,6 @@ services:
 
   - type: web
     name: carrefour-admin-frontend
-    plan: free
     runtime: static
     rootDir: ./frontend
     buildCommand: npm ci && npm run build
