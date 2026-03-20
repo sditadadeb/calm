@@ -1,7 +1,8 @@
 # Backend
 backend/target/
 backend/*.log
-backend/data/
+backend/data/*.lock.db
+backend/data/*.trace.db
 backend/.mvn/
 backend/mvnw
 backend/mvnw.cmd
