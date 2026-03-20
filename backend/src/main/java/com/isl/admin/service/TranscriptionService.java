@@ -74,6 +74,35 @@ public class TranscriptionService {
     }
 
     @Transactional
+    public Map<String, Object> syncSpecificIds(List<String> targetIds) {
+        log.info("Starting targeted sync for {} IDs...", targetIds.size());
+        Set<String> existingIds = new HashSet<>(repository.findAllRecordingIds());
+        int imported = 0;
+        int skipped = 0;
+        for (String recordingId : targetIds) {
+            if (existingIds.contains(recordingId)) {
+                skipped++;
+                continue;
+            }
+            try {
+                Transcription t = importTranscription(recordingId);
+                if (t != null) {
+                    imported++;
+                    existingIds.add(recordingId);
+                }
+            } catch (Exception e) {
+                log.error("Error importing {}: {}", recordingId, e.getMessage());
+            }
+        }
+        log.info("Targeted sync done. imported={}, skipped={}", imported, skipped);
+        Map<String, Object> result = new HashMap<>();
+        result.put("imported", imported);
+        result.put("skipped", skipped);
+        result.put("total", repository.count());
+        return result;
+    }
+
+    @Transactional
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
         String transcriptionText = s3Service.getTranscription(recordingId);
@@ -352,6 +381,14 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
     }
 
+    public long countAll() {
+        return repository.count();
+    }
+
+    public long countPending() {
+        return repository.countPendingAnalysis();
+    }
+
     public List<Map<String, Object>> getBranches() {
         return repository.findAllBranches().stream()
                 .map(row -> {
@@ -430,6 +467,47 @@ public class TranscriptionService {
         result.put("analyzed", 0);
         result.put("timestamp", LocalDateTime.now());
         
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> resetMockAnalysis() {
+        List<Transcription> mocks = repository.findAll().stream()
+                .filter(t -> "UNINTERPRETABLE".equals(t.getSaleStatus())
+                        || "Análisis pendiente - API Key no configurada".equals(t.getNoSaleReason()))
+                .collect(Collectors.toList());
+        int affected = 0;
+        for (Transcription t : mocks) {
+            t.setSaleCompleted(null);
+            t.setSaleStatus(null);
+            t.setAnalysisConfidence(null);
+            t.setConfidenceTrace(null);
+            t.setSaleEvidence(null);
+            t.setSaleEvidenceMeta(null);
+            t.setNoSaleReason(null);
+            t.setMotivoPrincipal(null);
+            t.setResultadoLlamada(null);
+            t.setProductsDiscussed(null);
+            t.setCustomerObjections(null);
+            t.setImprovementSuggestions(null);
+            t.setAnalysisPayload(null);
+            t.setFollowUpRecommendation(null);
+            t.setExecutiveSummary(null);
+            t.setSellerScore(null);
+            t.setSellerStrengths(null);
+            t.setSellerWeaknesses(null);
+            t.setAnalyzed(false);
+            t.setAnalyzedAt(null);
+            affected++;
+        }
+        repository.saveAll(mocks);
+        advancedAnalysisRepository.deleteByRecordingIdIn(
+                mocks.stream().map(Transcription::getRecordingId).collect(Collectors.toList()));
+        log.info("Reset {} mock-analyzed transcriptions", affected);
+        Map<String, Object> result = new HashMap<>();
+        result.put("resetCount", affected);
+        result.put("totalInDb", repository.count());
+        result.put("pending", repository.countPendingAnalysis());
         return result;
     }
 

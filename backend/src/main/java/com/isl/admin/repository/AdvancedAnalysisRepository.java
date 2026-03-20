@@ -20,4 +20,6 @@ public interface AdvancedAnalysisRepository extends JpaRepository<AdvancedAnalys
     
     @Query("SELECT COUNT(a) FROM AdvancedAnalysis a")
     long countAnalyzed();
+
+    void deleteByRecordingIdIn(List<String> recordingIds);
 }

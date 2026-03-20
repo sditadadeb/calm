@@ -37,3 +37,10 @@ npm-debug.log*
 # Dependencies
 dependency-reduced-pom.xml
 
+# Temp/sensitive files
+*.mp3
+openai_key.txt
+s3_listing.json
+selected_ids.txt
+import_batch.ps1
+

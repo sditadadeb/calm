@@ -104,6 +104,12 @@ public class TranscriptionController {
         return ResponseEntity.ok(transcriptionService.forceSync());
     }
 
+    @PostMapping("/sync/specific")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> syncSpecificIds(@RequestBody List<String> ids) {
+        return ResponseEntity.ok(transcriptionService.syncSpecificIds(ids));
+    }
+
     @PostMapping("/sync/analysis/reset")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> resetAllAnalysis() {
@@ -140,6 +146,33 @@ public class TranscriptionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
         return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
+    }
+
+    @PostMapping("/reset-mock")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> resetMock() {
+        return ResponseEntity.ok(transcriptionService.resetMockAnalysis());
+    }
+
+    @PostMapping("/analyze-pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> analyzePending() {
+        int analyzed = transcriptionService.analyzeUnprocessedTranscriptions();
+        long total = transcriptionService.countAll();
+        long pending = transcriptionService.countPending();
+        return ResponseEntity.ok(Map.of(
+            "analyzed", analyzed,
+            "totalInDb", total,
+            "stillPending", pending
+        ));
+    }
+
+    @GetMapping("/transcriptions/count")
+    public ResponseEntity<Map<String, Object>> getTranscriptionCounts() {
+        long total = transcriptionService.countAll();
+        long pending = transcriptionService.countPending();
+        long analyzed = total - pending;
+        return ResponseEntity.ok(Map.of("total", total, "analyzed", analyzed, "pending", pending));
     }
     
     /**
