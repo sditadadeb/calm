@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lightbulb, AlertTriangle, CheckCircle, ArrowRight, ShieldAlert, Heart } from 'lucide-react';
+import { Lightbulb, AlertTriangle, CheckCircle, ArrowRight, Heart } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -70,66 +70,67 @@ const cleanReason = (rawReason) => {
 const getPayloadBlock = (payload, key) => payload?.[key] || {};
 
 const buildActionPlan = (signal) => {
-  const mistakes = [];
-  const recoveryActions = [];
-  const happyCustomerActions = [];
+  const commercialProblems = [];
+  const commercialActions = [];
+  const cxProblems = [];
+  const cxActions = [];
 
   if (signal.missedOpportunity) {
-    mistakes.push('Había oportunidad comercial detectada y no se llevó a una propuesta concreta.');
-    recoveryActions.push('Recontactar con oferta puntual y cierre en 2 pasos (beneficio + confirmación).');
-    happyCustomerActions.push('Explicar por qué la propuesta ayuda al caso del cliente y validar conformidad antes de cerrar.');
+    commercialProblems.push('Oportunidad comercial detectada pero no se concretó una propuesta.');
+    commercialActions.push('Recontactar con oferta puntual y cierre en 2 pasos (beneficio + confirmación).');
   }
-
   if (signal.highChurnRisk) {
-    mistakes.push('Se detectó riesgo alto de baja sin contención suficiente.');
-    recoveryActions.push('Aplicar protocolo de retención con opción alternativa y seguimiento en 24h.');
-    happyCustomerActions.push('Reconocer la molestia explícitamente y acordar próximo paso con plazo exacto.');
+    commercialProblems.push('Riesgo alto de baja sin contención suficiente.');
+    commercialActions.push('Aplicar protocolo de retención con opción alternativa y seguimiento en 24h.');
   }
-
-  if (signal.friction) {
-    mistakes.push(`Hubo fricción${signal.frictionType ? ` (${signal.frictionType})` : ''} durante la atención.`);
-    recoveryActions.push('Usar resumen intermedio: problema entendido + acción + validación de entendimiento.');
-    happyCustomerActions.push('Cerrar con recap de solución y pregunta final: "¿Te resolví lo que necesitabas hoy?"');
-  }
-
-  if (signal.audioIssue) {
-    mistakes.push('La calidad de audio pudo degradar comprensión y confianza.');
-    recoveryActions.push('Reintentar por canal alternativo o nueva llamada con prueba de audio inicial.');
-    happyCustomerActions.push('Pedir disculpas por el canal y confirmar que el cliente comprendió la solución.');
-  }
-
   if (!signal.solutionOffered) {
-    mistakes.push('No quedó registrada una solución concreta para el caso.');
-    recoveryActions.push('Definir una acción resolutiva concreta con responsable y plazo.');
-    happyCustomerActions.push('Informar estado actual + próximo hito + cómo contactarse si persiste el problema.');
+    commercialProblems.push('No quedó registrada una solución concreta.');
+    commercialActions.push('Definir acción resolutiva con responsable y plazo.');
   }
-
-  if (!signal.protocolOk) {
-    mistakes.push('Faltó cumplimiento de protocolo (saludo / identificación / cierre).');
-    recoveryActions.push('Reforzar estructura base de apertura y cierre en el guion del equipo.');
-    happyCustomerActions.push('Agregar cierre empático con confirmación de satisfacción.');
+  if (signal.friction) {
+    commercialProblems.push(`Fricción detectada${signal.frictionType ? ` (${signal.frictionType})` : ''}.`);
+    commercialActions.push('Resumir problema entendido + acción + validar entendimiento antes de avanzar.');
   }
 
   if (signal.lowEmpathy || signal.lowClarity) {
-    mistakes.push('El tono o la claridad del agente no ayudaron a bajar la tensión.');
-    recoveryActions.push('Capacitar en lenguaje simple y empatía operacional para objeciones complejas.');
-    happyCustomerActions.push('Usar lenguaje menos técnico y validar entendimiento cada 1-2 pasos.');
+    cxProblems.push('El tono o la claridad del agente no ayudaron a bajar la tensión del cliente.');
+    cxActions.push('Usar lenguaje simple, validar entendimiento cada 1-2 pasos y mostrar empatía genuina.');
+  }
+  if (signal.frustrationHigh) {
+    cxProblems.push('El cliente terminó con frustración alta.');
+    cxActions.push('Reconocer la molestia explícitamente y acordar próximo paso con plazo exacto.');
+  }
+  if (signal.sentimentWorsened) {
+    cxProblems.push('El sentimiento del cliente empeoró durante la llamada.');
+    cxActions.push('Cerrar con recap de solución y pregunta: "¿Te resolví lo que necesitabas hoy?"');
+  }
+  if (!signal.protocolOk) {
+    cxProblems.push('Faltó protocolo completo (saludo / identificación / cierre).');
+    cxActions.push('Reforzar estructura base de apertura y cierre empático.');
+  }
+  if (signal.audioIssue) {
+    cxProblems.push('Calidad de audio degradó la comprensión y confianza.');
+    cxActions.push('Pedir disculpas por el canal y confirmar que el cliente comprendió todo.');
+  }
+  if (signal.recontactHigh) {
+    cxProblems.push('Alta probabilidad de que el cliente vuelva a llamar por lo mismo.');
+    cxActions.push('Informar estado actual + próximo hito + cómo contactarse si persiste.');
   }
 
-  if (mistakes.length === 0) {
-    mistakes.push('No se observan fallas críticas; hay oportunidad de optimización comercial.');
-  }
-  if (recoveryActions.length === 0) {
-    recoveryActions.push('Mantener el enfoque actual y estandarizar la práctica en el equipo.');
-  }
-  if (happyCustomerActions.length === 0) {
-    happyCustomerActions.push('Cerrar siempre con validación de satisfacción y canal de seguimiento.');
-  }
+  if (commercialProblems.length === 0) commercialProblems.push('Sin fallas comerciales críticas; hay espacio para optimización.');
+  if (commercialActions.length === 0) commercialActions.push('Mantener enfoque actual y estandarizar la práctica.');
+  if (cxProblems.length === 0) cxProblems.push('Sin problemas graves de experiencia detectados.');
+  if (cxActions.length === 0) cxActions.push('Cerrar siempre con validación de satisfacción y canal de seguimiento.');
 
   return {
-    whatWentWrong: mistakes[0],
-    whatToDo: recoveryActions[0],
-    makeCustomerHappier: happyCustomerActions[0],
+    commercialProblem: commercialProblems[0],
+    commercialAction: commercialActions[0],
+    commercialAllProblems: commercialProblems,
+    commercialAllActions: commercialActions,
+    cxProblem: cxProblems[0],
+    cxAction: cxActions[0],
+    cxAllProblems: cxProblems,
+    cxAllActions: cxActions,
   };
 };
 
@@ -225,6 +226,9 @@ export default function SalesRecommendations() {
           protocolOk,
           lowEmpathy,
           lowClarity,
+          frustrationHigh: frustration === 'alto',
+          sentimentWorsened: sentimentInitial !== 'negativo' && sentimentFinal === 'negativo',
+          recontactHigh: recontactProb === 'alta',
         });
 
         return {
@@ -264,8 +268,8 @@ export default function SalesRecommendations() {
     const total = analyzedCases.length;
     const high = analyzedCases.filter((r) => r.highChurnRisk).length;
     const missed = analyzedCases.filter((r) => r.missedOpportunity).length;
-    const review = analyzedCases.filter((r) => r.requiresReview).length;
-    return { total, high, missed, review };
+    const unhappy = analyzedCases.filter((r) => r.needsHappierFlow).length;
+    return { total, high, missed, unhappy };
   }, [analyzedCases]);
 
   const tabs = useMemo(() => ([
@@ -278,7 +282,8 @@ export default function SalesRecommendations() {
         (
           c.missedOpportunity ||
           (c.hasOpportunity && !c.saleCompleted) ||
-          (c.highChurnRisk && c.hasOpportunity)
+          (c.highChurnRisk && c.hasOpportunity) ||
+          !c.solutionOffered
         )
       ).length
     },
@@ -288,19 +293,14 @@ export default function SalesRecommendations() {
       icon: Heart,
       count: analyzedCases.filter((c) =>
         c.analysisConfidence >= 55 &&
-        c.needsHappierFlow &&
-        (!c.saleCompleted || c.frustration === 'alto' || c.sentimentFinal === 'negativo')
-      ).length
-    },
-    { id: 'validacion', label: 'Validación de diagnóstico', icon: ShieldAlert, count: analyzedCases.filter((c) => c.requiresReview).length },
-    {
-      id: 'criticos',
-      label: 'No resueltos críticos',
-      icon: AlertTriangle,
-      count: analyzedCases.filter((c) =>
-        c.analysisConfidence >= 55 &&
-        !c.saleCompleted &&
-        (c.highChurnRisk || c.legalRisk === 'alto')
+        (
+          c.frustration === 'alto' ||
+          c.sentimentFinal === 'negativo' ||
+          c.recontactProb === 'alta' ||
+          c.lowEmpathy ||
+          c.lowClarity ||
+          !c.protocolOk
+        )
       ).length
     },
   ]), [analyzedCases]);
@@ -309,7 +309,7 @@ export default function SalesRecommendations() {
     const sortByPriority = (arr) =>
       [...arr].sort((a, b) => {
         if (b.priorityScore !== a.priorityScore) return b.priorityScore - a.priorityScore;
-        return a.analysisConfidence - b.analysisConfidence;
+        return b.analysisConfidence - a.analysisConfidence;
       });
 
     if (activeTab === 'comercial') {
@@ -319,74 +319,46 @@ export default function SalesRecommendations() {
           (
             c.missedOpportunity ||
             (c.hasOpportunity && !c.saleCompleted) ||
-            (c.highChurnRisk && c.hasOpportunity)
+            (c.highChurnRisk && c.hasOpportunity) ||
+            !c.solutionOffered
           )
         )
-      ).slice(0, 12);
+      ).slice(0, 15);
     }
 
     if (activeTab === 'feliz') {
       return sortByPriority(
         analyzedCases.filter((c) =>
           c.analysisConfidence >= 55 &&
-          c.needsHappierFlow &&
-          (!c.saleCompleted || c.frustration === 'alto' || c.sentimentFinal === 'negativo')
+          (
+            c.frustration === 'alto' ||
+            c.sentimentFinal === 'negativo' ||
+            c.recontactProb === 'alta' ||
+            c.lowEmpathy ||
+            c.lowClarity ||
+            !c.protocolOk
+          )
         )
-      ).slice(0, 12);
+      ).slice(0, 15);
     }
 
-    if (activeTab === 'validacion') {
-      return sortByPriority(analyzedCases.filter((c) => c.requiresReview)).slice(0, 12);
-    }
-
-    if (activeTab === 'criticos') {
-      return sortByPriority(
-        analyzedCases.filter((c) =>
-          c.analysisConfidence >= 55 &&
-          !c.saleCompleted &&
-          (c.highChurnRisk || c.legalRisk === 'alto')
-        )
-      ).slice(0, 12);
-    }
-
-    return sortByPriority(analyzedCases).slice(0, 12);
+    return sortByPriority(analyzedCases).slice(0, 15);
   }, [activeTab, analyzedCases]);
 
   const getCardCopy = (rec) => {
     if (activeTab === 'feliz') {
       return {
         leftTitle: 'Qué afectó la experiencia',
-        leftText: rec.whatWentWrong,
-        rightTitle: 'Qué hacer para que se vaya más feliz',
-        rightText: rec.makeCustomerHappier,
-      };
-    }
-    if (activeTab === 'validacion') {
-      return {
-        leftTitle: 'Señal a validar',
-        leftText: rec.consistencyWarnings?.[0] || 'Revisar consistencia entre resultado final y señales del caso.',
-        rightTitle: 'Acción de control',
-        rightText: 'Validar transcripción, evidencia y resultado final antes de ejecutar gestión comercial.',
-      };
-    }
-    if (activeTab === 'criticos') {
-      const mainRisk = rec.legalRisk === 'alto'
-        ? 'Riesgo legal/reputacional alto.'
-        : rec.highChurnRisk
-          ? 'Riesgo alto de baja.'
-          : 'Caso no resuelto con señales críticas.';
-      return {
-        leftTitle: 'Riesgo principal',
-        leftText: mainRisk,
-        rightTitle: 'Acción inmediata',
-        rightText: rec.whatToDo,
+        leftItems: rec.cxAllProblems || [rec.cxProblem],
+        rightTitle: 'Cómo lograr que se vaya más feliz',
+        rightItems: rec.cxAllActions || [rec.cxAction],
       };
     }
     return {
-      leftTitle: 'Qué se hizo mal',
-      leftText: rec.whatWentWrong,
-      rightTitle: 'Qué se debería hacer',
-      rightText: rec.whatToDo,
+      leftTitle: 'Qué falló comercialmente',
+      leftItems: rec.commercialAllProblems || [rec.commercialProblem],
+      rightTitle: 'Acción recomendada',
+      rightItems: rec.commercialAllActions || [rec.commercialAction],
     };
   };
 
@@ -410,9 +382,9 @@ export default function SalesRecommendations() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Casos recomendados</p>
+          <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Conversaciones analizadas</p>
           <p className={`text-2xl font-bold mt-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>{stats.total}</p>
         </div>
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
@@ -420,17 +392,13 @@ export default function SalesRecommendations() {
           <p className={`text-2xl font-bold mt-1 ${isDark ? 'text-zinc-100' : 'text-gray-800'}`}>{stats.high}</p>
         </div>
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Oportunidad desaprovechada</p>
+          <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Oportunidades desaprovechadas</p>
           <p className={`text-2xl font-bold mt-1 ${isDark ? 'text-zinc-100' : 'text-gray-800'}`}>{stats.missed}</p>
-        </div>
-        <div className={`rounded-xl border p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Casos para revisar</p>
-          <p className={`text-2xl font-bold mt-1 ${isDark ? 'text-zinc-100' : 'text-gray-800'}`}>{stats.review}</p>
         </div>
       </div>
 
       <div className={`rounded-xl border p-2 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = tab.id === activeTab;
@@ -495,29 +463,30 @@ export default function SalesRecommendations() {
                       <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
                       {copy.leftTitle}
                     </p>
-                    <p className={`text-sm ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{copy.leftText}</p>
+                    <ul className={`text-sm space-y-1 ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>
+                      {copy.leftItems.map((item, i) => (
+                        <li key={`${rec.recordingId}-l-${i}`} className="flex items-start gap-1.5">
+                          <span className="mt-1.5 w-1 h-1 rounded-full bg-red-400 shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <div className={`rounded-lg p-3 ${isDark ? 'bg-green-950/30 border border-green-900/40' : 'bg-green-50 border border-green-100'}`}>
                     <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isDark ? 'text-zinc-300' : 'text-gray-700'}`}>
                       <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
                       {copy.rightTitle}
                     </p>
-                    <p className={`text-sm ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{copy.rightText}</p>
-                  </div>
-                </div>
-                {activeTab === 'validacion' && rec.consistencyWarnings.length > 0 && (
-                  <div className={`rounded-lg p-3 mt-3 ${isDark ? 'bg-orange-950/20 border border-orange-900/30' : 'bg-orange-50 border border-orange-100'}`}>
-                    <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>
-                      <ShieldAlert className="w-3.5 h-3.5 inline mr-1" />
-                      Qué validar
-                    </p>
-                    <ul className={`text-sm list-disc pl-5 space-y-1 ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>
-                      {rec.consistencyWarnings.map((warning, wIdx) => (
-                        <li key={`${rec.recordingId}-w-${wIdx}`}>{warning}</li>
+                    <ul className={`text-sm space-y-1 ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>
+                      {copy.rightItems.map((item, i) => (
+                        <li key={`${rec.recordingId}-r-${i}`} className="flex items-start gap-1.5">
+                          <span className="mt-1.5 w-1 h-1 rounded-full bg-green-400 shrink-0" />
+                          {item}
+                        </li>
                       ))}
                     </ul>
                   </div>
-                )}
+                </div>
                 {rec.evidence && (
                   <div className={`rounded-lg p-3 mt-3 ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-gray-200'}`}>
                     <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isDark ? 'text-zinc-500' : 'text-gray-500'}`}>
@@ -529,19 +498,14 @@ export default function SalesRecommendations() {
                 <div className="flex flex-wrap gap-2 mt-3">
                   {activeTab === 'comercial' && rec.hasOpportunity && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Cross-sell</span>}
                   {activeTab === 'comercial' && rec.missedOpportunity && <span className="px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-300">Desaprovechada</span>}
+                  {activeTab === 'comercial' && rec.highChurnRisk && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Riesgo fuga</span>}
                   {activeTab === 'comercial' && rec.friction && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Fricción</span>}
 
                   {activeTab === 'feliz' && rec.frustration === 'alto' && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Frustración alta</span>}
-                  {activeTab === 'feliz' && rec.sentimentFinal === 'negativo' && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Sentimiento final negativo</span>}
+                  {activeTab === 'feliz' && rec.sentimentFinal === 'negativo' && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Sentimiento negativo</span>}
                   {activeTab === 'feliz' && rec.recontactProb === 'alta' && <span className="px-2 py-1 rounded-full text-xs bg-amber-500/20 text-amber-300">Recontacto alto</span>}
-
-                  {activeTab === 'validacion' && rec.requiresReview && <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-300">Revisar diagnóstico</span>}
-                  {activeTab === 'validacion' && !rec.solutionOffered && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Sin solución concreta</span>}
-                  {activeTab === 'validacion' && !rec.protocolOk && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Protocolo incompleto</span>}
-
-                  {activeTab === 'criticos' && rec.highChurnRisk && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Fuga alta</span>}
-                  {activeTab === 'criticos' && rec.legalRisk === 'alto' && <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-300">Riesgo legal alto</span>}
-                  {activeTab === 'criticos' && rec.audioIssue && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Audio</span>}
+                  {activeTab === 'feliz' && rec.lowEmpathy && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Empatía baja</span>}
+                  {activeTab === 'feliz' && !rec.protocolOk && <span className="px-2 py-1 rounded-full text-xs bg-zinc-800 text-zinc-200">Protocolo incompleto</span>}
 
                   <span className={`px-2 py-1 rounded-full text-xs ${rec.confidenceBand === 'alta' ? 'bg-green-500/20 text-green-300' : rec.confidenceBand === 'media' ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'}`}>
                     Confianza {rec.confidenceBand} ({rec.analysisConfidence}%)

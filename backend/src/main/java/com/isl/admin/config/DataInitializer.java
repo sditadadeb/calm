@@ -23,13 +23,13 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${admin.username:Admin}")
     private String adminUsername;
 
-    @Value("${admin.password:Numi@2026!}")
+    @Value("${admin.password:#{null}}")
     private String adminPassword;
 
     @Value("${viewer.username:viewer}")
     private String viewerUsername;
 
-    @Value("${viewer.password:Num1a2026!}")
+    @Value("${viewer.password:#{null}}")
     private String viewerPassword;
 
     public DataInitializer(
@@ -44,8 +44,17 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        ensureUser(adminUsername, adminPassword, "ADMIN");
-        ensureUser(viewerUsername, viewerPassword, "VIEWER");
+        if (adminPassword != null && !adminPassword.isBlank()) {
+            ensureUser(adminUsername, adminPassword, "ADMIN");
+        } else {
+            log.warn("⚠️ ADMIN_PASSWORD no configurado. No se creó/actualizó el usuario admin.");
+        }
+
+        if (viewerPassword != null && !viewerPassword.isBlank()) {
+            ensureUser(viewerUsername, viewerPassword, "VIEWER");
+        } else {
+            log.warn("⚠️ VIEWER_PASSWORD no configurado. No se creó/actualizó el usuario viewer.");
+        }
 
         ensurePromptAndModelDefaults();
     }

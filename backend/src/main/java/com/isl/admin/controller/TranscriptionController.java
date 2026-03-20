@@ -92,12 +92,14 @@ public class TranscriptionController {
     }
 
     @PostMapping("/transcriptions/{recordingId}/analyze")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TranscriptionDTO> analyzeTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         return ResponseEntity.ok(transcriptionService.analyzeTranscription(recordingId));
     }
 
     @PostMapping("/sync")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> syncTranscriptions() {
         return ResponseEntity.ok(transcriptionService.forceSync());
     }
@@ -112,6 +114,7 @@ public class TranscriptionController {
      * Sync with Server-Sent Events for real-time progress updates.
      */
     @GetMapping(value = "/sync/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     public SseEmitter syncWithProgress(jakarta.servlet.http.HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-cache, no-transform");
         response.setHeader("Connection", "keep-alive");
@@ -134,6 +137,7 @@ public class TranscriptionController {
      * Útil para corregir errores de detección después de mejorar el prompt.
      */
     @PostMapping("/reanalyze-no-sales")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
         return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
     }

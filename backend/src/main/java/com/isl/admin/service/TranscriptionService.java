@@ -932,7 +932,10 @@ public class TranscriptionService {
             return Map.of("results", new ArrayList<>(), "totalResults", 0, "totalMatches", 0);
         }
         
-        String term = searchTerm.trim().toLowerCase();
+        String term = searchTerm.trim().toLowerCase()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
         List<Transcription> transcriptions = repository.searchByText(term, userId, branchId, saleCompleted);
         
         List<SearchResultDTO> results = new ArrayList<>();

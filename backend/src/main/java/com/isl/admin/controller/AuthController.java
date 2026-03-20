@@ -51,8 +51,7 @@ public class AuthController {
         if (rateLimitingService.isBlocked(rateLimitKey)) {
             log.warn("Rate limit exceeded for IP: {}", clientIp);
             Map<String, Object> error = new HashMap<>();
-            error.put("error", "Demasiados intentos fallidos. Intentá de nuevo en 1 minuto.");
-            error.put("blockedUntil", rateLimitingService.getBlockedUntil(rateLimitKey));
+            error.put("error", "Demasiados intentos fallidos. Intentá de nuevo más tarde.");
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
         }
 
@@ -90,16 +89,12 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (BadCredentialsException e) {
-            // Record failed attempt
             rateLimitingService.recordAttempt(rateLimitKey);
-            int remaining = rateLimitingService.getRemainingAttempts(rateLimitKey);
 
-            log.warn("Failed login attempt for user: {} from IP: {}. Remaining attempts: {}",
-                    loginRequest.getUsername(), clientIp, remaining);
+            log.warn("Failed login attempt for user: {} from IP: {}", loginRequest.getUsername(), clientIp);
 
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Credenciales inválidas");
-            error.put("remainingAttempts", remaining);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
     }

@@ -23,7 +23,6 @@ const Login = () => {
       
       navigate('/');
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.response?.data?.error || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
