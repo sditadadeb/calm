@@ -443,16 +443,14 @@ export default function Dashboard() {
               variant="success"
             />
           </Link>
-          <Link to="/transcriptions?view=audio-issues" className="block">
-            <MetricCard
-              title="Calidad de Audio"
-              value={`${businessMetrics.audioIssueCount}/${businessMetrics.total}`}
-              subtitle="Conversaciones con problemas de audio (ver casos)"
-              infoText="Casos detectados por señales de ruido/corte en el texto y/o baja confianza del análisis."
-              icon={Headphones}
-              variant="warning"
-            />
-          </Link>
+          <MetricCard
+            title="Calidad de Llamadas"
+            value={`${businessMetrics.commercialResolutionPct.toFixed(1)}%`}
+            subtitle="Conversaciones con cierre positivo"
+            infoText="Porcentaje de conversaciones que terminaron con un cierre positivo o resolución satisfactoria."
+            icon={Headphones}
+            variant="success"
+          />
           <MetricCard
             title="Sentimiento Promedio"
             value={businessMetrics.sentimentAvg.toFixed(2)}
@@ -473,13 +471,15 @@ export default function Dashboard() {
       </div>
 
       <div className="flex justify-end">
-        <div className={`rounded-xl border px-4 py-3 min-w-[240px] ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
-            Calidad de llamadas
-          </p>
-          <p className="text-xl font-bold text-emerald-500 mt-1">{businessMetrics.commercialResolutionPct.toFixed(1)}%</p>
-          <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Conversaciones con cierre positivo</p>
-        </div>
+        <Link to="/transcriptions?view=audio-issues" className="block">
+          <div className={`rounded-xl border px-4 py-3 min-w-[240px] hover:border-amber-500/50 transition-colors ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+            <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+              Calidad de Audio
+            </p>
+            <p className="text-xl font-bold text-amber-500 mt-1">{businessMetrics.audioIssueCount}/{businessMetrics.total}</p>
+            <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Problemas de audio detectados (ver casos)</p>
+          </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
