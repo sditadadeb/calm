@@ -451,8 +451,15 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replace('\u2018', '\'').replace('\u2019', '\'');
         // Guiones especiales
         json = json.replace('\u2013', '-').replace('\u2014', '-');
+        // Puntos suspensivos Unicode
+        json = json.replace("\u2026", "...");
+        // Comillas angulares
+        json = json.replace("\u00AB", "\"").replace("\u00BB", "\"");
+        // Apóstrofe tipográfico
+        json = json.replace("\u02BC", "'");
         // Espacios especiales
         json = json.replace('\u00A0', ' ');
+        json = json.replace("\u200B", "").replace("\u00AD", "");
         // BOM
         if (json.startsWith("\uFEFF")) json = json.substring(1);
         // Normalizar line endings

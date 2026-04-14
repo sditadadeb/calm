@@ -100,7 +100,11 @@ export default function Dashboard() {
   })) || [];
 
   const noSaleReasonsData = noSaleReasons 
-    ? Object.entries(noSaleReasons).map(([name, value]) => ({ name, value }))
+    ? Object.entries(noSaleReasons)
+        .map(([name, value]) => ({ name, value }))
+        .filter(item => !item.name.toLowerCase().startsWith('error parseando'))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5)
     : [];
 
   // Procesar datos para Heatmap semanal (días vs horas)
