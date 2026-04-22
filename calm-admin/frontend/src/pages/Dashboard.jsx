@@ -107,10 +107,10 @@ export default function Dashboard() {
         .slice(0, 5)
     : [];
 
-  // Procesar datos para Heatmap semanal (dÃ­as vs horas)
+  // Procesar datos para Heatmap semanal (días vs horas)
   const heatmapData = (() => {
     const matrix = {};
-    // Inicializar matriz 7 dÃ­as x 24 horas
+    // Inicializar matriz 7 días x 24 horas
     for (let day = 0; day < 7; day++) {
       matrix[day] = {};
       for (let hour = 0; hour < 24; hour++) {
@@ -130,7 +130,7 @@ export default function Dashboard() {
     return matrix;
   })();
 
-  // Obtener el mÃ¡ximo para escala de colores del heatmap
+  // Obtener el máximo para escala de colores del heatmap
   const maxHeatmapValue = Math.max(
     1,
     ...Object.values(heatmapData).flatMap(hours => Object.values(hours))
@@ -202,7 +202,7 @@ export default function Dashboard() {
         <MetricCard
           title={t('dashboard.sales')}
           value={totalSales}
-          subtitle={`${conversionRate}% conversiÃ³n`}
+          subtitle={`${conversionRate}% conversión`}
           icon={ShoppingCart}
           variant="success"
         />
@@ -414,7 +414,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                   
-                  {/* Filas por dÃ­a */}
+                  {/* Filas por día */}
                   {DAYS.map((day, dayIdx) => (
                     <div key={day} className="flex items-center mb-1">
                       <div className={`w-10 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -585,11 +585,11 @@ export default function Dashboard() {
       ====================================================== */}
       {!userSellerId && (
         <div className="mt-8 space-y-6">
-          {/* TÃ­tulo secciÃ³n */}
+          {/* Título sección */}
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-[#0081FF]-full" />
             <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              MÃ©tricas de Calidad â€” Banco de Occidente
+              Métricas de Calidad — Banco de Occidente
             </h2>
           </div>
 
@@ -600,7 +600,7 @@ export default function Dashboard() {
               <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>CSAT Promedio</p>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-bold text-[#0081FF]">
-                  {rawMetrics.averageCsat > 0 ? rawMetrics.averageCsat.toFixed(1) : 'â€”'}
+                  {rawMetrics.averageCsat > 0 ? rawMetrics.averageCsat.toFixed(1) : '—'}
                 </span>
                 <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/5</span>
               </div>
@@ -611,7 +611,7 @@ export default function Dashboard() {
                   }`} />
                 ))}
               </div>
-              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>SatisfacciÃ³n del cliente</p>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Satisfacción del cliente</p>
             </div>
 
             {/* Escucha activa */}
@@ -619,7 +619,7 @@ export default function Dashboard() {
               <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Escucha Activa</p>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-bold text-blue-400">
-                  {rawMetrics.averageEscuchaActiva > 0 ? rawMetrics.averageEscuchaActiva.toFixed(1) : 'â€”'}
+                  {rawMetrics.averageEscuchaActiva > 0 ? rawMetrics.averageEscuchaActiva.toFixed(1) : '—'}
                 </span>
                 <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/10</span>
               </div>
@@ -647,7 +647,7 @@ export default function Dashboard() {
                   style={{ width: `${rawMetrics.protocolComplianceRate || 0}%` }}
                 />
               </div>
-              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atenciÃ³n</p>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atención</p>
             </div>
 
             {/* Producto ofrecido */}
@@ -669,12 +669,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Fila 2: TipificaciÃ³n + Estado emocional */}
+          {/* Fila 2: Tipificación + Estado emocional */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* DistribuciÃ³n motivo de visita */}
+            {/* Distribución motivo de visita */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-                TipificaciÃ³n â€” Motivo de Visita
+                Tipificación — Motivo de Visita
               </h3>
               {rawMetrics.visitReasonDistribution && Object.keys(rawMetrics.visitReasonDistribution).length > 0 ? (
                 <div className="space-y-2">
@@ -702,7 +702,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de tipificaciÃ³n aÃºn
+                  Sin datos de tipificación aún
                 </div>
               )}
             </div>
@@ -739,16 +739,16 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de estado emocional aÃºn
+                  Sin datos de estado emocional aún
                 </div>
               )}
             </div>
           </div>
 
-          {/* Fila 3: GrabaciÃ³n y consentimiento */}
+          {/* Fila 3: Grabación y consentimiento */}
           <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
             <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-              GrabaciÃ³n y Consentimiento
+              Grabación y Consentimiento
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="text-center">
@@ -756,14 +756,14 @@ export default function Dashboard() {
                   {rawMetrics.grabacionesCortadasCliente || 0}
                 </div>
                 <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas por cliente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitÃ³ no ser grabado</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitó no ser grabado</p>
               </div>
               <div className="text-center">
                 <div className={`text-4xl font-bold text-[#0081FF]`}>
                   {rawMetrics.grabacionesCortadasManual || 0}
                 </div>
                 <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas manualmente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizÃ³ la grabaciÃ³n</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizó la grabación</p>
               </div>
               <div className="text-center">
                 <div className={`text-4xl font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
