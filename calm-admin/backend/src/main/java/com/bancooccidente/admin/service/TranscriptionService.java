@@ -26,6 +26,9 @@ public class TranscriptionService {
 
     private static final Logger log = LoggerFactory.getLogger(TranscriptionService.class);
 
+    // Solo se importan grabaciones de estas sucursales de Banco de Occidente
+    private static final Set<Long> ALLOWED_BRANCH_IDS = Set.of(4476L, 4495L, 4496L);
+
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final S3Service s3Service;
@@ -50,6 +53,12 @@ public class TranscriptionService {
         
         for (String recordingId : recordingIds) {
             if (!repository.existsByRecordingId(recordingId)) {
+                Map<String, Object> meta = s3Service.getMetadata(recordingId);
+                Long bid = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
+                if (bid != null && !ALLOWED_BRANCH_IDS.contains(bid)) {
+                    log.debug("Skipping {} - branch {} not allowed", recordingId, bid);
+                    continue;
+                }
                 if (s3Service.transcriptionExists(recordingId)) {
                     try {
                         importTranscription(recordingId);
@@ -93,6 +102,14 @@ public class TranscriptionService {
     @Transactional
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
+
+        // Filtrar por sucursales permitidas de Banco de Occidente
+        Long branchIdFromMeta = metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null;
+        if (branchIdFromMeta != null && !ALLOWED_BRANCH_IDS.contains(branchIdFromMeta)) {
+            log.debug("Skipping recording {} - branchId {} not in allowed list", recordingId, branchIdFromMeta);
+            return null;
+        }
+
         String transcriptionText = s3Service.getTranscription(recordingId);
         
         if (transcriptionText == null || transcriptionText.isEmpty()) {
@@ -377,11 +394,20 @@ public class TranscriptionService {
                 
                 List<String> recordingIds = s3Service.listAllRecordingIds();
                 
-                // Count new ones first
+                // Count new ones first (only from allowed branches)
                 List<String> newIds = new ArrayList<>();
                 for (String recordingId : recordingIds) {
-                    if (!repository.existsByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
-                        newIds.add(recordingId);
+                    if (!repository.existsByRecordingId(recordingId)) {
+                        // Pre-check branchId from metadata before fetching transcription
+                        Map<String, Object> meta = s3Service.getMetadata(recordingId);
+                        Long bid = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
+                        if (bid != null && !ALLOWED_BRANCH_IDS.contains(bid)) {
+                            log.debug("Skipping {} - branch {} not allowed", recordingId, bid);
+                            continue;
+                        }
+                        if (s3Service.transcriptionExists(recordingId)) {
+                            newIds.add(recordingId);
+                        }
                     }
                 }
                 int totalToImport = newIds.size();
