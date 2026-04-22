@@ -45,10 +45,10 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#FF8C00] mb-4 shadow-lg shadow-orange-500/30">
-            <span className="text-4xl font-bold text-white">C</span>
+            <span className="text-4xl font-bold text-white">B</span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="text-[#FF8C00]">calm</span> Admin
+            <span className="text-[#FF8C00]">Banco de Occidente</span>
           </h1>
           <p className="text-gray-400">{t('login.subtitle')}</p>
         </div>

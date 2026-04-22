@@ -142,9 +142,8 @@ export default function Layout({ children }) {
         <div className={`p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
           <div className="flex items-center gap-3">
             <div className="px-3 py-1.5 rounded-lg bg-[#F5A623]">
-              <span className="text-white font-bold text-lg">calm</span>
+              <span className="text-white font-bold text-lg">Banco de Occidente</span>
             </div>
-            <span className={`text-xl font-light ${isDark ? 'text-white' : 'text-gray-800'}`}>Admin</span>
           </div>
           <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('nav.adminPanel')}</p>
         </div>

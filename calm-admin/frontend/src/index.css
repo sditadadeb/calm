@@ -1,11 +1,11 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --calm-primary: #F5A623;
-  --calm-secondary: #FFBB54;
-  --calm-dark: #D4911F;
+  --banco-occidente-primary: #F5A623;
+  --banco-occidente-secondary: #FFBB54;
+  --banco-occidente-dark: #D4911F;
 }
 
 * {
@@ -251,3 +251,4 @@ body.dark {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+

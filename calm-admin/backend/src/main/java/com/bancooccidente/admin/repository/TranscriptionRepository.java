@@ -1,0 +1,134 @@
+package com.bancooccidente.admin.repository;
+
+import com.bancooccidente.admin.model.Transcription;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+public interface TranscriptionRepository extends JpaRepository<Transcription, String> {
+
+    List<Transcription> findByAnalyzedFalse();
+    
+    List<Transcription> findByUserId(Long userId);
+    
+    List<Transcription> findByBranchId(Long branchId);
+    
+    List<Transcription> findBySaleCompleted(Boolean saleCompleted);
+    
+    @Query("SELECT t FROM Transcription t WHERE " +
+           "(:userId IS NULL OR t.userId = :userId) AND " +
+           "(:branchId IS NULL OR t.branchId = :branchId) AND " +
+           "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) AND " +
+           "(:dateFrom IS NULL OR t.recordingDate >= :dateFrom) AND " +
+           "(:dateTo IS NULL OR t.recordingDate <= :dateTo) AND " +
+           "(:minScore IS NULL OR t.sellerScore >= :minScore) AND " +
+           "(:maxScore IS NULL OR t.sellerScore <= :maxScore) " +
+           "ORDER BY t.recordingDate DESC")
+    List<Transcription> findWithFilters(
+            @Param("userId") Long userId,
+            @Param("branchId") Long branchId,
+            @Param("saleCompleted") Boolean saleCompleted,
+            @Param("dateFrom") LocalDateTime dateFrom,
+            @Param("dateTo") LocalDateTime dateTo,
+            @Param("minScore") Integer minScore,
+            @Param("maxScore") Integer maxScore
+    );
+
+    // Solo cuenta transcripciones ANALIZADAS con venta confirmada
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = true")
+    long countSales();
+
+    // Solo cuenta transcripciones ANALIZADAS sin venta
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false")
+    long countNoSales();
+    
+    // Cuenta transcripciones analizadas
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true")
+    long countAnalyzed();
+    
+    // Cuenta transcripciones pendientes de análisis
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = false OR t.analyzed IS NULL")
+    long countPendingAnalysis();
+
+    @Query("SELECT AVG(t.sellerScore) FROM Transcription t WHERE t.analyzed = true AND t.sellerScore IS NOT NULL")
+    Double averageSellerScore();
+
+    @Query("SELECT DISTINCT t.userId, t.userName FROM Transcription t")
+    List<Object[]> findAllSellers();
+
+    @Query("SELECT DISTINCT t.branchId, t.branchName FROM Transcription t")
+    List<Object[]> findAllBranches();
+
+    @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL GROUP BY t.noSaleReason")
+    List<Object[]> countByNoSaleReason();
+
+    // Solo estadísticas de transcripciones ANALIZADAS
+    @Query("SELECT t.userId, t.userName, t.branchName, " +
+           "COUNT(t), " +
+           "SUM(CASE WHEN t.saleCompleted = true THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN t.saleCompleted = false THEN 1 ELSE 0 END), " +
+           "AVG(t.sellerScore) " +
+           "FROM Transcription t WHERE t.analyzed = true GROUP BY t.userId, t.userName, t.branchName")
+    List<Object[]> getSellerStats();
+
+    // Solo estadísticas de transcripciones ANALIZADAS
+    @Query("SELECT t.branchId, t.branchName, " +
+           "COUNT(t), " +
+           "SUM(CASE WHEN t.saleCompleted = true THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN t.saleCompleted = false THEN 1 ELSE 0 END), " +
+           "AVG(t.sellerScore) " +
+           "FROM Transcription t WHERE t.analyzed = true GROUP BY t.branchId, t.branchName")
+    List<Object[]> getBranchStats();
+
+    boolean existsByRecordingId(String recordingId);
+
+    // === Queries métricas Banco de Occidente ===
+
+    @Query("SELECT AVG(t.csatScore) FROM Transcription t WHERE t.analyzed = true AND t.csatScore IS NOT NULL AND t.csatScore > 0")
+    Double averageCsatScore();
+
+    @Query("SELECT AVG(t.escuchaActivaScore) FROM Transcription t WHERE t.analyzed = true AND t.escuchaActivaScore IS NOT NULL AND t.escuchaActivaScore > 0")
+    Double averageEscuchaActiva();
+
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.cumplimientoProtocolo = true")
+    long countProtocolCompliant();
+
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.productoOfrecido = true")
+    long countProductoOfrecido();
+
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.grabacionCortadaCliente = true")
+    long countGrabacionesCortadasCliente();
+
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.grabacionCortadaManual = true")
+    long countGrabacionesCortadasManual();
+
+    @Query("SELECT t.motivoVisita, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.motivoVisita IS NOT NULL GROUP BY t.motivoVisita ORDER BY COUNT(t) DESC")
+    List<Object[]> getVisitReasonDistribution();
+
+    @Query("SELECT t.estadoEmocional, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.estadoEmocional IS NOT NULL GROUP BY t.estadoEmocional")
+    List<Object[]> getEmotionalStateDistribution();
+    
+    // Transcripciones analizadas marcadas como "no venta" - para re-análisis
+    @Query("SELECT t FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false")
+    List<Transcription> findAnalyzedNoSales();
+    
+    // Búsqueda de texto en transcripciones
+    @Query("SELECT t FROM Transcription t WHERE " +
+           "LOWER(t.transcriptionText) LIKE LOWER(CONCAT('%', :searchTerm, '%')) AND " +
+           "(:userId IS NULL OR t.userId = :userId) AND " +
+           "(:branchId IS NULL OR t.branchId = :branchId) AND " +
+           "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) " +
+           "ORDER BY t.recordingDate DESC")
+    List<Transcription> searchByText(
+            @Param("searchTerm") String searchTerm,
+            @Param("userId") Long userId,
+            @Param("branchId") Long branchId,
+            @Param("saleCompleted") Boolean saleCompleted
+    );
+}
+

@@ -30,7 +30,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import MetricCard from '../components/MetricCard';
 
-// Colores CALM
+// Colores Banco de Occidente
 const COLORS = ['#F5A623', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 
 // Colores para sucursales en scatter plot
@@ -575,6 +575,203 @@ export default function Dashboard() {
                   {t('dashboard.noDateData')}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================
+          NUEVAS MÉTRICAS BANCO DE OCCIDENTE
+      ====================================================== */}
+      {!userSellerId && (
+        <div className="mt-8 space-y-6">
+          {/* Título sección */}
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 bg-[#F5A623] rounded-full" />
+            <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              Métricas de Calidad — Banco de Occidente
+            </h2>
+          </div>
+
+          {/* Fila 1: CSAT + Escucha activa + Protocolo + Producto ofrecido */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* CSAT */}
+            <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>CSAT Promedio</p>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-[#F5A623]">
+                  {rawMetrics.averageCsat > 0 ? rawMetrics.averageCsat.toFixed(1) : '—'}
+                </span>
+                <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/5</span>
+              </div>
+              <div className="mt-2 flex gap-1">
+                {[1,2,3,4,5].map(star => (
+                  <div key={star} className={`h-1.5 flex-1 rounded-full ${
+                    rawMetrics.averageCsat >= star ? 'bg-[#F5A623]' : isDark ? 'bg-slate-700' : 'bg-gray-200'
+                  }`} />
+                ))}
+              </div>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Satisfacción del cliente</p>
+            </div>
+
+            {/* Escucha activa */}
+            <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Escucha Activa</p>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-blue-400">
+                  {rawMetrics.averageEscuchaActiva > 0 ? rawMetrics.averageEscuchaActiva.toFixed(1) : '—'}
+                </span>
+                <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/10</span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
+                <div
+                  className="h-1.5 rounded-full bg-blue-400"
+                  style={{ width: `${rawMetrics.averageEscuchaActiva > 0 ? (rawMetrics.averageEscuchaActiva / 10) * 100 : 0}%` }}
+                />
+              </div>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Score del oficial</p>
+            </div>
+
+            {/* Cumplimiento protocolo */}
+            <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Protocolo</p>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-green-400">
+                  {rawMetrics.protocolComplianceRate > 0 ? Math.round(rawMetrics.protocolComplianceRate) : 0}
+                </span>
+                <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>%</span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
+                <div
+                  className="h-1.5 rounded-full bg-green-400"
+                  style={{ width: `${rawMetrics.protocolComplianceRate || 0}%` }}
+                />
+              </div>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atención</p>
+            </div>
+
+            {/* Producto ofrecido */}
+            <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Producto Ofrecido</p>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-purple-400">
+                  {rawMetrics.productOfferingRate > 0 ? Math.round(rawMetrics.productOfferingRate) : 0}
+                </span>
+                <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>%</span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
+                <div
+                  className="h-1.5 rounded-full bg-purple-400"
+                  style={{ width: `${rawMetrics.productOfferingRate || 0}%` }}
+                />
+              </div>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Efectividad comercial</p>
+            </div>
+          </div>
+
+          {/* Fila 2: Tipificación + Estado emocional */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Distribución motivo de visita */}
+            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Tipificación — Motivo de Visita
+              </h3>
+              {rawMetrics.visitReasonDistribution && Object.keys(rawMetrics.visitReasonDistribution).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(rawMetrics.visitReasonDistribution)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 7)
+                    .map(([reason, count], idx) => {
+                      const total = Object.values(rawMetrics.visitReasonDistribution).reduce((s, v) => s + v, 0);
+                      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                      return (
+                        <div key={reason}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{reason}</span>
+                            <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{count} ({pct}%)</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
+                            <div
+                              className="h-1.5 rounded-full bg-[#F5A623]"
+                              style={{ width: `${pct}%`, opacity: 1 - idx * 0.1 }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                  Sin datos de tipificación aún
+                </div>
+              )}
+            </div>
+
+            {/* Estado emocional */}
+            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                Estado Emocional del Cliente
+              </h3>
+              {rawMetrics.emotionalStateDistribution && Object.keys(rawMetrics.emotionalStateDistribution).length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {[
+                    { key: 'Positivo', color: '#22c55e', bg: 'bg-green-500' },
+                    { key: 'Neutro', color: '#F5A623', bg: 'bg-yellow-400' },
+                    { key: 'Negativo', color: '#ef4444', bg: 'bg-red-500' },
+                    { key: 'No determinado', color: '#9ca3af', bg: 'bg-gray-400' },
+                  ].map(({ key, color, bg }) => {
+                    const count = rawMetrics.emotionalStateDistribution[key] || 0;
+                    const total = Object.values(rawMetrics.emotionalStateDistribution).reduce((s, v) => s + v, 0);
+                    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                    return (
+                      <div key={key} className="flex items-center gap-4">
+                        <div className={`w-3 h-3 rounded-full ${bg}`} />
+                        <span className={`text-sm w-28 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{key}</span>
+                        <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-slate-700">
+                          <div className={`h-2 rounded-full ${bg}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className={`text-sm font-semibold w-14 text-right ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {count} ({pct}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                  Sin datos de estado emocional aún
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fila 3: Grabación y consentimiento */}
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+              Grabación y Consentimiento
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className={`text-4xl font-bold text-red-400`}>
+                  {rawMetrics.grabacionesCortadasCliente || 0}
+                </div>
+                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas por cliente</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitó no ser grabado</p>
+              </div>
+              <div className="text-center">
+                <div className={`text-4xl font-bold text-orange-400`}>
+                  {rawMetrics.grabacionesCortadasManual || 0}
+                </div>
+                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas manualmente</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizó la grabación</p>
+              </div>
+              <div className="text-center">
+                <div className={`text-4xl font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                  {((rawMetrics.grabacionesCortadasCliente || 0) + (rawMetrics.grabacionesCortadasManual || 0))}
+                </div>
+                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Total irregularidades</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>de {rawMetrics.totalTranscriptions || 0} grabaciones</p>
+              </div>
             </div>
           </div>
         </div>
