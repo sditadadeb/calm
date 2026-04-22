@@ -71,7 +71,7 @@ export default {
     passwordPlaceholder: 'Enter your password',
     signingIn: 'Signing in...',
     submit: 'Sign in',
-    footer: '© 2026 CALM - Administration Panel',
+    footer: '© 2026 Banco de Occidente - Administration Panel',
     error: 'Error signing in',
   },
   dashboard: {
