@@ -97,11 +97,11 @@ export default function Layout({ children }) {
       <aside className={`w-60 flex flex-col border-r ${sidebarBg} flex-shrink-0`}>
 
         {/* Logo */}
-        <div className="px-4 py-3 border-b border-gray-100">
+        <div className="px-4 py-4 border-b border-gray-100">
           <img
             src="/logo-horizontal.png"
             alt="Banco de Occidente"
-            className="h-8 w-auto object-contain"
+            className="h-16 w-auto object-contain"
             style={{ mixBlendMode: 'multiply' }}
           />
         </div>
@@ -161,10 +161,10 @@ export default function Layout({ children }) {
                 {/* Sync */}
                 <div className="mt-3">
                   <button onClick={handleSync} disabled={syncing || loading}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-4 h-4 flex-shrink-0 ${syncing ? 'animate-spin' : ''}`} />
-                    <span className="truncate">{syncing && syncProgress.total > 0 ? `${syncProgress.current}/${syncProgress.total}` : t('nav.syncS3')}</span>
+                    <span>{syncing && syncProgress.total > 0 ? `${syncProgress.current}/${syncProgress.total}` : t('nav.syncS3')}</span>
                   </button>
                   {syncing && syncProgress.total > 0 && (
                     <div className="mt-2">
