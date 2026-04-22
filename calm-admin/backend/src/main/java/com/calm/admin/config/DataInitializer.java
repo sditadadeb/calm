@@ -1,6 +1,8 @@
 package com.calm.admin.config;
 
+import com.calm.admin.model.Transcription;
 import com.calm.admin.model.User;
+import com.calm.admin.repository.TranscriptionRepository;
 import com.calm.admin.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,12 +12,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Set;
+
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
+    private static final Set<Long> EXCLUDED_BRANCH_IDS = Set.of(4476L, 4495L, 4496L);
+
     private final UserRepository userRepository;
+    private final TranscriptionRepository transcriptionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -25,15 +33,15 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${admin.password:admin123}")
     private String adminPassword;
 
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder, JdbcTemplate jdbcTemplate) {
+    public DataInitializer(UserRepository userRepository, TranscriptionRepository transcriptionRepository, PasswordEncoder passwordEncoder, JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
+        this.transcriptionRepository = transcriptionRepository;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public void run(String... args) {
-        // Create admin user if not exists
         if (!userRepository.existsByUsername(adminUsername)) {
             User admin = new User();
             admin.setUsername(adminUsername);
@@ -46,7 +54,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Usuario admin ya existe");
         }
         
-        // Create viewer user (always exists)
         String viewerUsername = "viewer";
         String viewerPassword = "calm2026!";
         if (!userRepository.existsByUsername(viewerUsername)) {
@@ -62,6 +69,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         applyTimezoneCorrection();
+        purgeExcludedBranches();
     }
 
     private void applyTimezoneCorrection() {
@@ -92,5 +100,13 @@ public class DataInitializer implements CommandLineRunner {
             log.error("Error aplicando migracion timezone: {}", e.getMessage());
         }
     }
+    
+    private void purgeExcludedBranches() {
+        List<Transcription> toRemove = transcriptionRepository.findByBranchIdIn(EXCLUDED_BRANCH_IDS);
+        if (!toRemove.isEmpty()) {
+            log.info("Eliminando {} transcripciones de sucursales excluidas (IDs: {})", toRemove.size(), EXCLUDED_BRANCH_IDS);
+            transcriptionRepository.deleteAll(toRemove);
+            log.info("Transcripciones de sucursales excluidas eliminadas correctamente");
+        }
+    }
 }
-

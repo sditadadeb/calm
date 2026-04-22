@@ -26,6 +26,8 @@ public class TranscriptionService {
 
     private static final Logger log = LoggerFactory.getLogger(TranscriptionService.class);
 
+    private static final Set<Long> EXCLUDED_BRANCH_IDS = Set.of(4476L, 4495L, 4496L);
+
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final S3Service s3Service;
@@ -52,8 +54,10 @@ public class TranscriptionService {
             if (!repository.existsByRecordingId(recordingId)) {
                 if (s3Service.transcriptionExists(recordingId)) {
                     try {
-                        importTranscription(recordingId);
-                        newCount++;
+                        Transcription imported = importTranscription(recordingId);
+                        if (imported != null) {
+                            newCount++;
+                        }
                     } catch (Exception e) {
                         log.error("Error importing transcription {}: {}", recordingId, e.getMessage());
                     }
@@ -93,6 +97,13 @@ public class TranscriptionService {
     @Transactional
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
+        
+        Long branchIdValue = metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null;
+        if (branchIdValue != null && EXCLUDED_BRANCH_IDS.contains(branchIdValue)) {
+            log.info("Skipping recording {} from excluded branch {}", recordingId, branchIdValue);
+            return null;
+        }
+        
         String transcriptionText = s3Service.getTranscription(recordingId);
         
         if (transcriptionText == null || transcriptionText.isEmpty()) {
@@ -332,10 +343,16 @@ public class TranscriptionService {
                 
                 List<String> recordingIds = s3Service.listAllRecordingIds();
                 
-                // Count new ones first
+                // Count new ones first (pre-filter excluded branches via metadata check)
                 List<String> newIds = new ArrayList<>();
                 for (String recordingId : recordingIds) {
                     if (!repository.existsByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
+                        Map<String, Object> meta = s3Service.getMetadata(recordingId);
+                        Long bId = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
+                        if (bId != null && EXCLUDED_BRANCH_IDS.contains(bId)) {
+                            log.info("Skipping recording {} from excluded branch {}", recordingId, bId);
+                            continue;
+                        }
                         newIds.add(recordingId);
                     }
                 }
@@ -434,6 +451,7 @@ public class TranscriptionService {
                 }
             } finally {
                 executor.shutdown();
+                try { emitter.complete(); } catch (Exception ignored) {}
             }
         });
         

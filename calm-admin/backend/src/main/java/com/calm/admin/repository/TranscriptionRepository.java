@@ -39,53 +39,49 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
             @Param("maxScore") Integer maxScore
     );
 
-    // Solo cuenta transcripciones ANALIZADAS con venta confirmada
-    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = true")
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = true AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL)")
     long countSales();
 
-    // Solo cuenta transcripciones ANALIZADAS sin venta
-    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false")
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL)")
     long countNoSales();
     
-    // Cuenta transcripciones analizadas
-    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true")
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = true AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL)")
     long countAnalyzed();
     
-    // Cuenta transcripciones pendientes de análisis
-    @Query("SELECT COUNT(t) FROM Transcription t WHERE t.analyzed = false OR t.analyzed IS NULL")
+    @Query("SELECT COUNT(t) FROM Transcription t WHERE (t.analyzed = false OR t.analyzed IS NULL) AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL)")
     long countPendingAnalysis();
 
-    @Query("SELECT AVG(t.sellerScore) FROM Transcription t WHERE t.analyzed = true AND t.sellerScore IS NOT NULL")
+    @Query("SELECT AVG(t.sellerScore) FROM Transcription t WHERE t.analyzed = true AND t.sellerScore IS NOT NULL AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL)")
     Double averageSellerScore();
 
-    @Query("SELECT DISTINCT t.userId, t.userName FROM Transcription t")
+    @Query("SELECT DISTINCT t.userId, t.userName FROM Transcription t WHERE t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL")
     List<Object[]> findAllSellers();
 
-    @Query("SELECT DISTINCT t.branchId, t.branchName FROM Transcription t")
+    @Query("SELECT DISTINCT t.branchId, t.branchName FROM Transcription t WHERE t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL")
     List<Object[]> findAllBranches();
 
-    @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL GROUP BY t.noSaleReason")
+    @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL) GROUP BY t.noSaleReason")
     List<Object[]> countByNoSaleReason();
 
-    // Solo estadísticas de transcripciones ANALIZADAS
     @Query("SELECT t.userId, t.userName, t.branchName, " +
            "COUNT(t), " +
            "SUM(CASE WHEN t.saleCompleted = true THEN 1 ELSE 0 END), " +
            "SUM(CASE WHEN t.saleCompleted = false THEN 1 ELSE 0 END), " +
            "AVG(t.sellerScore) " +
-           "FROM Transcription t WHERE t.analyzed = true GROUP BY t.userId, t.userName, t.branchName")
+           "FROM Transcription t WHERE t.analyzed = true AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL) GROUP BY t.userId, t.userName, t.branchName")
     List<Object[]> getSellerStats();
 
-    // Solo estadísticas de transcripciones ANALIZADAS
     @Query("SELECT t.branchId, t.branchName, " +
            "COUNT(t), " +
            "SUM(CASE WHEN t.saleCompleted = true THEN 1 ELSE 0 END), " +
            "SUM(CASE WHEN t.saleCompleted = false THEN 1 ELSE 0 END), " +
            "AVG(t.sellerScore) " +
-           "FROM Transcription t WHERE t.analyzed = true GROUP BY t.branchId, t.branchName")
+           "FROM Transcription t WHERE t.analyzed = true AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL) GROUP BY t.branchId, t.branchName")
     List<Object[]> getBranchStats();
 
     boolean existsByRecordingId(String recordingId);
+    
+    List<Transcription> findByBranchIdIn(java.util.Collection<Long> branchIds);
     
     // Transcripciones analizadas marcadas como "no venta" - para re-análisis
     @Query("SELECT t FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false")
