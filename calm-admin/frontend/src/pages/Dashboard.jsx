@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+﻿import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FileText, 
@@ -30,11 +30,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import MetricCard from '../components/MetricCard';
 
-// Colores Banco de Occidente
-const COLORS = ['#F5A623', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
+// Paleta Banco de Occidente
+const COLORS = ['#0081FF', '#E70518', '#26C16E', '#FFD008', '#0862C5', '#1EB2FF', '#6D6D6D'];
 
 // Colores para sucursales en scatter plot
-const BRANCH_COLORS = ['#F5A623', '#22c55e', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const BRANCH_COLORS = ['#0081FF', '#E70518', '#26C16E', '#FFD008', '#0862C5', '#1EB2FF', '#6D6D6D'];
 
 export default function Dashboard() {
   const { dashboardMetrics, transcriptions, loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
@@ -61,7 +61,7 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#0081FF] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.loadingData')}</p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export default function Dashboard() {
     return (
       <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-          <FileText className="w-8 h-8 text-[#F5A623]" />
+          <FileText className="w-8 h-8 text-[#0081FF]" />
         </div>
         <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noData')}</h3>
         <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('dashboard.syncToStart')}</p>
@@ -107,10 +107,10 @@ export default function Dashboard() {
         .slice(0, 5)
     : [];
 
-  // Procesar datos para Heatmap semanal (días vs horas)
+  // Procesar datos para Heatmap semanal (dÃ­as vs horas)
   const heatmapData = (() => {
     const matrix = {};
-    // Inicializar matriz 7 días x 24 horas
+    // Inicializar matriz 7 dÃ­as x 24 horas
     for (let day = 0; day < 7; day++) {
       matrix[day] = {};
       for (let hour = 0; hour < 24; hour++) {
@@ -130,7 +130,7 @@ export default function Dashboard() {
     return matrix;
   })();
 
-  // Obtener el máximo para escala de colores del heatmap
+  // Obtener el mÃ¡ximo para escala de colores del heatmap
   const maxHeatmapValue = Math.max(
     1,
     ...Object.values(heatmapData).flatMap(hours => Object.values(hours))
@@ -202,7 +202,7 @@ export default function Dashboard() {
         <MetricCard
           title={t('dashboard.sales')}
           value={totalSales}
-          subtitle={`${conversionRate}% conversión`}
+          subtitle={`${conversionRate}% conversiÃ³n`}
           icon={ShoppingCart}
           variant="success"
         />
@@ -231,7 +231,7 @@ export default function Dashboard() {
               <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.topSellers')}</h3>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.salesComparison')}</p>
             </div>
-            <Link to="/sellers" className="text-sm text-[#F5A623] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
+            <Link to="/sellers" className="text-sm text-[#0081FF] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
               {t('dashboard.viewAll')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -304,8 +304,8 @@ export default function Dashboard() {
         {/* Top Sellers Ranking */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
-              <Users className="w-5 h-5 text-[#F5A623]" />
+            <div className="p-3 bg-[#0081FF]/20 rounded-xl">
+              <Users className="w-5 h-5 text-[#0081FF]" />
             </div>
             <div>
               <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
@@ -319,7 +319,7 @@ export default function Dashboard() {
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#FFBB54] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
@@ -342,8 +342,8 @@ export default function Dashboard() {
         {/* Branch Performance */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
-              <Building2 className="w-5 h-5 text-[#F5A623]" />
+            <div className="p-3 bg-[#0081FF]/20 rounded-xl">
+              <Building2 className="w-5 h-5 text-[#0081FF]" />
             </div>
             <div>
               <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
@@ -357,7 +357,7 @@ export default function Dashboard() {
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#FFBB54] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
                   index === 2 ? 'bg-amber-700 text-amber-100' :
                   isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
@@ -382,8 +382,8 @@ export default function Dashboard() {
       {transcriptions?.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
-              <Clock className="w-5 h-5 text-[#F5A623]" />
+            <div className="p-3 bg-[#0081FF]/20 rounded-xl">
+              <Clock className="w-5 h-5 text-[#0081FF]" />
             </div>
             <div>
               <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
@@ -395,7 +395,7 @@ export default function Dashboard() {
             {/* Heatmap Semanal */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-[#F5A623]" />
+                <Calendar className="w-5 h-5 text-[#0081FF]" />
                 <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.weeklyHeatmap')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -414,7 +414,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                   
-                  {/* Filas por día */}
+                  {/* Filas por dÃ­a */}
                   {DAYS.map((day, dayIdx) => (
                     <div key={day} className="flex items-center mb-1">
                       <div className={`w-10 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -460,7 +460,7 @@ export default function Dashboard() {
             {/* Scatter Plot Temporal */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-[#F5A623]" />
+                <Clock className="w-5 h-5 text-[#0081FF]" />
                 <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.attendancesByTime')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -581,15 +581,15 @@ export default function Dashboard() {
       )}
 
       {/* ======================================================
-          NUEVAS MÉTRICAS BANCO DE OCCIDENTE
+          NUEVAS MÃ‰TRICAS BANCO DE OCCIDENTE
       ====================================================== */}
       {!userSellerId && (
         <div className="mt-8 space-y-6">
-          {/* Título sección */}
+          {/* TÃ­tulo secciÃ³n */}
           <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-[#F5A623] rounded-full" />
+            <div className="w-1 h-6 bg-[#0081FF]-full" />
             <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              Métricas de Calidad — Banco de Occidente
+              MÃ©tricas de Calidad â€” Banco de Occidente
             </h2>
           </div>
 
@@ -599,19 +599,19 @@ export default function Dashboard() {
             <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>CSAT Promedio</p>
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold text-[#F5A623]">
-                  {rawMetrics.averageCsat > 0 ? rawMetrics.averageCsat.toFixed(1) : '—'}
+                <span className="text-3xl font-bold text-[#0081FF]">
+                  {rawMetrics.averageCsat > 0 ? rawMetrics.averageCsat.toFixed(1) : 'â€”'}
                 </span>
                 <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/5</span>
               </div>
               <div className="mt-2 flex gap-1">
                 {[1,2,3,4,5].map(star => (
                   <div key={star} className={`h-1.5 flex-1 rounded-full ${
-                    rawMetrics.averageCsat >= star ? 'bg-[#F5A623]' : isDark ? 'bg-slate-700' : 'bg-gray-200'
+                    rawMetrics.averageCsat >= star ? 'bg-[#0081FF]' : isDark ? 'bg-slate-700' : 'bg-gray-200'
                   }`} />
                 ))}
               </div>
-              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Satisfacción del cliente</p>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>SatisfacciÃ³n del cliente</p>
             </div>
 
             {/* Escucha activa */}
@@ -619,7 +619,7 @@ export default function Dashboard() {
               <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Escucha Activa</p>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-bold text-blue-400">
-                  {rawMetrics.averageEscuchaActiva > 0 ? rawMetrics.averageEscuchaActiva.toFixed(1) : '—'}
+                  {rawMetrics.averageEscuchaActiva > 0 ? rawMetrics.averageEscuchaActiva.toFixed(1) : 'â€”'}
                 </span>
                 <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>/10</span>
               </div>
@@ -647,7 +647,7 @@ export default function Dashboard() {
                   style={{ width: `${rawMetrics.protocolComplianceRate || 0}%` }}
                 />
               </div>
-              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atención</p>
+              <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atenciÃ³n</p>
             </div>
 
             {/* Producto ofrecido */}
@@ -669,12 +669,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Fila 2: Tipificación + Estado emocional */}
+          {/* Fila 2: TipificaciÃ³n + Estado emocional */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Distribución motivo de visita */}
+            {/* DistribuciÃ³n motivo de visita */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-                Tipificación — Motivo de Visita
+                TipificaciÃ³n â€” Motivo de Visita
               </h3>
               {rawMetrics.visitReasonDistribution && Object.keys(rawMetrics.visitReasonDistribution).length > 0 ? (
                 <div className="space-y-2">
@@ -692,7 +692,7 @@ export default function Dashboard() {
                           </div>
                           <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
                             <div
-                              className="h-1.5 rounded-full bg-[#F5A623]"
+                              className="h-1.5 rounded-full bg-[#0081FF]"
                               style={{ width: `${pct}%`, opacity: 1 - idx * 0.1 }}
                             />
                           </div>
@@ -702,7 +702,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de tipificación aún
+                  Sin datos de tipificaciÃ³n aÃºn
                 </div>
               )}
             </div>
@@ -716,7 +716,7 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-4">
                   {[
                     { key: 'Positivo', color: '#22c55e', bg: 'bg-green-500' },
-                    { key: 'Neutro', color: '#F5A623', bg: 'bg-yellow-400' },
+                    { key: 'Neutro', color: '#0081FF', bg: 'bg-yellow-400' },
                     { key: 'Negativo', color: '#ef4444', bg: 'bg-red-500' },
                     { key: 'No determinado', color: '#9ca3af', bg: 'bg-gray-400' },
                   ].map(({ key, color, bg }) => {
@@ -739,16 +739,16 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de estado emocional aún
+                  Sin datos de estado emocional aÃºn
                 </div>
               )}
             </div>
           </div>
 
-          {/* Fila 3: Grabación y consentimiento */}
+          {/* Fila 3: GrabaciÃ³n y consentimiento */}
           <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
             <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-              Grabación y Consentimiento
+              GrabaciÃ³n y Consentimiento
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="text-center">
@@ -756,14 +756,14 @@ export default function Dashboard() {
                   {rawMetrics.grabacionesCortadasCliente || 0}
                 </div>
                 <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas por cliente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitó no ser grabado</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitÃ³ no ser grabado</p>
               </div>
               <div className="text-center">
                 <div className={`text-4xl font-bold text-orange-400`}>
                   {rawMetrics.grabacionesCortadasManual || 0}
                 </div>
                 <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas manualmente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizó la grabación</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizÃ³ la grabaciÃ³n</p>
               </div>
               <div className="text-center">
                 <div className={`text-4xl font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
@@ -779,3 +779,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+

@@ -33,46 +33,48 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0862C5 0%, #003580 50%, #001a40 100%)' }}>
+      {/* Patrón sutil de fondo */}
+      <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M20 20l-8-8h16l-8 8zm0 0l8 8H12l8-8z'/%3E%3C/g%3E%3C/svg%3E")`,
         }} />
       </div>
 
       <div className="relative z-10 w-full max-w-md px-6">
-        {/* Logo */}
+        {/* Logo vertical oficial */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#FF8C00] mb-4 shadow-lg shadow-orange-500/30">
-            <span className="text-4xl font-bold text-white">B</span>
+          <div className="inline-flex items-center justify-center mb-4">
+            <img
+              src="/logo-vertical.png"
+              alt="Banco de Occidente"
+              className="h-28 w-auto drop-shadow-lg"
+              style={{ filter: 'brightness(0) invert(1)' }}
+            />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="text-[#FF8C00]">Banco de Occidente</span>
-          </h1>
-          <p className="text-gray-400">{t('login.subtitle')}</p>
+          <p className="text-blue-200 text-sm">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
-          <h2 className="text-xl font-semibold text-white mb-6 text-center">{t('login.signIn')}</h2>
+        <div className="bg-white rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">{t('login.signIn')}</h2>
           
           {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm text-center">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('login.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0081FF] focus:border-[#0081FF] transition-all"
                 placeholder={t('login.usernamePlaceholder')}
                 required
                 autoFocus
@@ -80,14 +82,14 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('login.password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0081FF] focus:border-[#0081FF] transition-all"
                 placeholder={t('login.passwordPlaceholder')}
                 required
               />
@@ -96,7 +98,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-[#f5a203] to-[#F7931E] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/30"
+              className="w-full py-3 px-4 bg-[#E70518] hover:bg-[#FF283A] text-white font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E70518] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-500/20"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -114,7 +116,7 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-blue-300 text-sm mt-6">
           {t('login.footer')}
         </p>
       </div>

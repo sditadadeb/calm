@@ -133,24 +133,24 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
-
   return (
-    <div className={`min-h-screen flex ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-      {/* Sidebar */}
-      <aside className={`w-64 flex flex-col border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-        {/* Logo */}
-        <div className={`p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-lg bg-[#F5A623]">
-              <span className="text-white font-bold text-lg">Banco de Occidente</span>
-            </div>
-          </div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('nav.adminPanel')}</p>
+    <div className={`min-h-screen flex ${isDark ? 'bg-slate-900' : 'bg-[#F6F6F6]'}`}>
+      {/* Sidebar — azul institucional */}
+      <aside className="w-64 flex flex-col" style={{ background: isDark ? '#0f2244' : '#0862C5' }}>
+        {/* Logo horizontal */}
+        <div className="p-5 border-b border-white/10">
+          <img
+            src="/logo-horizontal.png"
+            alt="Banco de Occidente"
+            className="h-9 w-auto"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
+          <p className="text-xs mt-2 text-blue-200/70">{t('nav.adminPanel')}</p>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <p className={`text-xs font-semibold uppercase tracking-wider mb-4 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-4 px-3 text-blue-200/50">
             {t('nav.menu')}
           </p>
           <div className="space-y-1">
@@ -160,24 +160,22 @@ export default function Layout({ children }) {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
-                      : isDark 
-                        ? 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 ${
+                    isActive
+                      ? 'bg-white text-[#0862C5] font-semibold shadow-sm'
+                      : 'text-blue-100 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm font-medium">{item.name}</span>
                 </Link>
               );
             })}
             
             {isAdmin && (
               <>
-                <div className={`border-t my-4 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}></div>
-                <p className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                <div className="border-t border-white/10 my-4" />
+                <p className="text-xs font-semibold uppercase tracking-wider mb-2 px-3 text-blue-200/50">
                   {t('nav.admin')}
                 </p>
                 {adminNavigation.map((item) => {
@@ -186,16 +184,14 @@ export default function Layout({ children }) {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                        isActive 
-                          ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
-                          : isDark 
-                            ? 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 ${
+                        isActive
+                          ? 'bg-white text-[#0862C5] font-semibold shadow-sm'
+                          : 'text-blue-100 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.name}</span>
+                      <item.icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm font-medium">{item.name}</span>
                     </Link>
                   );
                 })}
@@ -205,9 +201,9 @@ export default function Layout({ children }) {
                   <button
                     onClick={handleSync}
                     disabled={syncing || loading}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-[#F5A623] to-[#FFBB54] hover:from-[#D4911F] hover:to-[#F5A623] transition-all duration-200 shadow-lg shadow-[#F5A623]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-white bg-[#E70518] hover:bg-[#FF283A] transition-all duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 flex-shrink-0 ${syncing ? 'animate-spin' : ''}`} />
                     <span className="font-medium text-sm">
                       {syncing 
                         ? (syncProgress.total > 0 
@@ -218,13 +214,13 @@ export default function Layout({ children }) {
                   </button>
                   {syncing && syncProgress.total > 0 && (
                     <div className="mt-3">
-                      <div className={`w-full rounded-full h-2 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                      <div className="w-full rounded-full h-1.5 overflow-hidden bg-white/10">
                         <div 
-                          className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] h-2 rounded-full transition-all duration-300 ease-out"
+                          className="bg-white h-1.5 rounded-full transition-all duration-300 ease-out"
                           style={{ width: `${syncProgress.percent}%` }}
                         />
                       </div>
-                      <p className={`text-xs mt-2 truncate ${isDark ? 'text-slate-400' : 'text-gray-500'}`} title={syncProgress.message}>
+                      <p className="text-xs mt-2 truncate text-blue-200/70" title={syncProgress.message}>
                         {syncProgress.message}
                       </p>
                     </div>
@@ -235,30 +231,48 @@ export default function Layout({ children }) {
           </div>
         </nav>
 
+        {/* User info at bottom */}
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm text-white truncate">{user.username || t('nav.user')}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded text-blue-200/70 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+              title={t('nav.signOut')}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+      <main className={`flex-1 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-[#F6F6F6]'}`}>
         {/* Header */}
         {(() => {
           const currentPage = pageConfig[location.pathname] || { name: 'Panel', subtitle: '', icon: LayoutDashboard };
           const PageIcon = currentPage.icon;
           return (
-            <header className={`px-8 py-5 sticky top-0 z-10 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <header className={`px-8 py-4 sticky top-0 z-10 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-                    <PageIcon className="w-6 h-6 text-[#F5A623]" />
+                  <div className={`p-2.5 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-blue-50'}`}>
+                    <PageIcon className="w-5 h-5 text-[#0081FF]" />
                   </div>
                   <div>
-                    <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentPage.name}</h1>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{currentPage.subtitle}</p>
+                    <h1 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentPage.name}</h1>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{currentPage.subtitle}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   {/* Date */}
-                  <span className={`hidden sm:block text-sm px-4 py-2 rounded-full ${isDark ? 'text-slate-300 bg-slate-700' : 'text-gray-600 bg-gray-100'}`}>
-                    {new Date().toLocaleDateString('es-AR', { 
+                  <span className={`hidden sm:block text-sm px-3 py-1.5 rounded-full ${isDark ? 'text-slate-300 bg-slate-700' : 'text-gray-600 bg-gray-100'}`}>
+                    {new Date().toLocaleDateString('es-CO', { 
                       weekday: 'short', 
                       day: 'numeric',
                       month: 'short'
@@ -266,14 +280,14 @@ export default function Layout({ children }) {
                   </span>
                   
                   {/* Metrics */}
-                  <div className="hidden md:flex items-center gap-8">
+                  <div className="hidden md:flex items-center gap-6">
                     <div className="text-center">
                       <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.attendances')}</p>
-                      <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</p>
+                      <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</p>
                     </div>
                     <div className="text-center">
                       <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.conversion')}</p>
-                      <p className="text-2xl font-bold text-[#F5A623]">{dashboardMetrics?.conversionRate || '--'}%</p>
+                      <p className="text-xl font-bold text-[#0081FF]">{dashboardMetrics?.conversionRate || '--'}%</p>
                     </div>
                   </div>
                   
@@ -283,31 +297,18 @@ export default function Layout({ children }) {
                     className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                     title={isDark ? t('nav.lightTheme') : t('nav.darkTheme')}
                   >
-                    {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </button>
 
                   {/* Language */}
                   <div className={`flex items-center rounded-lg overflow-hidden border ${isDark ? 'border-slate-600' : 'border-gray-300'}`}>
                     <button onClick={() => switchLang('es')}
-                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-[#0081FF] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
                       ES
                     </button>
                     <button onClick={() => switchLang('en')}
-                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-[#0081FF] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
                       EN
-                    </button>
-                  </div>
-
-                  {/* User & Logout */}
-                  <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-                    <User className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-medium hidden sm:block ${isDark ? 'text-white' : 'text-gray-700'}`}>{user.username || t('nav.user')}</span>
-                    <button
-                      onClick={handleLogout}
-                      className={`p-1.5 rounded transition-colors ${isDark ? 'text-slate-400 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}
-                      title={t('nav.signOut')}
-                    >
-                      <LogOut className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

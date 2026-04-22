@@ -12,38 +12,38 @@ export default function MetricCard({
 }) {
   const { isDark } = useTheme();
   
-  // Variantes con colores CALM
+  // Variantes con colores Banco de Occidente
   const variants = {
     default: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-[#F5A623] border border-slate-700'
-      : 'bg-white border-l-4 border-l-[#F5A623] border border-gray-200',
-    primary: 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white border-0',
+      ? 'bg-slate-800 border-l-4 border-l-[#0081FF] border border-slate-700'
+      : 'bg-white border-l-4 border-l-[#0081FF] border border-gray-200',
+    primary: 'bg-gradient-to-br from-[#0862C5] to-[#0081FF] text-white border-0',
     success: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-green-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-green-500 border border-gray-200',
+      ? 'bg-slate-800 border-l-4 border-l-[#26C16E] border border-slate-700'
+      : 'bg-white border-l-4 border-l-[#26C16E] border border-gray-200',
     danger: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-red-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-red-500 border border-gray-200',
+      ? 'bg-slate-800 border-l-4 border-l-[#E70518] border border-slate-700'
+      : 'bg-white border-l-4 border-l-[#E70518] border border-gray-200',
     warning: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-amber-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-amber-500 border border-gray-200',
+      ? 'bg-slate-800 border-l-4 border-l-[#FFD008] border border-slate-700'
+      : 'bg-white border-l-4 border-l-[#FFD008] border border-gray-200',
   };
 
   const iconBg = {
-    default: 'bg-[#F5A623]/20 text-[#F5A623]',
+    default: 'bg-[#0081FF]/15 text-[#0081FF]',
     primary: 'bg-white/20 text-white',
-    success: 'bg-green-500/20 text-green-400',
-    danger: 'bg-red-500/20 text-red-400',
-    warning: 'bg-amber-500/20 text-amber-400',
+    success: 'bg-[#26C16E]/15 text-[#26C16E]',
+    danger:  'bg-[#E70518]/10 text-[#E70518]',
+    warning: 'bg-[#FFD008]/20 text-[#b38a00]',
   };
 
   const isPrimary = variant === 'primary';
 
   return (
-    <div className={`rounded-2xl p-6 transition-all hover:shadow-lg hover:translate-y-[-2px] ${variants[variant]}`}>
+    <div className={`rounded-xl p-6 transition-all hover:shadow-md hover:translate-y-[-1px] ${variants[variant]}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className={`text-sm font-medium ${isPrimary ? 'text-white/70' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <p className={`text-xs font-medium uppercase tracking-wide ${isPrimary ? 'text-white/70' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             {title}
           </p>
           <p className={`text-3xl font-bold mt-2 ${isPrimary ? 'text-white' : isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -63,11 +63,11 @@ export default function MetricCard({
       </div>
       
       {trend !== undefined && (
-        <div className={`flex items-center gap-2 mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          {trend === 'up' && <TrendingUp className="w-4 h-4 text-green-400" />}
-          {trend === 'down' && <TrendingDown className="w-4 h-4 text-red-400" />}
+        <div className={`flex items-center gap-2 mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
+          {trend === 'up' && <TrendingUp className="w-4 h-4 text-[#26C16E]" />}
+          {trend === 'down' && <TrendingDown className="w-4 h-4 text-[#E70518]" />}
           <span className={`text-sm font-medium ${
-            trend === 'up' ? 'text-green-400' : 'text-red-400'
+            trend === 'up' ? 'text-[#26C16E]' : 'text-[#E70518]'
           }`}>
             {trendValue}
           </span>
