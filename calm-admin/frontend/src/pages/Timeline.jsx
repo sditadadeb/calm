@@ -60,7 +60,7 @@ export default function Timeline() {
 
   const METRIC_OPTIONS = useMemo(() => [
     { key: 'saleRate', label: t('timeline.saleRate'), color: '#10B981' },
-    { key: 'avgScore', label: t('timeline.avgScore'), color: '#F5A623' },
+    { key: 'avgScore', label: t('timeline.avgScore'), color: '#0081FF' },
     { key: 'avgConfidence', label: t('timeline.avgConfidence'), color: '#3B82F6' },
     { key: 'total', label: t('timeline.attendanceCount'), color: '#8B5CF6' },
   ], [t]);
@@ -191,7 +191,7 @@ export default function Timeline() {
   }, [events]);
 
   const cardClass = `rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`;
-  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#F5A623]`;
+  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#0081FF]`;
 
   return (
     <div className="space-y-6">
@@ -234,7 +234,7 @@ export default function Timeline() {
       <div className={cardClass}>
         {loading ? (
           <div className="h-80 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F5A623]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0081FF]"></div>
           </div>
         ) : chartData.length === 0 ? (
           <div className="h-80 flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function Timeline() {
       {selectedEvent && (
         <div className={`${cardClass} border-l-4`} style={{ borderLeftColor: getCategoryInfo(selectedEvent.category).color }}>
           <div className="flex items-center gap-3 mb-4">
-            <Info className="w-5 h-5 text-[#F5A623]" />
+            <Info className="w-5 h-5 text-[#0081FF]" />
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {t('timeline.impact')} {selectedEvent.title}
             </h3>
@@ -295,7 +295,7 @@ export default function Timeline() {
           </div>
           {loadingCompare ? (
             <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#F5A623]"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#0081FF]"></div>
             </div>
           ) : comparison ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -339,7 +339,7 @@ export default function Timeline() {
         <div className="flex items-center justify-between mb-4">
           <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('timeline.registeredEvents')}</h3>
           <button onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors">
             <Plus className="w-4 h-4" />
             {showForm ? t('timeline.cancel') : t('timeline.newEvent')}
           </button>
@@ -372,7 +372,7 @@ export default function Timeline() {
             </div>
             <div className="mt-3 flex justify-end">
               <button type="submit"
-                className="px-6 py-2 rounded-xl text-sm font-medium text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+                className="px-6 py-2 rounded-xl text-sm font-medium text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors">
                 {t('timeline.saveEvent')}
               </button>
             </div>
@@ -396,7 +396,7 @@ export default function Timeline() {
 
               if (isEditing) {
                 return (
-                  <div key={ev.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-[#F5A623]/50' : 'bg-orange-50 border-[#F5A623]/50'}`}
+                  <div key={ev.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-[#0081FF]/50' : 'bg-[#0081FF] border-[#0081FF]/50'}`}
                     onClick={e => e.stopPropagation()}>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
@@ -427,7 +427,7 @@ export default function Timeline() {
                         <X className="w-4 h-4" />
                       </button>
                       <button onClick={handleSaveEdit}
-                        className="p-2 rounded-lg text-white bg-[#F5A623] hover:bg-[#D4911F] transition-colors">
+                        className="p-2 rounded-lg text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors">
                         <Check className="w-4 h-4" />
                       </button>
                     </div>
@@ -440,7 +440,7 @@ export default function Timeline() {
                   onClick={() => handleSelectEvent(ev)}
                   className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all border ${
                     isSelected
-                      ? isDark ? 'bg-slate-700 border-[#F5A623]/50' : 'bg-orange-50 border-[#F5A623]/50'
+                      ? isDark ? 'bg-slate-700 border-[#0081FF]/50' : 'bg-[#0081FF] border-[#0081FF]/50'
                       : isDark ? 'bg-slate-700/30 border-transparent hover:bg-slate-700/60' : 'bg-gray-50 border-transparent hover:bg-gray-100'
                   }`}>
                   <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: cat.color }} />
@@ -460,7 +460,7 @@ export default function Timeline() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button onClick={(e) => handleStartEdit(ev, e)}
-                      className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:bg-slate-600' : 'text-gray-400 hover:text-[#F5A623] hover:bg-gray-200'}`}>
+                      className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-[#0081FF] hover:bg-slate-600' : 'text-gray-400 hover:text-[#0081FF] hover:bg-gray-200'}`}>
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button onClick={(e) => handleDelete(ev.id, e)}

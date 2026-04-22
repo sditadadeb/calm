@@ -116,8 +116,8 @@ export default function Transcriptions() {
           {label}
           {isActive ? (
             sortConfig.direction === 'asc' ? 
-              <ChevronUp className="w-4 h-4 text-[#F5A623]" /> : 
-              <ChevronDown className="w-4 h-4 text-[#F5A623]" />
+              <ChevronUp className="w-4 h-4 text-[#0081FF]" /> : 
+              <ChevronDown className="w-4 h-4 text-[#0081FF]" />
           ) : (
             <ChevronsUpDown className="w-3 h-3 opacity-40" />
           )}
@@ -218,7 +218,7 @@ export default function Transcriptions() {
       {recalculating && (
         <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3">
-            <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
+            <RefreshCw className="w-5 h-5 text-[#0081FF] animate-spin" />
             <div className="flex-1">
               <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
                 {t('transcriptions.recalculating')}
@@ -230,7 +230,7 @@ export default function Transcriptions() {
           </div>
           <div className="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-[#F5A623] to-[#FFBB54] rounded-full animate-pulse"
+              className="h-full bg-gradient-to-r from-[#0081FF] to-[#0862C5] rounded-full animate-pulse"
               style={{ width: '100%' }}
             />
           </div>
@@ -241,7 +241,7 @@ export default function Transcriptions() {
       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
         {syncing ? (
           <>
-            <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
+            <RefreshCw className="w-4 h-4 animate-spin text-[#0081FF]" />
             <span>{t('transcriptions.checkingNew')}</span>
           </>
         ) : (
@@ -259,7 +259,7 @@ export default function Transcriptions() {
       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-10 h-10 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-10 h-10 border-4 border-[#0081FF] border-t-transparent rounded-full animate-spin mx-auto" />
             <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('transcriptions.loadingTranscriptions')}</p>
           </div>
         ) : transcriptions.length === 0 ? (
@@ -293,7 +293,7 @@ export default function Transcriptions() {
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-[#F5A623]">#{transcription.recordingId}</span>
+                      <span className="font-mono text-sm font-medium text-[#0081FF]">#{transcription.recordingId}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
@@ -391,14 +391,14 @@ export default function Transcriptions() {
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${transcription.recordingId}`}
-                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
+                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#0081FF] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#0081FF] hover:text-white'}`}
                         >
                           <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
                         {!transcription.analyzed && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
-                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
+                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity"
                             disabled={loading}
                           >
                             <Sparkles className="w-3 h-3" /> {t('transcriptions.analyze')}

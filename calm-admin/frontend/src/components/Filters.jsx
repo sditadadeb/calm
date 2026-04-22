@@ -35,7 +35,7 @@ export default function Filters({ onApply }) {
     if (onApply) onApply();
   };
 
-  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
+  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#0081FF] focus:border-transparent ${
     isDark 
       ? 'bg-slate-700 border border-slate-600 text-white' 
       : 'bg-white border border-gray-300 text-gray-800'
@@ -46,7 +46,7 @@ export default function Filters({ onApply }) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-            <Filter className="w-5 h-5 text-[#F5A623]" />
+            <Filter className="w-5 h-5 text-[#0081FF]" />
           </div>
           <div>
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.title')}</h3>
@@ -161,7 +161,7 @@ export default function Filters({ onApply }) {
         </button>
         <button 
           onClick={handleApply} 
-          className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <Search className="w-4 h-4" />
           {t('filters.applyFilters')}

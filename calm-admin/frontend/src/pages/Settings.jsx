@@ -11,7 +11,7 @@ const InfoIcon = ({ tooltip, isDark }) => {
     <div className="relative inline-block ml-2">
       <button
         type="button"
-        className="w-5 h-5 rounded-full bg-[#F5A623]/20 text-[#F5A623] text-xs font-bold hover:bg-[#F5A623] hover:text-white transition-colors flex items-center justify-center"
+        className="w-5 h-5 rounded-full bg-[#0081FF]/20 text-[#0081FF] text-xs font-bold hover:bg-[#0081FF] hover:text-white transition-colors flex items-center justify-center"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onClick={() => setShowTooltip(!showTooltip)}
@@ -147,7 +147,7 @@ const Settings = () => {
     };
   };
 
-  const inputClasses = `w-full p-3 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
+  const inputClasses = `w-full p-3 rounded-lg focus:ring-2 focus:ring-[#0081FF] focus:border-transparent ${
     isDark 
       ? 'bg-slate-700 border border-slate-600 text-white' 
       : 'bg-white border border-gray-300 text-gray-800'
@@ -156,7 +156,7 @@ const Settings = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F5A623]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0081FF]"></div>
       </div>
     );
   }
@@ -170,7 +170,7 @@ const Settings = () => {
       )}
 
       {/* Explicación de criterios */}
-      <div className="bg-gradient-to-r from-[#F5A623]/10 to-[#FFBB54]/10 rounded-xl p-6 border border-[#F5A623]/20">
+      <div className="bg-gradient-to-r from-[#0081FF]/10 to-[#0862C5]/10 rounded-xl p-6 border border-[#0081FF]/20">
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
           📊 {t('settings.scoreCriteria')}
           <InfoIcon isDark={isDark} tooltip={t('settings.scoreCriteriaTooltip')} />
@@ -189,7 +189,7 @@ const Settings = () => {
               item.color === 'yellow' ? 'border-l-yellow-400' :
               item.color === 'blue' ? 'border-l-blue-400' :
               item.color === 'green' ? 'border-l-green-400' :
-              'border-l-[#F5A623]'
+              'border-l-[#0081FF]'
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`text-2xl font-bold ${
@@ -197,7 +197,7 @@ const Settings = () => {
                   item.color === 'yellow' ? 'text-yellow-400' :
                   item.color === 'blue' ? 'text-blue-400' :
                   item.color === 'green' ? 'text-green-400' :
-                  'text-[#F5A623]'
+                  'text-[#0081FF]'
                 }`}>{item.score}</span>
                 <span className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{item.label}</span>
               </div>
@@ -209,7 +209,7 @@ const Settings = () => {
 
       {/* Editor de Prompt */}
       <div className={`rounded-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-        <div className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] p-4">
+        <div className="bg-gradient-to-r from-[#0081FF] to-[#0862C5] p-4">
           <h2 className="text-lg font-semibold text-white flex items-center">
             🤖 {t('settings.systemPrompt')}
             <InfoIcon isDark={isDark} tooltip={t('settings.systemPromptTooltip')} />
@@ -293,7 +293,7 @@ const Settings = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
+            className="px-6 py-2 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
           >
             {saving ? t('settings.saving') : t('settings.saveChanges')}
           </button>
@@ -314,12 +314,12 @@ const Settings = () => {
         {reanalyzing && (
           <div className="mb-4">
             <div className="flex items-center gap-3 mb-2">
-              <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
+              <RefreshCw className="w-5 h-5 text-[#0081FF] animate-spin" />
               <span className={isDark ? 'text-white' : 'text-gray-800'}>{reanalyzeProgress.message}</span>
             </div>
             <div className={`h-3 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
               <div 
-                className="h-full bg-gradient-to-r from-[#F5A623] to-[#FFBB54] transition-all duration-300"
+                className="h-full bg-gradient-to-r from-[#0081FF] to-[#0862C5] transition-all duration-300"
                 style={{ width: reanalyzeProgress.total > 0 ? `${(reanalyzeProgress.current / reanalyzeProgress.total) * 100}%` : '0%' }}
               />
             </div>
@@ -335,7 +335,7 @@ const Settings = () => {
           className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
             reanalyzing || saving
               ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-              : 'bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white hover:opacity-90'
+              : 'bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white hover:opacity-90'
           }`}
         >
           <RefreshCw className={`w-5 h-5 ${reanalyzing ? 'animate-spin' : ''}`} />

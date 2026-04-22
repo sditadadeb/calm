@@ -870,7 +870,7 @@ export default function Recommendations() {
                     </div>
                     <div className="w-full bg-slate-700 rounded-full h-2">
                       <div 
-                        className={`h-2 rounded-full ${value > 70 ? 'bg-green-500' : value > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                        className={`h-2 rounded-full ${value > 70 ? 'bg-green-500' : value > 50 ? 'bg-[#0056b3]' : 'bg-red-500'}`}
                         style={{ width: `${value}%` }}
                       ></div>
                     </div>
@@ -1000,7 +1000,7 @@ export default function Recommendations() {
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-lg font-bold text-white">Recomendaciones Accionables</h3>
                 <InfoTooltip text={`Recomendaciones automáticas basadas en el análisis de datos.\n\nUmbrales utilizados:\n• Confidence < ${THRESHOLDS.confidence.min}: Problema de rapport\n• Conversión < ${THRESHOLDS.conversion.min}%: Problema de cierre\n• Score vendedor < ${THRESHOLDS.sellerScore.min}: Problema general\n\nPrioridades:\n🔴 Alta: Requiere acción inmediata\n🟠 Media: Mejorar en próximas semanas\n🟢 Baja: Optimización opcional`}>
-                  <Info className="w-4 h-4 text-gray-400 hover:text-orange-500 cursor-help" />
+                  <Info className="w-4 h-4 text-gray-400 hover:text-[#0081FF] cursor-help" />
                 </InfoTooltip>
               </div>
               <p className="text-sm text-slate-500 mb-4">
@@ -1016,7 +1016,7 @@ export default function Recommendations() {
                 <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 flex items-start gap-4">
                   <div className={`w-2 h-full rounded-full ${
                     item.priority === 'alta' ? 'bg-red-500' : 
-                    item.priority === 'media' ? 'bg-amber-500' : 'bg-green-500'
+                    item.priority === 'media' ? 'bg-[#0056b3]' : 'bg-green-500'
                   }`}></div>
                   <div className="flex-1">
                     <p className="font-medium text-white">{item.name}</p>
@@ -1037,14 +1037,14 @@ export default function Recommendations() {
               <h4 className="font-semibold text-gray-700 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" /> Por Sucursal
                 <InfoTooltip text={`Recomendaciones por sucursal basadas en:\n\n• Confidence Score promedio\n• Tasa de conversión\n• Score promedio de vendedores\n\nSe identifica el punto más débil de cada sucursal y se sugiere una acción específica.`}>
-                  <Info className="w-3 h-3 text-gray-400 hover:text-orange-500 cursor-help" />
+                  <Info className="w-3 h-3 text-gray-400 hover:text-[#0081FF] cursor-help" />
                 </InfoTooltip>
               </h4>
               {actionableRecommendations.branches.map((item, idx) => (
                 <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 flex items-start gap-4">
                   <div className={`w-2 h-full rounded-full ${
                     item.priority === 'alta' ? 'bg-red-500' : 
-                    item.priority === 'media' ? 'bg-amber-500' : 'bg-green-500'
+                    item.priority === 'media' ? 'bg-[#0056b3]' : 'bg-green-500'
                   }`}></div>
                   <div className="flex-1">
                     <p className="font-medium text-white capitalize">{item.name}</p>
@@ -1142,11 +1142,11 @@ export default function Recommendations() {
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between text-sm mb-2">
             <span className={isDark ? 'text-slate-300' : 'text-gray-600'}>{analysisProgress.message}</span>
-            <span className="font-medium text-[#F5A623]">{analysisProgress.percent}%</span>
+            <span className="font-medium text-[#0081FF]">{analysisProgress.percent}%</span>
           </div>
           <div className={`w-full rounded-full h-2 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
             <div 
-              className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-[#0081FF] to-[#0862C5] h-2 rounded-full transition-all duration-300"
               style={{ width: `${analysisProgress.percent}%` }}
             />
           </div>

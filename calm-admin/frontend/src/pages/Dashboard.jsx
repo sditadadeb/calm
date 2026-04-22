@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FileText, 
@@ -231,7 +231,7 @@ export default function Dashboard() {
               <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.topSellers')}</h3>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.salesComparison')}</p>
             </div>
-            <Link to="/sellers" className="text-sm text-[#0081FF] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
+            <Link to="/sellers" className="text-sm text-[#0081FF] font-semibold flex items-center gap-1 hover:text-[#0862C5]">
               {t('dashboard.viewAll')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -319,9 +319,9 @@ export default function Dashboard() {
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#FFBB54] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#0862C5] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
+                  index === 2 ? 'bg-[#0056b3] text-blue-100' :
                   isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
                 }`}>
                   {index + 1}
@@ -357,9 +357,9 @@ export default function Dashboard() {
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#FFBB54] text-white' :
+                  index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#0862C5] text-white' :
                   index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
+                  index === 2 ? 'bg-[#0056b3] text-blue-100' :
                   isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
                 }`}>
                   {index + 1}
@@ -759,7 +759,7 @@ export default function Dashboard() {
                 <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitÃ³ no ser grabado</p>
               </div>
               <div className="text-center">
-                <div className={`text-4xl font-bold text-orange-400`}>
+                <div className={`text-4xl font-bold text-[#0081FF]`}>
                   {rawMetrics.grabacionesCortadasManual || 0}
                 </div>
                 <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas manualmente</p>

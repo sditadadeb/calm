@@ -26,7 +26,7 @@ export default function Branches() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#0081FF] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.loading')}</p>
         </div>
       </div>
@@ -53,14 +53,14 @@ export default function Branches() {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#0081FF] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.activeBranches')}</p>
               <p className={`text-3xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{branches.length}</p>
             </div>
-            <div className="w-12 h-12 bg-[#F5A623]/20 rounded-xl flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-[#F5A623]" />
+            <div className="w-12 h-12 bg-[#0081FF]/20 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-[#0081FF]" />
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function Branches() {
                 <XAxis dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={11} angle={-45} textAnchor="end" height={60} />
                 <YAxis stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, t('branches.conversion')]} />
-                <Bar dataKey="conversion" fill={isDark ? '#334155' : '#F5A623'} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="conversion" fill={isDark ? '#334155' : '#0081FF'} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -152,9 +152,9 @@ export default function Branches() {
                 <tr key={branch.branchId} className={`transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}>
                   <td className="px-6 py-4">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                      index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
+                      index === 0 ? 'bg-gradient-to-br from-[#0081FF] to-[#0862C5] text-white' :
                       index === 1 ? 'bg-slate-400 text-slate-800' :
-                      index === 2 ? 'bg-amber-700 text-amber-100' :
+                      index === 2 ? 'bg-[#0056b3] text-blue-100' :
                       isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {index + 1}
@@ -163,7 +163,7 @@ export default function Branches() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-                        <MapPin className="w-5 h-5 text-[#F5A623]" />
+                        <MapPin className="w-5 h-5 text-[#0081FF]" />
                       </div>
                       <span className={`font-medium capitalize ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</span>
                     </div>
@@ -207,7 +207,7 @@ export default function Branches() {
                   <td className="px-6 py-4">
                     <Link
                       to={`/transcriptions?branchId=${branch.branchId}`}
-                      className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
+                      className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#0081FF] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#0081FF] hover:text-white'}`}
                     >
                       <Eye className="w-3 h-3" /> {t('branches.viewAttendances')}
                     </Link>

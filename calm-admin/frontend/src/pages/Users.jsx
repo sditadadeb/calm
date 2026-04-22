@@ -110,7 +110,7 @@ export default function Users() {
     }
   };
 
-  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
+  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#0081FF] focus:border-transparent ${
     isDark 
       ? 'bg-slate-700 border border-slate-600 text-white' 
       : 'bg-white border border-gray-300 text-gray-800'
@@ -119,7 +119,7 @@ export default function Users() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F5A623]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0081FF]"></div>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function Users() {
       <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity"
         >
           <UserPlus className="w-5 h-5" />
           {t('users.newUser')}
@@ -219,7 +219,7 @@ export default function Users() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
+                className="px-4 py-2 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity"
               >
                 {t('users.createUser')}
               </button>
@@ -263,10 +263,10 @@ export default function Users() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      user.role === 'ADMIN' ? 'bg-[#F5A623]/20' : isDark ? 'bg-slate-700' : 'bg-gray-100'
+                      user.role === 'ADMIN' ? 'bg-[#0081FF]/20' : isDark ? 'bg-slate-700' : 'bg-gray-100'
                     }`}>
                       {user.role === 'ADMIN' ? (
-                        <Shield className="w-5 h-5 text-[#F5A623]" />
+                        <Shield className="w-5 h-5 text-[#0081FF]" />
                       ) : (
                         <User className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
                       )}
@@ -277,7 +277,7 @@ export default function Users() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     user.role === 'ADMIN' 
-                      ? 'bg-[#F5A623]/20 text-[#F5A623]' 
+                      ? 'bg-[#0081FF]/20 text-[#0081FF]' 
                       : user.role === 'VIEWER'
                         ? 'bg-blue-500/20 text-blue-400'
                         : isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600'
@@ -306,7 +306,7 @@ export default function Users() {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleToggleRole(user.id, user.role)}
-                      className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10' : 'text-gray-400 hover:text-[#F5A623] hover:bg-[#F5A623]/10'}`}
+                      className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-[#0081FF] hover:bg-[#0081FF]/10' : 'text-gray-400 hover:text-[#0081FF] hover:bg-[#0081FF]/10'}`}
                       title={user.role === 'ADMIN' ? t('users.convertToUser') : t('users.convertToAdmin')}
                     >
                       <Shield className="w-4 h-4" />

@@ -34,8 +34,13 @@ const Login = () => {
       {/* Panel izquierdo — azul institucional */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-16"
         style={{ background: 'linear-gradient(160deg, #0862C5 0%, #0081FF 100%)' }}>
-        <img src="/logo-vertical.png" alt="Banco de Occidente"
-          className="w-48 mb-10" style={{ filter: 'brightness(0) invert(1)' }} />
+
+        {/* Logo en caja blanca para mantener los colores originales */}
+        <div className="bg-white rounded-2xl px-10 py-8 mb-10 shadow-lg">
+          <img src="/logo-vertical.png" alt="Banco de Occidente"
+            className="w-40" style={{ objectFit: 'contain' }} />
+        </div>
+
         <h2 className="text-white text-3xl font-bold text-center leading-snug">
           Panel de Administración
         </h2>

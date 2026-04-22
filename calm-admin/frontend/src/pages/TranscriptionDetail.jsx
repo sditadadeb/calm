@@ -105,7 +105,7 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
       
       <button
         onClick={togglePlay}
-        className="p-3 rounded-full bg-[#F5A623] hover:bg-[#D4911F] text-white transition-colors"
+        className="p-3 rounded-full bg-[#0081FF] hover:bg-[#0862C5] text-white transition-colors"
       >
         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
       </button>
@@ -119,11 +119,11 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
         onClick={handleSeek}
       >
         <div 
-          className="h-full bg-[#F5A623] rounded-full"
+          className="h-full bg-[#0081FF] rounded-full"
           style={{ width: `${progress}%` }}
         />
         <div 
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#F5A623]"
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow border-2 border-[#0081FF]"
           style={{ left: `calc(${progress}% - 8px)` }}
         />
       </div>
@@ -409,7 +409,7 @@ export default function TranscriptionDetail() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-[#0081FF] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className={`mt-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('detail.loading')}</p>
         </div>
       </div>
@@ -424,7 +424,7 @@ export default function TranscriptionDetail() {
           <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{error || t('detail.notFound')}</p>
           <button
             onClick={() => navigate('/transcriptions')}
-            className="mt-4 px-4 py-2 bg-[#F5A623] text-white rounded-lg hover:opacity-90"
+            className="mt-4 px-4 py-2 bg-[#0081FF] text-white rounded-lg hover:opacity-90"
           >
             {t('detail.backToList')}
           </button>
@@ -443,7 +443,7 @@ export default function TranscriptionDetail() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/transcriptions')}
-          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#F5A623]' : 'text-gray-500 hover:text-[#F5A623]'}`}
+          className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-[#0081FF]' : 'text-gray-500 hover:text-[#0081FF]'}`}
         >
           <ArrowLeft className="w-4 h-4" />
           {t('detail.backToList')}
@@ -498,7 +498,7 @@ export default function TranscriptionDetail() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xl font-bold text-[#F5A623]">{trans.recordingId}</span>
+              <span className="font-mono text-xl font-bold text-[#0081FF]">{trans.recordingId}</span>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                 <StatusIcon className="w-4 h-4" /> {statusConfig.label}
               </span>
@@ -564,7 +564,7 @@ export default function TranscriptionDetail() {
             </div>
             <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
               <div 
-                className="h-full bg-[#F5A623] transition-all duration-300"
+                className="h-full bg-[#0081FF] transition-all duration-300"
                 style={{ width: `${audioProgress}%` }}
               />
             </div>
@@ -589,7 +589,7 @@ export default function TranscriptionDetail() {
         {trans.executiveSummary && (
           <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#F5A623] rounded-lg">
+              <div className="p-2 bg-[#0081FF] rounded-lg">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.executiveSummary')}</h3>
@@ -659,7 +659,7 @@ export default function TranscriptionDetail() {
         {trans.customerObjections && trans.customerObjections.length > 0 && trans.customerObjections[0] !== '' && (
           <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-orange-500 rounded-lg">
+              <div className="p-2 bg-[#0081FF] rounded-lg">
                 <MessageSquare className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.customerObjections')}</h3>
@@ -667,7 +667,7 @@ export default function TranscriptionDetail() {
             <ul className="space-y-2">
               {trans.customerObjections.map((obj, i) => (
                 <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-[#0081FF] mt-1">•</span>
                   {obj}
                 </li>
               ))}
@@ -717,9 +717,9 @@ export default function TranscriptionDetail() {
 
         {/* Improvement Suggestions */}
         {trans.improvementSuggestions && trans.improvementSuggestions.length > 0 && trans.improvementSuggestions[0] !== '' && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-[#0056b3]/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500 rounded-lg">
+              <div className="p-2 bg-[#0056b3] rounded-lg">
                 <Lightbulb className="w-5 h-5 text-white" />
               </div>
               <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>{t('detail.improvementSuggestions')}</h3>
@@ -774,7 +774,7 @@ export default function TranscriptionDetail() {
               <div key={c.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-[#F5A623]/20 text-[#F5A623]' : 'bg-[#F5A623]/20 text-[#F5A623]'}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-[#0081FF]/20 text-[#0081FF]' : 'bg-[#0081FF]/20 text-[#0081FF]'}`}>
                       {c.authorUsername?.charAt(0).toUpperCase()}
                     </div>
                     <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{c.authorUsername}</span>
@@ -808,14 +808,14 @@ export default function TranscriptionDetail() {
             placeholder={t('detail.commentPlaceholder')}
             className={`flex-1 px-4 py-2 rounded-lg border text-sm ${
               isDark 
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500 focus:border-[#F5A623]' 
-                : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#F5A623]'
-            } focus:outline-none focus:ring-1 focus:ring-[#F5A623]/50`}
+                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500 focus:border-[#0081FF]' 
+                : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#0081FF]'
+            } focus:outline-none focus:ring-1 focus:ring-[#0081FF]/50`}
           />
           <button
             onClick={handleAddComment}
             disabled={!newComment.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
+            className="px-4 py-2 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
           >
             {t('common.send')}
           </button>
