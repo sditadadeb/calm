@@ -97,16 +97,12 @@ export default function Layout({ children }) {
       <aside className={`w-60 flex flex-col border-r ${sidebarBg} flex-shrink-0`}>
 
         {/* Logo */}
-        <div className={`px-5 py-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <img
             src="/logo-horizontal.png"
             alt="Banco de Occidente"
-            className="h-8 w-auto"
-            style={isDark ? { filter: 'brightness(0) invert(1)' } : {}}
+            className="h-9 w-auto object-contain"
           />
-          <p className={`text-[10px] mt-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-            {t('nav.adminPanel')}
-          </p>
         </div>
 
         {/* Nav */}
@@ -162,7 +158,7 @@ export default function Layout({ children }) {
                 })}
 
                 {/* Sync */}
-                <div className="mt-3 px-1">
+                <div className="mt-3">
                   <button onClick={handleSync} disabled={syncing || loading}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white bg-[#0081FF] hover:bg-[#0862C5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >

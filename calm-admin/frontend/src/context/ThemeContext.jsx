@@ -1,26 +1,17 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(() => {
-    // Check localStorage first, default to light
-    const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : false;
-  });
+  // Siempre modo claro — identidad visual Banco de Occidente
+  const isDark = false;
 
   useEffect(() => {
-    // Apply theme to document
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    // Save preference
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }, []);
 
-  const toggleTheme = () => setIsDark(!isDark);
+  const toggleTheme = () => {}; // no-op, mantenido por compatibilidad
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
