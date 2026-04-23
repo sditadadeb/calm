@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../api';
+import { login, syncTranscriptions } from '../api';
 import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
@@ -20,6 +20,8 @@ const Login = () => {
       const { token, username: user, role, sellerId, sellerName } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify({ username: user, role, sellerId, sellerName }));
+      // Sync en background al iniciar sesión — no bloquea la navegación
+      syncTranscriptions().catch(() => {});
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || t('login.error'));

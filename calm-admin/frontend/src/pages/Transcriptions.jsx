@@ -149,26 +149,24 @@ export default function Transcriptions() {
       setFilters(urlFilters);
     }
     
-    const COOLDOWN_MS = 60 * 60 * 1000;
-    const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
-    const now = Date.now();
-    const shouldCheck = (now - lastCheck) >= COOLDOWN_MS;
+    // Cargar lista inmediatamente sin esperar el sync
+    fetchTranscriptions();
 
-    const loadData = async () => {
-      if (shouldCheck) {
-        setSyncing(true);
-        try {
-          await checkNewTranscriptions();
+    // Sync en background: siempre al entrar, con cooldown de 2 min para no saturar
+    const COOLDOWN_MS = 2 * 60 * 1000;
+    const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
+    const shouldCheck = (Date.now() - lastCheck) >= COOLDOWN_MS;
+
+    if (shouldCheck) {
+      setSyncing(true);
+      checkNewTranscriptions()
+        .then(() => {
           localStorage.setItem('lastS3Check', String(Date.now()));
-        } catch (err) {
-          console.error('Auto-check failed:', err);
-        } finally {
-          setSyncing(false);
-        }
-      }
-      fetchTranscriptions();
-    };
-    loadData();
+          fetchTranscriptions();
+        })
+        .catch(err => console.error('Auto-check failed:', err))
+        .finally(() => setSyncing(false));
+    }
   }, [searchParams]);
 
   const handleAnalyze = async (recordingId, e) => {
