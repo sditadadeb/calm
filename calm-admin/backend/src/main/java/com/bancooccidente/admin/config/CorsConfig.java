@@ -26,9 +26,11 @@ public class CorsConfig {
         for (String origin : origins) {
             config.addAllowedOriginPattern(origin.trim());
         }
-        // Also allow localhost for development
+        // Allow localhost for development
         config.addAllowedOriginPattern("http://localhost:*");
         config.addAllowedOriginPattern("http://127.0.0.1:*");
+        // Allow all Render.com deployments
+        config.addAllowedOriginPattern("https://*.onrender.com");
         
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
