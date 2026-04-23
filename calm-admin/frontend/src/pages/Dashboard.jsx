@@ -385,8 +385,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Traffic Distribution Section — removido por solicitud */}
-      {false && transcriptions?.length > 0 && (
+      {/* Traffic Distribution Section */}
+      {transcriptions?.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0081FF]/20 rounded-xl">
@@ -398,7 +398,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Heatmap Semanal */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
@@ -464,125 +464,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Scatter Plot Temporal */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-[#0081FF]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.attendancesByTime')}</h3>
-              </div>
-              <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('dashboard.scatterDesc')}
-              </p>
-              
-              {scatterData.branches?.length > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 40 }}>
-                      <XAxis 
-                        type="number" 
-                        dataKey="x" 
-                        domain={[-0.5, scatterData.dates.length - 0.5]}
-                        ticks={scatterData.dates.map((_, i) => i)}
-                        tickFormatter={(tick) => {
-                          const dateStr = scatterData.dates[tick];
-                          if (!dateStr) return '';
-                          const d = new Date(dateStr);
-                          return `${d.getDate()}/${d.getMonth()+1}`;
-                        }}
-                        stroke={isDark ? '#64748b' : '#9ca3af'}
-                        fontSize={10}
-                        angle={-45}
-                        textAnchor="end"
-                        height={50}
-                      />
-                      <YAxis 
-                        type="number" 
-                        dataKey="y" 
-                        domain={[7, 21]}
-                        ticks={[8, 10, 12, 14, 16, 18, 20]}
-                        tickFormatter={(tick) => `${tick}h`}
-                        stroke={isDark ? '#64748b' : '#9ca3af'}
-                        fontSize={10}
-                        width={35}
-                      />
-                      <ZAxis range={[60, 60]} />
-                      <Tooltip 
-                        content={({ active, payload }) => {
-                          if (active && payload?.[0]) {
-                            const data = payload[0].payload;
-                            return (
-                              <div className={`p-3 rounded-lg shadow-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-                                <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                  {data.branch}
-                                </p>
-                                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                  {data.dayName} {data.dateStr}
-                                </p>
-                                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                  {t('dashboard.time')}: {data.hour}:{data.minutes.toString().padStart(2, '0')}
-                                </p>
-                                <p className={`text-sm font-medium mt-1 ${data.sale ? 'text-green-400' : 'text-red-400'}`}>
-                                  {data.sale ? t('dashboard.saleCompleted') : t('dashboard.noSaleCompleted')}
-                                </p>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      {scatterData.branches.map((branch) => (
-                        <Scatter
-                          key={branch.branch}
-                          name={branch.branch}
-                          data={branch.data}
-                          shape={(props) => {
-                            const { cx, cy, payload } = props;
-                            return (
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={6}
-                                fill={payload.branchColor}
-                                fillOpacity={0.8}
-                                stroke={payload.sale ? '#22c55e' : '#ef4444'}
-                                strokeWidth={2}
-                              />
-                            );
-                          }}
-                        />
-                      ))}
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                  
-                  {/* Leyenda de sucursales */}
-                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700">
-                    {scatterData.branches.map((branch) => (
-                      <div key={branch.branch} className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full border-2 border-gray-400"
-                          style={{ backgroundColor: branch.color }}
-                        />
-                        <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                          {branch.branch} ({branch.data.length})
-                        </span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 ml-4">
-                      <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-green-500" />
-                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.sale')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-red-500" />
-                      <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.noSaleShort')}</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className={`h-48 flex items-center justify-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  {t('dashboard.noDateData')}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
