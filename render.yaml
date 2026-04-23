@@ -3,7 +3,7 @@
 databases:
   # ── PostgreSQL persistente ─────────────────────────────────────────────────
   - name: banco-occidente-db
-    plan: starter
+    plan: basic-256mb
     databaseName: banco_occidente
     user: banco_occidente_user
 
