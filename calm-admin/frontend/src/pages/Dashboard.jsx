@@ -385,8 +385,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Traffic Distribution Section */}
-      {transcriptions?.length > 0 && (
+      {/* Traffic Distribution Section — removido por solicitud */}
+      {false && transcriptions?.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0081FF]/20 rounded-xl">
