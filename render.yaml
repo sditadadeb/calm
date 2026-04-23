@@ -1,5 +1,12 @@
 # Render Blueprint - Banco de Occidente Admin Dashboard
 # Deploy automático: conectar repo en render.com > New Blueprint Instance
+databases:
+  # ── PostgreSQL persistente ─────────────────────────────────────────────────
+  - name: banco-occidente-db
+    plan: starter
+    databaseName: banco_occidente
+    user: banco_occidente_user
+
 services:
   # ── Backend (Spring Boot via Docker) ──────────────────────────────────────
   - type: web
@@ -12,17 +19,27 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      # DB — configurar manualmente con los datos de tu PostgreSQL existente en Render
+      # DB — inyectada automáticamente desde banco-occidente-db
       - key: DB_HOST
-        sync: false
+        fromDatabase:
+          name: banco-occidente-db
+          property: host
       - key: DB_PORT
-        value: "5432"
+        fromDatabase:
+          name: banco-occidente-db
+          property: port
       - key: DB_NAME
-        sync: false
+        fromDatabase:
+          name: banco-occidente-db
+          property: database
       - key: DATABASE_USERNAME
-        sync: false
+        fromDatabase:
+          name: banco-occidente-db
+          property: user
       - key: DATABASE_PASSWORD
-        sync: false
+        fromDatabase:
+          name: banco-occidente-db
+          property: password
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
