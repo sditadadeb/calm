@@ -32,6 +32,9 @@ public class CorsConfig {
         config.addAllowedOriginPattern("http://127.0.0.1:*");
         // All Render.com deployments
         config.addAllowedOriginPattern("https://*.onrender.com");
+        // Custom domain
+        config.addAllowedOriginPattern("https://*.numia.co");
+        config.addAllowedOriginPattern("https://numia.co");
 
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
