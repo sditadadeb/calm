@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.controller;
+package com.bancooccidente.admin.controller;
 
 import com.bancooccidente.admin.dto.DashboardMetricsDTO;
 import com.bancooccidente.admin.dto.FilterDTO;

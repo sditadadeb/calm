@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.repository;
+package com.bancooccidente.admin.repository;
 
 import com.bancooccidente.admin.model.AdvancedAnalysis;
 import org.springframework.data.jpa.repository.JpaRepository;

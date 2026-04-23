@@ -1,11 +1,17 @@
-# Render Blueprint - CALM Admin Dashboard
+# Render Blueprint - Banco de Occidente Admin Dashboard
+# Deploy automático: conectar repo en render.com > New Blueprint Instance
 services:
+  # ── Backend (Spring Boot via Docker) ──────────────────────────────────────
   - type: web
-    name: calm-admin-api
+    name: banco-occidente-api
     runtime: docker
     dockerfilePath: ./calm-admin/backend/Dockerfile
     dockerContext: ./calm-admin/backend
+    plan: free
+    healthCheckPath: /api/auth/health
     envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
@@ -22,15 +28,19 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
       - key: CORS_ALLOWED_ORIGINS
         sync: false
 
+  # ── Frontend (Vite/React Static Site) ─────────────────────────────────────
   - type: web
-    name: calm-admin-frontend
+    name: banco-occidente-frontend
     runtime: static
     rootDir: ./calm-admin/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
+    plan: free
     envVars:
       - key: VITE_API_URL
         sync: false

@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, FileText, Users, Building2, RefreshCw,
-  Settings, LogOut, User, UserPlus, Lightbulb, Sun, Moon, Search, TrendingUp
+  Settings, LogOut, User, UserPlus, Sun, Moon, Search, TrendingUp
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
@@ -26,7 +26,6 @@ export default function Layout({ children }) {
     '/search':         { name: t('nav.search'),          subtitle: t('nav.searchSub'),          icon: Search },
     '/sellers':        { name: t('nav.sellers'),         subtitle: t('nav.sellersSub'),         icon: Users },
     '/branches':       { name: t('nav.branches'),        subtitle: t('nav.branchesSub'),        icon: Building2 },
-    '/recommendations':{ name: t('nav.recommendations'), subtitle: t('nav.recommendationsSub'), icon: Lightbulb },
     '/timeline':       { name: t('nav.timeline'),        subtitle: t('nav.timelineSub'),        icon: TrendingUp },
     '/users':          { name: t('nav.users'),           subtitle: t('nav.usersSub'),           icon: UserPlus },
     '/settings':       { name: t('nav.settings'),        subtitle: t('nav.settingsSub'),        icon: Settings },
@@ -38,7 +37,6 @@ export default function Layout({ children }) {
     { name: t('nav.search'),          href: '/search',         icon: Search },
     { name: t('nav.sellers'),         href: '/sellers',        icon: Users },
     { name: t('nav.branches'),        href: '/branches',       icon: Building2 },
-    { name: t('nav.recommendations'), href: '/recommendations',icon: Lightbulb },
   ];
 
   const adminNavigation = [
@@ -94,16 +92,18 @@ export default function Layout({ children }) {
     <div className={`min-h-screen flex ${isDark ? 'bg-slate-800' : 'bg-[#F6F6F6]'}`}>
 
       {/* ── Sidebar ── */}
-      <aside className={`w-60 flex flex-col border-r ${sidebarBg} flex-shrink-0`}>
+      <aside className={`w-60 flex flex-col border-r ${sidebarBg} flex-shrink-0 h-screen sticky top-0`}>
 
         {/* Logo */}
-        <div className="px-4 py-4 border-b border-gray-100">
-          <img
-            src="/logo-horizontal.png"
-            alt="Banco de Occidente"
-            className="h-16 w-auto object-contain"
-            style={{ mixBlendMode: 'multiply' }}
-          />
+        <div className={`px-4 py-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
+          <div className={isDark ? 'bg-white rounded-xl px-3 py-2 inline-block' : undefined}>
+            <img
+              src="/logo-horizontal.png"
+              alt="Banco de Occidente"
+              className="h-16 w-auto object-contain"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          </div>
         </div>
 
         {/* Nav */}

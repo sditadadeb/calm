@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.config;
+package com.bancooccidente.admin.config;
 
 import com.bancooccidente.admin.model.User;
 import com.bancooccidente.admin.repository.UserRepository;

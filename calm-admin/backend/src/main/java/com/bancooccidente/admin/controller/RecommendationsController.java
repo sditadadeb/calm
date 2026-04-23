@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.controller;
+package com.bancooccidente.admin.controller;
 
 import com.bancooccidente.admin.service.AdvancedAnalyzerService;
 import org.springframework.http.MediaType;

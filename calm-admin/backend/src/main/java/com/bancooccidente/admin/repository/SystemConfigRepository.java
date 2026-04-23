@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.repository;
+package com.bancooccidente.admin.repository;
 
 import com.bancooccidente.admin.model.SystemConfig;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -43,8 +43,6 @@ export default {
     sellersSub: 'Sales team performance',
     branches: 'Branches',
     branchesSub: 'Performance by point of sale',
-    recommendations: 'Recommendations',
-    recommendationsSub: 'Insights and improvement actions',
     timeline: 'Timeline',
     timelineSub: 'Impact of actions on metrics',
     users: 'Users',

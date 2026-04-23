@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FileText, 
@@ -252,48 +252,55 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* No Sale Reasons Chart */}
+        {/* Tipificación — Motivo de Visita (torta) */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="mb-6">
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noSaleReasons')}</h3>
-            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.objectionAnalysis')}</p>
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Tipificación</h3>
+            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Distribución por motivo de visita</p>
           </div>
-          {noSaleReasonsData.length > 0 ? (
-            <div className="flex items-center">
-              <ResponsiveContainer width="50%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={noSaleReasonsData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {noSaleReasonsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="w-1/2 space-y-3">
-                {noSaleReasonsData.slice(0, 5).map((item, index) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className={`text-sm truncate flex-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{item.name}</span>
-                    <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.value}</span>
-                  </div>
-                ))}
+          {rawMetrics.visitReasonDistribution && Object.keys(rawMetrics.visitReasonDistribution).length > 0 ? (() => {
+            const tipData = Object.entries(rawMetrics.visitReasonDistribution)
+              .map(([name, value]) => ({ name, value }))
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 7);
+            return (
+              <div className="flex items-center">
+                <ResponsiveContainer width="50%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={tipData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {tipData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [value, name]} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="w-1/2 space-y-2">
+                  {tipData.map((item, index) => {
+                    const total = tipData.reduce((s, i) => s + i.value, 0);
+                    const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    return (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                        <span className={`text-xs truncate flex-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{item.name}</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{pct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : (
+            );
+          })() : (
             <div className={`h-64 flex items-center justify-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              {t('dashboard.noData')}
+              Sin datos de tipificación aún
             </div>
           )}
         </div>
@@ -669,44 +676,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Fila 2: Tipificación + Estado emocional */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Distribución motivo de visita */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-                Tipificación — Motivo de Visita
-              </h3>
-              {rawMetrics.visitReasonDistribution && Object.keys(rawMetrics.visitReasonDistribution).length > 0 ? (
-                <div className="space-y-2">
-                  {Object.entries(rawMetrics.visitReasonDistribution)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 7)
-                    .map(([reason, count], idx) => {
-                      const total = Object.values(rawMetrics.visitReasonDistribution).reduce((s, v) => s + v, 0);
-                      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-                      return (
-                        <div key={reason}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{reason}</span>
-                            <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{count} ({pct}%)</span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-700">
-                            <div
-                              className="h-1.5 rounded-full bg-[#0081FF]"
-                              style={{ width: `${pct}%`, opacity: 1 - idx * 0.1 }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <div className={`h-32 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Sin datos de tipificación aún
-                </div>
-              )}
-            </div>
-
+          {/* Fila 2: Estado emocional */}
+          <div className="grid grid-cols-1 gap-6">
             {/* Estado emocional */}
             <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
@@ -724,14 +695,14 @@ export default function Dashboard() {
                     const total = Object.values(rawMetrics.emotionalStateDistribution).reduce((s, v) => s + v, 0);
                     const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                     return (
-                      <div key={key} className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full ${bg}`} />
-                        <span className={`text-sm w-28 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{key}</span>
+                      <div key={key} className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${bg}`} />
+                        <span className={`text-sm w-24 flex-shrink-0 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{key}</span>
                         <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-slate-700">
                           <div className={`h-2 rounded-full ${bg}`} style={{ width: `${pct}%` }} />
                         </div>
-                        <span className={`text-sm font-semibold w-14 text-right ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                          {count} ({pct}%)
+                        <span className={`text-sm font-semibold flex-shrink-0 w-20 text-right whitespace-nowrap ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {count} · {pct}%
                         </span>
                       </div>
                     );

@@ -379,9 +379,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
 
-            // Modelos 5.x no soportan max_tokens ni temperature custom
-            // Solo aceptan defaults (temperature=1, sin max_tokens)
-            boolean isNewModel = model.startsWith("gpt-5") || model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4");
+            // Modelos GPT-5.x y o-series no soportan max_tokens ni temperature custom
+            boolean isNewModel = model.startsWith("gpt-5") || model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4") || model.startsWith("gpt-5.4") || model.startsWith("gpt-5.3") || model.startsWith("gpt-5.2");
             
             ChatCompletionRequest.ChatCompletionRequestBuilder requestBuilder = ChatCompletionRequest.builder()
                     .model(model)

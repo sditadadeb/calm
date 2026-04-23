@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.service;
+package com.bancooccidente.admin.service;
 
 import com.bancooccidente.admin.model.AdvancedAnalysis;
 import com.bancooccidente.admin.model.Transcription;

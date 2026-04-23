@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin;
+package com.bancooccidente.admin;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

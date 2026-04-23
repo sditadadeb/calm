@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.dto;
+package com.bancooccidente.admin.dto;
 
 public class LoginResponse {
 

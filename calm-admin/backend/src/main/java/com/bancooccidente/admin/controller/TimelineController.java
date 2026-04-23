@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.controller;
+package com.bancooccidente.admin.controller;
 
 import com.bancooccidente.admin.model.TimelineEvent;
 import com.bancooccidente.admin.repository.TimelineEventRepository;

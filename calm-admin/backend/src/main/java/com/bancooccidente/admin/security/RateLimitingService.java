@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.security;
+package com.bancooccidente.admin.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

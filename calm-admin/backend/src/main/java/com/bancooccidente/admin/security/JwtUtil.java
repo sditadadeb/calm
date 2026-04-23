@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.security;
+package com.bancooccidente.admin.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;

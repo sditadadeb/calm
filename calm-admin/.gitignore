@@ -1,4 +1,4 @@
-# Backend
+# Backend build & data
 backend/target/
 backend/*.log
 backend/data/
@@ -10,6 +10,9 @@ backend/mvnw.cmd
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
 # IDE
 .idea/
@@ -22,13 +25,26 @@ frontend/.vite/
 .DS_Store
 Thumbs.db
 
-# Env files
+# Env / credentials (NEVER commit!)
 .env
 .env.local
 .env.*.local
-
-# Local credentials (NEVER commit!)
 backend/src/main/resources/application-local.properties
+start-backend.ps1
+start-backend-*.ps1
+
+# Local test/debug scripts (not needed in repo)
+test-*.py
+test-*.ps1
+check-*.py
+fix-*.py
+fix-*.ps1
+show-*.py
+reset-prompt.py
+test-analyze.py
+run-backend*.bat
+run-backend*.log
+transcriptions_debug.json
 
 # Logs
 *.log

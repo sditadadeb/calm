@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.security;
+package com.bancooccidente.admin.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

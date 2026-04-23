@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.controller;
+package com.bancooccidente.admin.controller;
 
 import com.bancooccidente.admin.dto.LoginRequest;
 import com.bancooccidente.admin.dto.LoginResponse;
@@ -137,6 +137,14 @@ public class AuthController {
         boolean valid = jwtUtil.validateToken(token);
 
         return ResponseEntity.ok(Map.of("valid", valid));
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        Map<String, String> status = new HashMap<>();
+        status.put("status", "UP");
+        status.put("service", "banco-occidente-admin");
+        return ResponseEntity.ok(status);
     }
 
     private String getClientIp(HttpServletRequest request) {

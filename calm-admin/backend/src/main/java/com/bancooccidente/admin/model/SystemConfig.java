@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.model;
+package com.bancooccidente.admin.model;
 
 import jakarta.persistence.*;
 

@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.config;
+package com.bancooccidente.admin.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

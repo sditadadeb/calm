@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.dto;
+package com.bancooccidente.admin.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

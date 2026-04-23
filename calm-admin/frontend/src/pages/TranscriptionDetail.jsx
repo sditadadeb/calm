@@ -24,7 +24,8 @@ import {
   Play,
   Pause,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { getTranscriptions } from '../api';
 import api from '../api';
@@ -203,7 +204,27 @@ export default function TranscriptionDetail() {
   const [newComment, setNewComment] = useState('');
   const [commentsLoading, setCommentsLoading] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = currentUser.role === 'ADMIN';
+  const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN';
+  const isSuperAdmin = currentUser.role === 'SUPERADMIN' || currentUser.role === 'ADMIN';
+
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [reanalyzeMsg, setReanalyzeMsg] = useState(null);
+
+  const handleReanalyze = async () => {
+    if (!window.confirm('¿Re-analizar esta transcripción con la IA? Se sobrescribirá el análisis actual.')) return;
+    try {
+      setReanalyzing(true);
+      setReanalyzeMsg(null);
+      const response = await api.post(`/transcriptions/${id}/analyze`);
+      setTranscription(response.data);
+      setReanalyzeMsg({ type: 'success', text: 'Re-análisis completado' });
+      setTimeout(() => setReanalyzeMsg(null), 3000);
+    } catch (err) {
+      setReanalyzeMsg({ type: 'error', text: 'Error al re-analizar: ' + (err.response?.data?.message || err.message) });
+    } finally {
+      setReanalyzing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -449,8 +470,33 @@ export default function TranscriptionDetail() {
           {t('detail.backToList')}
         </button>
         
-        {/* Flechas de navegación */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Botón Re-analizar — solo Admin/SuperAdmin */}
+          {isSuperAdmin && (
+            <div className="flex items-center gap-2">
+              {reanalyzeMsg && (
+                <span className={`text-xs px-2 py-1 rounded-lg ${reanalyzeMsg.type === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'}`}>
+                  {reanalyzeMsg.text}
+                </span>
+              )}
+              <button
+                onClick={handleReanalyze}
+                disabled={reanalyzing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isDark
+                    ? 'bg-[#0081FF]/20 text-[#0081FF] hover:bg-[#0081FF]/30'
+                    : 'bg-[#EBF5FF] text-[#0081FF] hover:bg-[#0081FF] hover:text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title="Re-analizar con IA"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${reanalyzing ? 'animate-spin' : ''}`} />
+                {reanalyzing ? 'Analizando...' : 'Re-analizar IA'}
+              </button>
+            </div>
+          )}
+
+          {/* Flechas de navegación */}
+          <div className="flex items-center gap-2">
           <button
             onClick={goToPrevious}
             disabled={!hasPrevious}
@@ -490,7 +536,8 @@ export default function TranscriptionDetail() {
           >
             <ChevronRight className="w-5 h-5" />
           </button>
-        </div>
+          </div>{/* fin flechas */}
+        </div>{/* fin acciones derecha */}
       </div>
 
       {/* Header Card */}

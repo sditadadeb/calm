@@ -1,4 +1,4 @@
-﻿package com.bancooccidente.admin.config;
+package com.bancooccidente.admin.config;
 
 import com.bancooccidente.admin.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;

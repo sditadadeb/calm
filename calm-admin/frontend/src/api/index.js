@@ -110,11 +110,6 @@ export const getReanalyzeAllStreamUrl = () => {
   return `${API_URL}/reanalyze-all/stream?token=${token}`;
 };
 
-// Recommendations (Advanced Analysis)
-export const getRecommendationsMetrics = () => api.get('/recommendations/metrics');
-export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');
-export const clearRecommendationsAnalyses = () => api.delete('/recommendations/clear');
-
 // Timeline
 export const getTimelineEvents = () => api.get('/timeline/events');
 export const createTimelineEvent = (event) => api.post('/timeline/events', event);
