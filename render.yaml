@@ -65,10 +65,11 @@ services:
   - type: web
     name: banco-occidente-frontend
     runtime: static
-    rootDir: calm-admin/frontend
-    buildCommand: npm install && npm run build
+    buildCommand: cd calm-admin/frontend && npm install && npm run build
     staticPublishPath: calm-admin/frontend/dist
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: VITE_API_URL
         sync: false
     routes:
