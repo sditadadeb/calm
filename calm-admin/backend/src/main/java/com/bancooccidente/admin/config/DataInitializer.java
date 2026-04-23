@@ -10,6 +10,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
+import java.sql.DatabaseMetaData;
+
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -18,6 +21,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final DataSource dataSource;
 
     @Value("${admin.username:admin}")
     private String adminUsername;
@@ -25,9 +29,11 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${admin.password:admin123}")
     private String adminPassword;
 
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder, JdbcTemplate jdbcTemplate) {
+    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                           JdbcTemplate jdbcTemplate, DataSource dataSource) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -77,9 +83,8 @@ public class DataInitializer implements CommandLineRunner {
             );
 
             if (count != null && count == 0) {
-                int updated = jdbcTemplate.update(
-                    "UPDATE transcriptions SET recording_date = recording_date - INTERVAL '3 hours' WHERE recording_date IS NOT NULL"
-                );
+                String updateSql = buildDateSubtractSql();
+                int updated = jdbcTemplate.update(updateSql);
                 jdbcTemplate.update(
                     "INSERT INTO applied_migrations (migration_id) VALUES (?)",
                     "timezone_minus_3h"
@@ -91,6 +96,20 @@ public class DataInitializer implements CommandLineRunner {
         } catch (Exception e) {
             log.error("Error aplicando migracion timezone: {}", e.getMessage());
         }
+    }
+
+    private String buildDateSubtractSql() {
+        try (var conn = dataSource.getConnection()) {
+            DatabaseMetaData meta = conn.getMetaData();
+            String dbName = meta.getDatabaseProductName().toLowerCase();
+            if (dbName.contains("postgresql") || dbName.contains("postgres")) {
+                return "UPDATE transcriptions SET recording_date = recording_date - INTERVAL '3 hours' WHERE recording_date IS NOT NULL";
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo detectar el tipo de base de datos, usando sintaxis H2: {}", e.getMessage());
+        }
+        // H2 syntax (default / fallback)
+        return "UPDATE transcriptions SET recording_date = DATEADD(HOUR, -3, recording_date) WHERE recording_date IS NOT NULL";
     }
 }
 
