@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
 
@@ -30,15 +31,17 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final Environment environment;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Value("${spring.h2.console.enabled:false}")
     private boolean h2ConsoleEnabled;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService,
-                         Environment environment) {
+                         Environment environment, CorsConfigurationSource corsConfigurationSource) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.environment = environment;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
@@ -46,8 +49,8 @@ public class SecurityConfig {
         boolean isProd = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
         http
-            .csrf(csrf -> csrf.disable()) // Disabled for stateless JWT API
-            .cors(cors -> {})
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
                 // Public endpoints
@@ -90,8 +93,8 @@ public class SecurityConfig {
                 );
                 
                 // Content Security Policy
-                headers.contentSecurityPolicy(csp -> 
-                    csp.policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'")
+                headers.contentSecurityPolicy(csp ->
+                    csp.policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.onrender.com")
                 );
                 
                 // Permissions Policy (formerly Feature Policy)
