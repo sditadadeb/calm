@@ -39,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        ensureTranscriptionSchema();
         syncAdminUser();
         
         // Create viewer user (always exists)
@@ -57,6 +58,34 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         applyTimezoneCorrection();
+    }
+
+    private void ensureTranscriptionSchema() {
+        addColumnIfMissing("sale_status", "VARCHAR(255)");
+        addColumnIfMissing("analysis_confidence", "INTEGER");
+        addColumnIfMissing("confidence_trace", "TEXT");
+        addColumnIfMissing("sale_evidence", "TEXT");
+        addColumnIfMissing("sale_evidence_meta", "TEXT");
+        addColumnIfMissing("motivo_visita", "VARCHAR(255)");
+        addColumnIfMissing("estado_emocional", "VARCHAR(255)");
+        addColumnIfMissing("csat_score", "INTEGER");
+        addColumnIfMissing("escucha_activa_score", "INTEGER");
+        addColumnIfMissing("cumplimiento_protocolo", "BOOLEAN");
+        addColumnIfMissing("protocolo_score", "INTEGER");
+        addColumnIfMissing("protocolo_detalle", "TEXT");
+        addColumnIfMissing("producto_ofrecido", "BOOLEAN");
+        addColumnIfMissing("monto_ofrecido", "BIGINT");
+        addColumnIfMissing("cumplimiento_lineamiento", "BOOLEAN");
+        addColumnIfMissing("grabacion_cortada_cliente", "BOOLEAN");
+        addColumnIfMissing("grabacion_cortada_manual", "BOOLEAN");
+    }
+
+    private void addColumnIfMissing(String columnName, String columnDefinition) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE transcriptions ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition);
+        } catch (Exception e) {
+            log.warn("No se pudo asegurar columna transcriptions.{}: {}", columnName, e.getMessage());
+        }
     }
 
     private void syncAdminUser() {
