@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,10 +11,17 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
+  useEffect(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     try {
       const response = await login(username, password);
       const { token, username: user, role, sellerId, sellerName } = response.data;

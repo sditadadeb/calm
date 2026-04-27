@@ -39,18 +39,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Create admin user if not exists
-        if (!userRepository.existsByUsername(adminUsername)) {
-            User admin = new User();
-            admin.setUsername(adminUsername);
-            admin.setPassword(passwordEncoder.encode(adminPassword));
-            admin.setRole("ADMIN");
-            admin.setEnabled(true);
-            userRepository.save(admin);
-            log.info("Usuario admin creado: {}", adminUsername);
-        } else {
-            log.info("Usuario admin ya existe");
-        }
+        syncAdminUser();
         
         // Create viewer user (always exists)
         String viewerUsername = "viewer";
@@ -68,6 +57,42 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         applyTimezoneCorrection();
+    }
+
+    private void syncAdminUser() {
+        User admin = userRepository.findByUsername(adminUsername).orElse(null);
+
+        if (admin == null) {
+            admin = new User();
+            admin.setUsername(adminUsername);
+            admin.setPassword(passwordEncoder.encode(adminPassword));
+            admin.setRole("ADMIN");
+            admin.setEnabled(true);
+            userRepository.save(admin);
+            log.info("Usuario admin creado: {}", adminUsername);
+            return;
+        }
+
+        boolean changed = false;
+        if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+            admin.setPassword(passwordEncoder.encode(adminPassword));
+            changed = true;
+        }
+        if (!"ADMIN".equals(admin.getRole())) {
+            admin.setRole("ADMIN");
+            changed = true;
+        }
+        if (!Boolean.TRUE.equals(admin.getEnabled())) {
+            admin.setEnabled(true);
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(admin);
+            log.info("Usuario admin sincronizado con variables de entorno: {}", adminUsername);
+        } else {
+            log.info("Usuario admin ya existe y esta sincronizado");
+        }
     }
 
     private void applyTimezoneCorrection() {
