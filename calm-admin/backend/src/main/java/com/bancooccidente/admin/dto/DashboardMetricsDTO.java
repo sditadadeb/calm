@@ -29,6 +29,7 @@ public class DashboardMetricsDTO {
     private long grabacionesCortadasManual;
     // Score promedio (0-10) por cada uno de los 6 pasos del protocolo BO
     private Map<String, Double> protocoloPasoScores;
+    private long protocoloDetalleCount;
 
     public DashboardMetricsDTO() {}
 
@@ -94,6 +95,9 @@ public class DashboardMetricsDTO {
 
     public Map<String, Double> getProtocoloPasoScores() { return protocoloPasoScores; }
     public void setProtocoloPasoScores(Map<String, Double> protocoloPasoScores) { this.protocoloPasoScores = protocoloPasoScores; }
+
+    public long getProtocoloDetalleCount() { return protocoloDetalleCount; }
+    public void setProtocoloDetalleCount(long protocoloDetalleCount) { this.protocoloDetalleCount = protocoloDetalleCount; }
 
     public static class BranchMetrics {
         private Long branchId;

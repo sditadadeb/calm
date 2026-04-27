@@ -189,9 +189,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Main Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 order-1">
         <MetricCard
           title={t('dashboard.totalAttendances')}
           value={totalTranscriptions}
@@ -223,7 +223,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 order-3">
         {/* Top Sellers Chart */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between mb-6">
@@ -307,7 +307,7 @@ export default function Dashboard() {
       </div>
 
       {/* Rankings */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 order-4">
         {/* Top Sellers Ranking */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3 mb-6">
@@ -387,7 +387,7 @@ export default function Dashboard() {
 
       {/* Traffic Distribution Section */}
       {transcriptions?.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-6 order-5">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0081FF]/20 rounded-xl">
               <Clock className="w-5 h-5 text-[#0081FF]" />
@@ -472,7 +472,7 @@ export default function Dashboard() {
           NUEVAS MÃ‰TRICAS BANCO DE OCCIDENTE
       ====================================================== */}
       {!userSellerId && (
-        <div className="mt-8 space-y-6">
+        <div className="space-y-6 order-2">
           {/* Título sección */}
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-[#0081FF]-full" />
@@ -563,37 +563,74 @@ export default function Dashboard() {
             <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
               Protocolo de Atención — Desglose por Paso
             </h3>
-            {rawMetrics.protocoloPasoScores && Object.values(rawMetrics.protocoloPasoScores).some(v => v > 0) ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { key: 'paso1_saludo',         label: 'Saludo personalizado',       icon: '👋' },
-                  { key: 'paso2_atencion',        label: 'Atención y presencia',       icon: '👁️' },
-                  { key: 'paso3_lenguaje',        label: 'Lenguaje sencillo',          icon: '💬' },
-                  { key: 'paso4_acompanamiento',  label: 'Acompañamiento en derivación', icon: '🤝' },
-                  { key: 'paso5_cierre',          label: 'Cierre confirmando impacto', icon: '✅' },
-                  { key: 'paso6_despedida',       label: 'Despedida personalizada',    icon: '👋' },
-                ].map(({ key, label, icon }) => {
-                  const score = rawMetrics.protocoloPasoScores?.[key] ?? 0;
-                  const pct = (score / 10) * 100;
-                  const color = score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-blue-400' : score >= 4 ? 'bg-yellow-400' : 'bg-red-400';
-                  const textColor = score >= 8 ? 'text-green-400' : score >= 6 ? 'text-blue-400' : score >= 4 ? 'text-yellow-400' : 'text-red-400';
+            {rawMetrics.protocoloPasoScores && (rawMetrics.protocoloDetalleCount || 0) > 0 ? (
+              <>
+                {(() => {
+                  const protocolSteps = [
+                    { key: 'paso1_saludo',         label: 'Saludo personalizado',       icon: '👋' },
+                    { key: 'paso2_atencion',        label: 'Atención y presencia',       icon: '👁️' },
+                    { key: 'paso3_lenguaje',        label: 'Lenguaje sencillo',          icon: '💬' },
+                    { key: 'paso4_acompanamiento',  label: 'Acompañamiento en derivación', icon: '🤝' },
+                    { key: 'paso5_cierre',          label: 'Cierre confirmando impacto', icon: '✅' },
+                    { key: 'paso6_despedida',       label: 'Despedida personalizada',    icon: '👋' },
+                  ];
+                  const scores = protocolSteps.map(({ key }) => rawMetrics.protocoloPasoScores?.[key] ?? 0);
+                  const generalAverage = scores.length > 0
+                    ? Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 10) / 10
+                    : 0;
+                  const generalPct = Math.max(0, Math.min(100, generalAverage * 10));
+                  const generalColor = generalAverage >= 8 ? 'bg-green-400' : generalAverage >= 6 ? 'bg-blue-400' : generalAverage >= 4 ? 'bg-yellow-400' : 'bg-red-400';
+                  const generalTextColor = generalAverage >= 8 ? 'text-green-400' : generalAverage >= 6 ? 'text-blue-400' : generalAverage >= 4 ? 'text-yellow-400' : 'text-red-400';
+
                   return (
-                    <div key={key} className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                          {icon} {label}
-                        </span>
-                        <span className={`text-sm font-bold ${textColor}`}>
-                          {score > 0 ? score.toFixed(1) : '—'}<span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>/10</span>
-                        </span>
+                    <>
+                      <div className={`mb-5 rounded-xl p-5 border ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-[#F6FAFF] border-blue-100'}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Estado general del protocolo</p>
+                            <div className="flex items-end gap-2">
+                              <span className={`text-4xl font-bold ${generalTextColor}`}>{generalAverage.toFixed(1)}</span>
+                              <span className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>/10 promedio</span>
+                            </div>
+                          </div>
+                          <div className="min-w-[220px] flex-1 sm:max-w-sm">
+                            <div className={`h-3 rounded-full overflow-hidden ${isDark ? 'bg-slate-600' : 'bg-blue-100'}`}>
+                              <div className={`h-full rounded-full transition-all ${generalColor}`} style={{ width: `${generalPct}%` }} />
+                            </div>
+                            <p className={`text-xs mt-2 text-right ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                              Base: {rawMetrics.protocoloDetalleCount} análisis con protocolo
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-600">
-                        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {protocolSteps.map(({ key, label, icon }) => {
+                          const score = rawMetrics.protocoloPasoScores?.[key] ?? 0;
+                          const pct = (score / 10) * 100;
+                          const color = score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-blue-400' : score >= 4 ? 'bg-yellow-400' : 'bg-red-400';
+                          const textColor = score >= 8 ? 'text-green-400' : score >= 6 ? 'text-blue-400' : score >= 4 ? 'text-yellow-400' : 'text-red-400';
+                          return (
+                            <div key={key} className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                                  {icon} {label}
+                                </span>
+                                <span className={`text-sm font-bold ${textColor}`}>
+                                  {score.toFixed(1)}<span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>/10</span>
+                                </span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-600">
+                                <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
+                    </>
                   );
-                })}
-              </div>
+                })()}
+              </>
             ) : (
               <div className={`h-24 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 Sin datos de protocolo aún — los próximos análisis incluirán el desglose por paso
@@ -641,35 +678,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Fila 3: Grabación y consentimiento */}
-          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-            <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
-              Grabación y Consentimiento
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className={`text-4xl font-bold text-red-400`}>
-                  {rawMetrics.grabacionesCortadasCliente || 0}
-                </div>
-                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas por cliente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cliente solicitó no ser grabado</p>
-              </div>
-              <div className="text-center">
-                <div className={`text-4xl font-bold text-[#0081FF]`}>
-                  {rawMetrics.grabacionesCortadasManual || 0}
-                </div>
-                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Grabaciones cortadas manualmente</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>El oficial finalizó la grabación</p>
-              </div>
-              <div className="text-center">
-                <div className={`text-4xl font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                  {((rawMetrics.grabacionesCortadasCliente || 0) + (rawMetrics.grabacionesCortadasManual || 0))}
-                </div>
-                <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Total irregularidades</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>de {rawMetrics.totalTranscriptions || 0} grabaciones</p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

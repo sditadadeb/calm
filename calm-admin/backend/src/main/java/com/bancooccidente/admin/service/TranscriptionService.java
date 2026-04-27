@@ -333,6 +333,7 @@ public class TranscriptionService {
 
         // Promedios por paso del protocolo BO (parseo del JSON protocoloDetalle)
         metrics.setProtocoloPasoScores(calcularPromedioPasos());
+        metrics.setProtocoloDetalleCount(contarTranscripcionesConProtocoloDetalle());
 
         return metrics;
     }
@@ -381,6 +382,12 @@ public class TranscriptionService {
                     Math.round(list.stream().mapToDouble(Double::doubleValue).average().orElse(0.0) * 10.0) / 10.0);
         }
         return result;
+    }
+
+    private long contarTranscripcionesConProtocoloDetalle() {
+        return repository.findAll().stream()
+                .filter(t -> t.getProtocoloDetalle() != null && !t.getProtocoloDetalle().isBlank())
+                .count();
     }
 
     public List<Map<String, Object>> getSellers() {
