@@ -737,7 +737,6 @@ export default function TranscriptionDetail() {
               </div>
               <div>
                 <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Métricas Banco de Occidente</h3>
-                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Resultado del re-análisis con el protocolo de atención</p>
               </div>
             </div>
 
