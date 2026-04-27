@@ -36,6 +36,7 @@ public class TranscriptionDTO {
     private Integer escuchaActivaScore;
     private Boolean cumplimientoProtocolo;
     private Integer protocoloScore;
+    private String protocoloDetalle;
     private Boolean productoOfrecido;
     private Long montoOfrecido;
     private Boolean cumplimientoLineamiento;
@@ -130,6 +131,9 @@ public class TranscriptionDTO {
 
     public Integer getProtocoloScore() { return protocoloScore; }
     public void setProtocoloScore(Integer protocoloScore) { this.protocoloScore = protocoloScore; }
+
+    public String getProtocoloDetalle() { return protocoloDetalle; }
+    public void setProtocoloDetalle(String protocoloDetalle) { this.protocoloDetalle = protocoloDetalle; }
 
     public Boolean getProductoOfrecido() { return productoOfrecido; }
     public void setProductoOfrecido(Boolean productoOfrecido) { this.productoOfrecido = productoOfrecido; }

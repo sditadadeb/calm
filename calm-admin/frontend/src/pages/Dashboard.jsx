@@ -538,6 +538,7 @@ export default function Dashboard() {
               <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Cumplimiento de atención</p>
             </div>
 
+
             {/* Producto ofrecido */}
             <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
               <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Producto Ofrecido</p>
@@ -555,6 +556,49 @@ export default function Dashboard() {
               </div>
               <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Efectividad comercial</p>
             </div>
+          </div>
+
+          {/* Desglose 6 pasos del Protocolo de Atención BO */}
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-700'}`}>
+              Protocolo de Atención — Desglose por Paso
+            </h3>
+            {rawMetrics.protocoloPasoScores && Object.values(rawMetrics.protocoloPasoScores).some(v => v > 0) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { key: 'paso1_saludo',         label: 'Saludo personalizado',       icon: '👋' },
+                  { key: 'paso2_atencion',        label: 'Atención y presencia',       icon: '👁️' },
+                  { key: 'paso3_lenguaje',        label: 'Lenguaje sencillo',          icon: '💬' },
+                  { key: 'paso4_acompanamiento',  label: 'Acompañamiento en derivación', icon: '🤝' },
+                  { key: 'paso5_cierre',          label: 'Cierre confirmando impacto', icon: '✅' },
+                  { key: 'paso6_despedida',       label: 'Despedida personalizada',    icon: '👋' },
+                ].map(({ key, label, icon }) => {
+                  const score = rawMetrics.protocoloPasoScores?.[key] ?? 0;
+                  const pct = (score / 10) * 100;
+                  const color = score >= 8 ? 'bg-green-400' : score >= 6 ? 'bg-blue-400' : score >= 4 ? 'bg-yellow-400' : 'bg-red-400';
+                  const textColor = score >= 8 ? 'text-green-400' : score >= 6 ? 'text-blue-400' : score >= 4 ? 'text-yellow-400' : 'text-red-400';
+                  return (
+                    <div key={key} className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                          {icon} {label}
+                        </span>
+                        <span className={`text-sm font-bold ${textColor}`}>
+                          {score > 0 ? score.toFixed(1) : '—'}<span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>/10</span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-gray-200 dark:bg-slate-600">
+                        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={`h-24 flex items-center justify-center text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                Sin datos de protocolo aún — los próximos análisis incluirán el desglose por paso
+              </div>
+            )}
           </div>
 
           {/* Fila 2: Estado emocional */}

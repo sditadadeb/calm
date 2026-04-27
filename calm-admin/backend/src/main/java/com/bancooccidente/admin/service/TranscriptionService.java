@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -192,6 +194,7 @@ public class TranscriptionService {
         transcription.setEscuchaActivaScore(analysis.getEscuchaActivaScore() > 0 ? analysis.getEscuchaActivaScore() : null);
         transcription.setCumplimientoProtocolo(analysis.isCumplimientoProtocolo());
         transcription.setProtocoloScore(analysis.getProtocoloScore() > 0 ? analysis.getProtocoloScore() : null);
+        transcription.setProtocoloDetalle(analysis.getProtocoloDetalle());
         transcription.setProductoOfrecido(analysis.isProductoOfrecido());
         transcription.setMontoOfrecido(analysis.getMontoOfrecido());
         transcription.setCumplimientoLineamiento(analysis.getCumplimientoLineamiento());
@@ -328,7 +331,56 @@ public class TranscriptionService {
                 ));
         metrics.setEmotionalStateDistribution(emotionalStates);
 
+        // Promedios por paso del protocolo BO (parseo del JSON protocoloDetalle)
+        metrics.setProtocoloPasoScores(calcularPromedioPasos());
+
         return metrics;
+    }
+
+    private static final List<String> PROTOCOLO_PASOS = List.of(
+            "paso1_saludo", "paso2_atencion", "paso3_lenguaje",
+            "paso4_acompanamiento", "paso5_cierre", "paso6_despedida"
+    );
+
+    private Map<String, Double> calcularPromedioPasos() {
+        List<Transcription> withDetalle = repository.findAll().stream()
+                .filter(t -> t.getProtocoloDetalle() != null && !t.getProtocoloDetalle().isBlank())
+                .toList();
+
+        if (withDetalle.isEmpty()) {
+            Map<String, Double> empty = new LinkedHashMap<>();
+            PROTOCOLO_PASOS.forEach(p -> empty.put(p, 0.0));
+            return empty;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, List<Double>> scores = new LinkedHashMap<>();
+        PROTOCOLO_PASOS.forEach(p -> scores.put(p, new ArrayList<>()));
+
+        for (Transcription t : withDetalle) {
+            try {
+                JsonNode root = mapper.readTree(t.getProtocoloDetalle());
+                for (String paso : PROTOCOLO_PASOS) {
+                    JsonNode pasoNode = root.get(paso);
+                    if (pasoNode != null && !pasoNode.isNull() && pasoNode.has("score") && !pasoNode.get("score").isNull()) {
+                        double score = pasoNode.get("score").asDouble(-1);
+                        if (score >= 0) {
+                            scores.get(paso).add(score);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Error parseando protocoloDetalle para {}: {}", t.getRecordingId(), e.getMessage());
+            }
+        }
+
+        Map<String, Double> result = new LinkedHashMap<>();
+        for (String paso : PROTOCOLO_PASOS) {
+            List<Double> list = scores.get(paso);
+            result.put(paso, list.isEmpty() ? 0.0 :
+                    Math.round(list.stream().mapToDouble(Double::doubleValue).average().orElse(0.0) * 10.0) / 10.0);
+        }
+        return result;
     }
 
     public List<Map<String, Object>> getSellers() {
@@ -737,6 +789,7 @@ public class TranscriptionService {
         transcription.setEscuchaActivaScore(analysis.getEscuchaActivaScore() > 0 ? analysis.getEscuchaActivaScore() : null);
         transcription.setCumplimientoProtocolo(analysis.isCumplimientoProtocolo());
         transcription.setProtocoloScore(analysis.getProtocoloScore() > 0 ? analysis.getProtocoloScore() : null);
+        transcription.setProtocoloDetalle(analysis.getProtocoloDetalle());
         transcription.setProductoOfrecido(analysis.isProductoOfrecido());
         transcription.setMontoOfrecido(analysis.getMontoOfrecido());
         transcription.setCumplimientoLineamiento(analysis.getCumplimientoLineamiento());
@@ -799,6 +852,7 @@ public class TranscriptionService {
         dto.setEscuchaActivaScore(t.getEscuchaActivaScore());
         dto.setCumplimientoProtocolo(t.getCumplimientoProtocolo());
         dto.setProtocoloScore(t.getProtocoloScore());
+        dto.setProtocoloDetalle(t.getProtocoloDetalle());
         dto.setProductoOfrecido(t.getProductoOfrecido());
         dto.setMontoOfrecido(t.getMontoOfrecido());
         dto.setCumplimientoLineamiento(t.getCumplimientoLineamiento());

@@ -78,6 +78,10 @@ public class Transcription {
     private Boolean cumplimientoProtocolo;
     private Integer protocoloScore;
 
+    // Detalle por paso del protocolo (JSON)
+    @Column(columnDefinition = "TEXT")
+    private String protocoloDetalle;
+
     // Efectividad comercial
     private Boolean productoOfrecido;
     private Long montoOfrecido;
@@ -200,6 +204,9 @@ public class Transcription {
 
     public Integer getProtocoloScore() { return protocoloScore; }
     public void setProtocoloScore(Integer protocoloScore) { this.protocoloScore = protocoloScore; }
+
+    public String getProtocoloDetalle() { return protocoloDetalle; }
+    public void setProtocoloDetalle(String protocoloDetalle) { this.protocoloDetalle = protocoloDetalle; }
 
     public Boolean getProductoOfrecido() { return productoOfrecido; }
     public void setProductoOfrecido(Boolean productoOfrecido) { this.productoOfrecido = productoOfrecido; }

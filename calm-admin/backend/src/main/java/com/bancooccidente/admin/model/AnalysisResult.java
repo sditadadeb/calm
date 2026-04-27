@@ -27,6 +27,8 @@ public class AnalysisResult {
     private int escuchaActivaScore;
     private boolean cumplimientoProtocolo;
     private int protocoloScore;
+    // JSON con score y evidencia por cada uno de los 6 pasos del protocolo BO
+    private String protocoloDetalle;
     private boolean productoOfrecido;
     private Long montoOfrecido;
     private Boolean cumplimientoLineamiento;
@@ -97,6 +99,9 @@ public class AnalysisResult {
 
     public int getProtocoloScore() { return protocoloScore; }
     public void setProtocoloScore(int protocoloScore) { this.protocoloScore = protocoloScore; }
+
+    public String getProtocoloDetalle() { return protocoloDetalle; }
+    public void setProtocoloDetalle(String protocoloDetalle) { this.protocoloDetalle = protocoloDetalle; }
 
     public boolean isProductoOfrecido() { return productoOfrecido; }
     public void setProductoOfrecido(boolean productoOfrecido) { this.productoOfrecido = productoOfrecido; }

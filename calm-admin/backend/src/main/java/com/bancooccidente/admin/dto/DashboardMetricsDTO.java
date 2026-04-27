@@ -27,6 +27,8 @@ public class DashboardMetricsDTO {
     private Map<String, Long> emotionalStateDistribution;
     private long grabacionesCortadasCliente;
     private long grabacionesCortadasManual;
+    // Score promedio (0-10) por cada uno de los 6 pasos del protocolo BO
+    private Map<String, Double> protocoloPasoScores;
 
     public DashboardMetricsDTO() {}
 
@@ -89,6 +91,9 @@ public class DashboardMetricsDTO {
 
     public long getGrabacionesCortadasManual() { return grabacionesCortadasManual; }
     public void setGrabacionesCortadasManual(long grabacionesCortadasManual) { this.grabacionesCortadasManual = grabacionesCortadasManual; }
+
+    public Map<String, Double> getProtocoloPasoScores() { return protocoloPasoScores; }
+    public void setProtocoloPasoScores(Map<String, Double> protocoloPasoScores) { this.protocoloPasoScores = protocoloPasoScores; }
 
     public static class BranchMetrics {
         private Long branchId;

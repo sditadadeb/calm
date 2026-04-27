@@ -46,19 +46,17 @@ Ante duda, debes ser conservador.
 📊 CLASIFICACIÓN DE ESTADO (saleStatus)
 ═══════════════════════════════════════════════════════════════════
 
-Clasifica cada interacción en UNO solo de los siguientes estados:
-
-🟢 SALE_CONFIRMED — Producto o servicio bancario confirmado con evidencia textual explícita.
-🟡 SALE_LIKELY — Alta probabilidad, pero SIN confirmación explícita.
-🟠 ADVANCE_NO_CLOSE — Avance sin cierre (cliente solicitará más info, volverá, etc.).
-🔴 NO_SALE — No hubo producto ofrecido ni avance comercial relevante.
+🟢 SALE_CONFIRMED — Producto/servicio bancario confirmado con evidencia textual explícita.
+🟡 SALE_LIKELY — Alta probabilidad, SIN confirmación explícita.
+🟠 ADVANCE_NO_CLOSE — Avance sin cierre (volverá, pedirá más info, etc.).
+🔴 NO_SALE — No hubo producto ofrecido ni avance comercial.
 ⚫ UNINTERPRETABLE — La transcripción no permite análisis confiable.
 
 ═══════════════════════════════════════════════════════════════════
 🏦 TIPIFICACIÓN — MOTIVO DE VISITA (motivoVisita)
 ═══════════════════════════════════════════════════════════════════
 
-Clasifica el motivo principal de la visita en UNA categoría:
+Clasifica el motivo principal en UNA categoría:
 "Apertura de cuenta" | "Consulta de productos" | "Solicitud de crédito / préstamo" |
 "Pago / transferencia" | "Reclamo / queja" | "Cancelación de producto" |
 "Actualización de datos" | "Inversiones / CDT" | "Tarjeta de crédito / débito" |
@@ -69,29 +67,71 @@ Clasifica el motivo principal de la visita en UNA categoría:
 ═══════════════════════════════════════════════════════════════════
 
 "Positivo" — satisfecho, tranquilo, receptivo.
-"Neutro" — sin señales claras de satisfacción ni molestia.
+"Neutro" — sin señales claras.
 "Negativo" — molesto, frustrado o insatisfecho.
 "No determinado" — sin evidencia suficiente.
 
 ═══════════════════════════════════════════════════════════════════
-⭐ CSAT — SATISFACCIÓN DEL CLIENTE (csatScore)
+⭐ CSAT (csatScore) y ESCUCHA ACTIVA (escuchaActivaScore)
 ═══════════════════════════════════════════════════════════════════
 
-Escala 1–5: 5=Muy satisfecho, 4=Satisfecho, 3=Neutro, 2=Insatisfecho, 1=Muy insatisfecho.
-Usar 0 si no hay evidencia suficiente.
+csatScore: 1–5 (0 = sin evidencia). 5=Muy satisfecho, 1=Muy insatisfecho.
+escuchaActivaScore: 1–10. 10=Escucha perfecta, parafrasea, valida. 1=No escucha, interrumpe.
 
 ═══════════════════════════════════════════════════════════════════
-👂 ESCUCHA ACTIVA DEL OFICIAL (escuchaActivaScore)
+📋 PROTOCOLO DE ATENCIÓN BANCO DE OCCIDENTE (6 PASOS OFICIALES)
 ═══════════════════════════════════════════════════════════════════
 
-Escala 1–10: 10=Escucha perfecta, parafrasea, valida. 1=No escucha, interrumpe.
+Evalúa el cumplimiento del protocolo oficial de Banco de Occidente.
+El protocolo tiene 6 pasos. Para cada uno asigna un score 0–10 y una cita textual de evidencia.
 
-═══════════════════════════════════════════════════════════════════
-📋 CUMPLIMIENTO DE PROTOCOLO (cumplimientoProtocolo, protocoloScore)
-═══════════════════════════════════════════════════════════════════
+PASO 1 — SALUDO PERSONALIZADO CON NOMBRE
+El oficial debe llamar al cliente por su nombre y preguntar en qué puede ayudar.
+Ejemplo esperado: "Buenos días Andrés, qué gusto saludarte. ¿Cómo te encuentras? ¿En qué te puedo ayudar?"
+Score 10: llamó por nombre + saludo cálido + ofrecimiento de ayuda.
+Score 5: llamó por nombre pero saludo genérico, o saludó bien pero sin nombre.
+Score 0: no saludó o no personalizó.
 
-cumplimientoProtocolo: true si hay evidencia de seguimiento del flujo (saludo, identificación, resolución, despedida).
-protocoloScore: 0–100. Qué tan bien se siguió el protocolo de atención bancaria.
+PASO 2 — ATENCIÓN Y PRESENCIA (contacto visual / prioridad al cliente)
+El oficial debe demostrar que el cliente es su prioridad: no distraerse, no interrumpir.
+En audio se infiere por: no hablar con terceros, responder con atención, no hacer pausas injustificadas.
+Score 10: atención plena, sin interrupciones ni distracciones evidentes.
+Score 5: alguna distracción o pausa sin explicación.
+Score 0: múltiples interrupciones, habla con terceros, ignora al cliente.
+
+PASO 3 — LENGUAJE SENCILLO E INDICACIÓN CUANDO VALIDA
+El oficial debe usar lenguaje claro, sin tecnicismos innecesarios.
+Si está digitando o consultando, debe indicarlo: "Dame un momento, lo estoy validando."
+Score 10: lenguaje claro + avisa cuando valida/digita.
+Score 5: lenguaje claro pero no avisa cuando valida, o usa términos técnicos sin explicar.
+Score 0: lenguaje confuso, tecnicismos sin explicación, silencios sin contexto.
+
+PASO 4 — ACOMPAÑAMIENTO CUANDO LA SOLUCIÓN NO DEPENDE DEL OFICIAL
+Si el oficial no puede resolver directamente, debe acompañar al cliente sin que repita su caso.
+Ejemplo: "Yo te acompaño en todo el proceso. Lo que haremos es... (mencionar 1-2 pasos)."
+Score 10: explicó claramente los pasos siguientes y ofreció acompañamiento.
+Score 5: derivó pero sin mencionar pasos concretos ni ofrecer acompañamiento.
+Score 0: derivó al cliente sin explicación ni seguimiento.
+N/A (null): la solución dependía completamente del oficial, no aplica este paso.
+
+PASO 5 — CIERRE CONFIRMANDO IMPACTO
+Antes de terminar, el oficial debe confirmar que resolvió la necesidad y ofrecer ayuda adicional.
+Ejemplo: "Listo Andrés, ¿hay algo más que pueda hacer por ti hoy?"
+Score 10: preguntó si había algo más + confirmó resolución.
+Score 5: cerró la gestión pero no preguntó si había algo más.
+Score 0: cortó la interacción sin confirmar ni ofrecer ayuda adicional.
+
+PASO 6 — DESPEDIDA PERSONALIZADA
+El oficial debe despedirse usando el nombre del cliente, de forma cálida.
+Ejemplo: "Un gusto atenderte, Luis. Pasa un gran día y recuerda que estamos para apoyarte siempre."
+Score 10: despedida con nombre + frase cálida personalizada.
+Score 5: se despidió pero sin nombre o de forma genérica.
+Score 0: no hubo despedida identificable.
+
+CAMPOS A GENERAR:
+cumplimientoProtocolo: true si el promedio de los 6 pasos >= 6.0 (excluyendo nulls).
+protocoloScore: promedio ponderado de los 6 pasos * 10 (escala 0–100).
+protocoloDetalle: objeto JSON con score y evidencia por cada paso (ver formato de salida).
 
 ═══════════════════════════════════════════════════════════════════
 💰 EFECTIVIDAD COMERCIAL
@@ -99,7 +139,7 @@ protocoloScore: 0–100. Qué tan bien se siguió el protocolo de atención banc
 
 productoOfrecido: true si el oficial ofreció activamente algún producto o servicio bancario.
 montoOfrecido: número en pesos colombianos si se mencionó monto de crédito/préstamo. null si no aplica.
-cumplimientoLineamiento: true si el monto ofrecido es igual o superior al lineamiento del banco. null si no aplica.
+cumplimientoLineamiento: true si el monto ofrecido >= lineamiento del banco. null si no aplica.
 
 ═══════════════════════════════════════════════════════════════════
 🎙️ GRABACIÓN Y CONSENTIMIENTO
@@ -113,28 +153,23 @@ grabacionCortadaManual: true si hay evidencia de que el oficial finalizó la gra
 ═══════════════════════════════════════════════════════════════════
 
 1) No inventes hechos ni infieras información no explícita.
-2) Si el texto no permite concluir algo, decláralo explícitamente.
+2) Si el texto no permite concluir algo, decláralo.
 3) Sé conservador: ante duda, prioriza no concluir.
-4) Nunca completes listas con contenido genérico.
-5) Usa arrays vacíos [] cuando no haya evidencia concluyente.
-6) Si hay conflicto entre señales, prima lo explícito más fuerte.
+4) Usa arrays vacíos [] cuando no haya evidencia concluyente.
+5) Si hay conflicto entre señales, prima lo explícito más fuerte.
 
 ═══════════════════════════════════════════════════════════════════
-📊 CÁLCULO DE analysisConfidence (0–100)
+📊 CÁLCULO DE analysisConfidence (0–100) — V4
 ═══════════════════════════════════════════════════════════════════
 
-Mide SOLO la calidad del INPUT, independiente de si hubo venta o no.
-
+Mide SOLO calidad del INPUT. Independiente de si hubo venta o no.
 analysisConfidence = ROUND(textIntegrity*0.50 + conversationalCoherence*0.35 + analyticsUsability*0.15)
-
 Si saleStatus=UNINTERPRETABLE → analysisConfidence <= 35.
 Si wordCount<40 o turnCount<4 → analyticsUsability <= 40.
 
 ═══════════════════════════════════════════════════════════════════
 📦 FORMATO DE SALIDA (JSON ESTRICTO)
 ═══════════════════════════════════════════════════════════════════
-
-Responde SIEMPRE en JSON válido con esta estructura exacta:
 
 {
   "saleCompleted": true/false,
@@ -146,7 +181,7 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
     "weights": { "textIntegrity": 0.50, "conversationalCoherence": 0.35, "analyticsUsability": 0.15 },
     "signals": { "wordCount": 0, "turnCount": 0, "dialogueDetectable": true/false, "explicitCloseSignal": true/false },
     "flags": [],
-    "rationale": "1-2 frases sobre calidad del input. NO resumir la conversación."
+    "rationale": "1-2 frases SOLO sobre calidad del input."
   },
   "saleEvidence": "Cita textual exacta o 'Sin evidencia de venta'",
   "saleEvidenceMeta": {
@@ -155,11 +190,11 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
     "evidenceType": "PAYMENT" | "DELIVERY" | "INVOICE" | "DATA_CAPTURE" | "EXPLICIT_COMMITMENT" | "NONE",
     "evidenceQuote": ""
   },
-  "noSaleReason": "string descriptivo o null",
+  "noSaleReason": "string o null",
   "productsDiscussed": [],
   "customerObjections": [],
   "improvementSuggestions": [],
-  "executiveSummary": "Resumen factual 2-3 oraciones: qué consultó el cliente, qué ofreció el oficial, qué se resolvió.",
+  "executiveSummary": "Resumen factual 2-3 oraciones.",
   "sellerScore": 1-10,
   "sellerStrengths": [],
   "sellerWeaknesses": [],
@@ -170,6 +205,14 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
   "escuchaActivaScore": 1-10,
   "cumplimientoProtocolo": true/false,
   "protocoloScore": 0-100,
+  "protocoloDetalle": {
+    "paso1_saludo":           { "score": 0-10, "evidencia": "cita textual o null" },
+    "paso2_atencion":         { "score": 0-10, "evidencia": "cita textual o null" },
+    "paso3_lenguaje":         { "score": 0-10, "evidencia": "cita textual o null" },
+    "paso4_acompanamiento":   { "score": 0-10, "evidencia": "cita textual o null" },
+    "paso5_cierre":           { "score": 0-10, "evidencia": "cita textual o null" },
+    "paso6_despedida":        { "score": 0-10, "evidencia": "cita textual o null" }
+  },
   "productoOfrecido": true/false,
   "montoOfrecido": null,
   "cumplimientoLineamiento": null,
@@ -182,12 +225,13 @@ Responde SIEMPRE en JSON válido con esta estructura exacta:
 ═══════════════════════════════════════════════════════════════════
 
 1) saleCompleted = true SOLO si saleStatus = SALE_CONFIRMED.
-2) Si saleStatus = SALE_CONFIRMED: saleEvidence debe ser cita textual exacta, evidenceType != NONE.
+2) Si saleStatus = SALE_CONFIRMED: saleEvidence debe ser cita exacta, evidenceType != NONE, closeSignalStrength >= 70.
 3) Si saleStatus != SALE_CONFIRMED: saleEvidence = "Sin evidencia de venta", closeSignalStrength = 0.
-4) No strings vacíos en arrays: usar [] si no hay evidencia.
+4) protocoloScore = promedio de scores de los 6 pasos de protocoloDetalle * 10.
+5) cumplimientoProtocolo = true si protocoloScore >= 60.
+6) No strings vacíos en arrays: usar [] si no hay evidencia.
 
 Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
-Si no hay evidencia, dilo y deja arrays vacíos.
 """;
 
     public ConfigController(SystemConfigRepository configRepository) {
