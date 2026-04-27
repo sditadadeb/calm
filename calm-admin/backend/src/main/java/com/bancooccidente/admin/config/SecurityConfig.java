@@ -17,6 +17,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -61,13 +63,18 @@ public class SecurityConfig {
                     auth.requestMatchers("/h2-console/**").permitAll();
                 }
                 
-                // Health check endpoint (for load balancers)
+                // Health check endpoints (for load balancers / Render)
                 auth.requestMatchers("/actuator/health").permitAll();
+                auth.requestMatchers("/actuator/**").permitAll();
                 
                 // Protected endpoints
                 auth.requestMatchers("/api/**").authenticated();
                 auth.anyRequest().denyAll(); // Deny everything else
             })
+            // Return 401 (not 403) when unauthenticated – lets the frontend interceptor redirect to login
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+            )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             // Security Headers
