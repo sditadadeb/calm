@@ -420,6 +420,38 @@ export default function TranscriptionDetail() {
     }
   };
 
+  const parseProtocolDetail = (detalle) => {
+    if (!detalle) return [];
+    try {
+      const data = typeof detalle === 'string' ? JSON.parse(detalle) : detalle;
+      const steps = [
+        ['paso1_saludo', '1. Saludo y bienvenida'],
+        ['paso2_atencion', '2. Atención y motivo'],
+        ['paso3_lenguaje', '3. Lenguaje claro'],
+        ['paso4_acompanamiento', '4. Acompañamiento'],
+        ['paso5_cierre', '5. Cierre comercial'],
+        ['paso6_despedida', '6. Despedida']
+      ];
+
+      return steps
+        .map(([key, label]) => {
+          const item = data?.[key] || {};
+          const score = item.score ?? item.puntaje ?? item.calificacion;
+          const evidence = item.evidencia || item.evidence || item.observacion || item.comentario || '';
+          return { key, label, score, evidence };
+        })
+        .filter(step => step.score !== undefined || step.evidence);
+    } catch {
+      return [];
+    }
+  };
+
+  const formatBoolean = (value) => {
+    if (value === true) return 'Sí';
+    if (value === false) return 'No';
+    return 'No determinado';
+  };
+
   // Obtener configuración del status (con labels traducidos)
   const getStatusConfig = (status) => {
     const cfg = SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG.NO_SALE;
@@ -457,6 +489,19 @@ export default function TranscriptionDetail() {
   const trans = transcription;
   const statusConfig = getStatusConfig(trans.saleStatus);
   const StatusIcon = statusConfig.icon;
+  const protocolSteps = parseProtocolDetail(trans.protocoloDetalle);
+  const hasBancoOccidenteMetrics = Boolean(
+    trans.motivoVisita ||
+    trans.estadoEmocional ||
+    trans.csatScore !== null && trans.csatScore !== undefined ||
+    trans.escuchaActivaScore !== null && trans.escuchaActivaScore !== undefined ||
+    trans.protocoloScore !== null && trans.protocoloScore !== undefined ||
+    trans.productoOfrecido !== null && trans.productoOfrecido !== undefined ||
+    trans.cumplimientoLineamiento !== null && trans.cumplimientoLineamiento !== undefined ||
+    trans.grabacionCortadaCliente !== null && trans.grabacionCortadaCliente !== undefined ||
+    trans.grabacionCortadaManual !== null && trans.grabacionCortadaManual !== undefined ||
+    protocolSteps.length > 0
+  );
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -680,6 +725,72 @@ export default function TranscriptionDetail() {
               <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('detail.noSaleReason')}</h3>
             </div>
             <p className={`font-medium text-lg ${isDark ? 'text-red-400' : 'text-red-600'}`}>{trans.noSaleReason}</p>
+          </div>
+        )}
+
+        {/* Banco de Occidente Metrics */}
+        {hasBancoOccidenteMetrics && (
+          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-[#0081FF] rounded-lg">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Métricas Banco de Occidente</h3>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Resultado del re-análisis con el protocolo de atención</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+              {[
+                ['Tipificación', trans.motivoVisita || 'No determinado'],
+                ['Estado emocional', trans.estadoEmocional || 'No determinado'],
+                ['CSAT estimado', trans.csatScore !== null && trans.csatScore !== undefined ? `${trans.csatScore}/5` : 'No determinado'],
+                ['Escucha activa', trans.escuchaActivaScore !== null && trans.escuchaActivaScore !== undefined ? `${trans.escuchaActivaScore}/10` : 'No determinado'],
+                ['Protocolo', trans.protocoloScore !== null && trans.protocoloScore !== undefined ? `${trans.protocoloScore}${trans.protocoloScore <= 10 ? '/10' : '/100'}` : formatBoolean(trans.cumplimientoProtocolo)],
+                ['Producto ofrecido', formatBoolean(trans.productoOfrecido)],
+                ['Lineamiento comercial', formatBoolean(trans.cumplimientoLineamiento)],
+                ['Corte por cliente', formatBoolean(trans.grabacionCortadaCliente)],
+                ['Corte manual', formatBoolean(trans.grabacionCortadaManual)]
+              ].map(([label, value]) => (
+                <div key={label} className={`rounded-xl border p-4 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-100'}`}>
+                  <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{label}</p>
+                  <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {protocolSteps.length > 0 && (
+              <div>
+                <h4 className={`font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`}>Desglose del protocolo por paso</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {protocolSteps.map(step => {
+                    const numericScore = Number(step.score);
+                    const pct = Number.isFinite(numericScore) ? Math.max(0, Math.min(100, numericScore <= 10 ? numericScore * 10 : numericScore)) : 0;
+                    return (
+                      <div key={step.key} className={`rounded-xl border p-4 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-[#F6FAFF] border-blue-100'}`}>
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{step.label}</p>
+                          {step.score !== undefined && (
+                            <span className="px-2.5 py-1 rounded-lg bg-[#EBF5FF] text-[#0081FF] text-sm font-bold">
+                              {step.score}/10
+                            </span>
+                          )}
+                        </div>
+                        {step.score !== undefined && (
+                          <div className={`h-2 rounded-full overflow-hidden mb-3 ${isDark ? 'bg-slate-700' : 'bg-blue-100'}`}>
+                            <div className="h-full rounded-full bg-[#0081FF]" style={{ width: `${pct}%` }} />
+                          </div>
+                        )}
+                        {step.evidence && (
+                          <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{step.evidence}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
