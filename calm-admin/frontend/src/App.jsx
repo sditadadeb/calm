@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import Layout from './components/Layout';
@@ -13,12 +13,27 @@ import Settings from './pages/Settings';
 import Users from './pages/Users';
 import Search from './pages/Search';
 import Timeline from './pages/Timeline';
+import { useEffect } from 'react';
+
+// Componente interno que escucha el evento auth:logout y redirige via React Router
+function AuthLogoutListener() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handleLogout = () => {
+      navigate('/login', { replace: true });
+    };
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, [navigate]);
+  return null;
+}
 
 function App() {
   return (
     <LanguageProvider>
     <ThemeProvider>
       <Router>
+        <AuthLogoutListener />
         <Routes>
           {/* Public route */}
           <Route path="/login" element={<Login />} />

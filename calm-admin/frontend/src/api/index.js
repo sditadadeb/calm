@@ -22,20 +22,28 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401/403 responses (unauthorized/forbidden - token expired or invalid)
+// Handle 401 responses (token expirado o inválido)
+// Reglas:
+//  - 403 (Forbidden) NUNCA desloguea — solo indica falta de permisos para ese recurso
+//  - 401 solo desloguea si NO viene del endpoint de login ni del endpoint de validate
+//    (evita loop: credenciales incorrectas → 401 desde /auth/login → redirect → loop)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
-    // Endpoints opcionales/background que no deben forzar logout ante 403
-    const silentEndpoints = ['/sync', '/transcriptions/check-new'];
-    const isSilent = silentEndpoints.some(ep => url.includes(ep));
 
-    if ((status === 401 || status === 403) && !isSilent) {
+    // Endpoints que nunca deben provocar logout aunque devuelvan 401
+    const noLogoutEndpoints = ['/auth/login', '/auth/validate', '/sync', '/transcriptions/check-new'];
+    const isNoLogout = noLogoutEndpoints.some(ep => url.includes(ep));
+
+    if (status === 401 && !isNoLogout) {
+      console.warn('[Auth] Sesión expirada o inválida, endpoint:', url);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Usar evento personalizado para que React Router maneje la navegación
+      // y evitar hard-reload que borra el estado de la app
+      window.dispatchEvent(new CustomEvent('auth:logout'));
     }
     return Promise.reject(error);
   }
