@@ -161,6 +161,19 @@ cumplimientoLineamiento: true si el monto ofrecido >= lineamiento del banco. nul
 grabacionCortadaCliente: true si hay evidencia de que el cliente solicitó no ser grabado.
 grabacionCortadaManual: true si hay evidencia de que el oficial finalizó la grabación manualmente.
 
+Regla crítica de calidad:
+Si la grabación fue cortada, termina abruptamente, o no permite evaluar cierre/despedida,
+la atención NO puede calificarse como buena aunque el saludo o los primeros pasos hayan sido correctos.
+Una interacción incompleta afecta directamente lo que se mide.
+
+Cuando detectes grabación cortada/incompleta:
+- sellerScore máximo: 4/10.
+- protocoloScore máximo: 50/100.
+- cumplimientoProtocolo debe ser false.
+- escuchaActivaScore máximo: 5/10.
+- agrega en sellerWeaknesses que la atención quedó incompleta por corte/finalización anticipada.
+- en executiveSummary menciona que la interacción no permite evaluar el ciclo completo de atención.
+
 ═══════════════════════════════════════════════════════════════════
 🧠 PRINCIPIOS OBLIGATORIOS
 ═══════════════════════════════════════════════════════════════════
@@ -243,6 +256,7 @@ Si wordCount<40 o turnCount<4 → analyticsUsability <= 40.
 4) protocoloScore = promedio de scores de los 6 pasos de protocoloDetalle * 10. Si un paso tiene null score, exclúyelo del promedio.
 5) cumplimientoProtocolo = true si protocoloScore >= 60.
 6) No strings vacíos en arrays: usar [] si no hay evidencia.
+7) Si grabacionCortadaCliente=true o grabacionCortadaManual=true, aplica siempre los topes de calidad por grabación incompleta.
 
 Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
 """;
@@ -343,6 +357,7 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
 
             log.info("Received analysis response from ChatGPT");
             AnalysisResult result = parseAnalysisResponse(response);
+            enforceIncompleteRecordingPenalty(result, transcriptionText);
             
             // Post-processing: Override ChatGPT decision if clear sale signals are detected
             String saleSignal = detectSaleSignals(transcriptionText);
@@ -366,6 +381,75 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
             log.error("Error analyzing transcription with ChatGPT: {}", e.getMessage(), e);
             return createErrorAnalysis("Error en análisis GPT: " + e.getMessage());
         }
+    }
+
+    private void enforceIncompleteRecordingPenalty(AnalysisResult result, String transcriptionText) {
+        if (result == null) {
+            return;
+        }
+        boolean incompleteRecording = result.isGrabacionCortadaCliente()
+                || result.isGrabacionCortadaManual()
+                || hasAbruptEnding(transcriptionText);
+        if (!incompleteRecording) return;
+
+        result.setSellerScore(Math.min(result.getSellerScore(), 4));
+        result.setProtocoloScore(Math.min(result.getProtocoloScore(), 50));
+        result.setCumplimientoProtocolo(false);
+        result.setEscuchaActivaScore(Math.min(result.getEscuchaActivaScore(), 5));
+        result.setCsatScore(Math.min(result.getCsatScore(), 3));
+
+        List<String> weaknesses = result.getSellerWeaknesses() != null
+                ? new ArrayList<>(result.getSellerWeaknesses())
+                : new ArrayList<>();
+        String cutReason = result.isGrabacionCortadaCliente()
+                ? "La atención quedó incompleta porque el cliente solicitó no continuar con la grabación."
+                : "La atención quedó incompleta por corte o finalización anticipada de la grabación.";
+        if (weaknesses.stream().noneMatch(w -> w != null && w.toLowerCase().contains("incompleta"))) {
+            weaknesses.add(cutReason);
+        }
+        result.setSellerWeaknesses(weaknesses);
+
+        String summary = result.getExecutiveSummary();
+        if (summary == null || summary.isBlank()) {
+            result.setExecutiveSummary(cutReason + " No se puede evaluar el ciclo completo de atención.");
+        } else if (!summary.toLowerCase().contains("ciclo completo")) {
+            result.setExecutiveSummary(summary + " " + cutReason + " No se puede evaluar el ciclo completo de atención.");
+        }
+    }
+
+    private boolean hasAbruptEnding(String transcriptionText) {
+        if (transcriptionText == null || transcriptionText.isBlank()) {
+            return false;
+        }
+
+        String[] lines = transcriptionText.trim().split("\\R+");
+        String lastUtterance = "";
+        for (int i = lines.length - 1; i >= 0; i--) {
+            String line = lines[i].trim();
+            if (!line.isBlank()) {
+                int separator = line.indexOf("]:");
+                lastUtterance = separator >= 0 ? line.substring(separator + 2).trim() : line;
+                break;
+            }
+        }
+
+        if (lastUtterance.isBlank()) {
+            return false;
+        }
+
+        String normalized = lastUtterance.toLowerCase(Locale.ROOT);
+        boolean hasNaturalClose = normalized.contains("gracias")
+                || normalized.contains("hasta luego")
+                || normalized.contains("buen dia")
+                || normalized.contains("buen día")
+                || normalized.contains("que estes bien")
+                || normalized.contains("que estés bien");
+        if (hasNaturalClose) {
+            return false;
+        }
+
+        int wordCount = normalized.replaceAll("[^\\p{L}\\p{N}\\s]", " ").trim().split("\\s+").length;
+        return wordCount <= 4;
     }
     
     /**
