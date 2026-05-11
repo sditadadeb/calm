@@ -10,7 +10,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 @Configuration
 public class CorsConfig {
@@ -59,6 +58,6 @@ public class CorsConfig {
     }
 
     private boolean isProd() {
-        return Set.of(environment.getActiveProfiles()).contains("prod");
+        return Arrays.asList(environment.getActiveProfiles()).contains("prod");
     }
 }

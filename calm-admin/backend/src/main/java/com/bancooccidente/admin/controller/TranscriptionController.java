@@ -150,7 +150,10 @@ public class TranscriptionController {
             String sellerName = currentUser != null && currentUser.getSellerName() != null
                     ? currentUser.getSellerName()
                     : currentUser != null ? currentUser.getUsername() : "Usuario";
-            return ResponseEntity.ok(List.of(Map.of("id", scopedSellerId, "name", sellerName)));
+            Map<String, Object> seller = new HashMap<>();
+            seller.put("id", scopedSellerId);
+            seller.put("name", sellerName);
+            return ResponseEntity.ok(List.of(seller));
         }
         return ResponseEntity.ok(transcriptionService.getSellers());
     }
