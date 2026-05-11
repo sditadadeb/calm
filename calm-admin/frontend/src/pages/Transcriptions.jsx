@@ -20,7 +20,7 @@ export default function Transcriptions() {
   const [syncing, setSyncing] = useState(false);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = user.role === 'ADMIN';
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
 
   // Función para ordenar
   const handleSort = (key) => {
@@ -152,22 +152,28 @@ export default function Transcriptions() {
     // Cargar lista inmediatamente sin esperar el sync
     fetchTranscriptions();
 
-    // Sync en background: siempre al entrar, con cooldown de 2 min para no saturar
+    // Sync en background: al entrar y cada 2 min mientras la página esté abierta.
     const COOLDOWN_MS = 2 * 60 * 1000;
-    const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
-    const shouldCheck = (Date.now() - lastCheck) >= COOLDOWN_MS;
+    const runAutoCheck = () => {
+      const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
+      const shouldCheck = (Date.now() - lastCheck) >= COOLDOWN_MS;
 
-    if (shouldCheck) {
-      setSyncing(true);
-      checkNewTranscriptions()
-        .then(() => {
-          localStorage.setItem('lastS3Check', String(Date.now()));
-          fetchTranscriptions();
-        })
-        .catch(err => console.error('Auto-check failed:', err))
-        .finally(() => setSyncing(false));
-    }
-  }, [searchParams]);
+      if (isAdmin && shouldCheck) {
+        setSyncing(true);
+        checkNewTranscriptions()
+          .then(() => {
+            localStorage.setItem('lastS3Check', String(Date.now()));
+            fetchTranscriptions();
+          })
+          .catch(err => console.error('Auto-check failed:', err))
+          .finally(() => setSyncing(false));
+      }
+    };
+
+    runAutoCheck();
+    const intervalId = window.setInterval(runAutoCheck, COOLDOWN_MS);
+    return () => window.clearInterval(intervalId);
+  }, [searchParams, isAdmin, fetchTranscriptions, setFilters]);
 
   const handleAnalyze = async (recordingId, e) => {
     e.preventDefault();
@@ -393,7 +399,7 @@ export default function Transcriptions() {
                         >
                           <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
-                        {!transcription.analyzed && (
+                        {isAdmin && !transcription.analyzed && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
                             className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#0081FF] to-[#0862C5] text-white rounded-lg hover:opacity-90 transition-opacity"

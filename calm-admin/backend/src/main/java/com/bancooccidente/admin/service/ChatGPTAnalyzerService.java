@@ -174,6 +174,16 @@ Cuando detectes grabación cortada/incompleta:
 - agrega en sellerWeaknesses que la atención quedó incompleta por corte/finalización anticipada.
 - en executiveSummary menciona que la interacción no permite evaluar el ciclo completo de atención.
 
+Cuando la transcripción sea demasiado breve para medir calidad (menos de 40 palabras o menos de 4 turnos):
+- sellerScore máximo: 3/10.
+- protocoloScore máximo: 30/100.
+- cumplimientoProtocolo debe ser false.
+- escuchaActivaScore máximo: 3/10.
+- csatScore máximo: 2/5.
+- analysisConfidence máximo: 35.
+- saleStatus debe ser UNINTERPRETABLE salvo que haya evidencia explícita de venta.
+- explica en sellerWeaknesses y executiveSummary que el input no permite evaluar la atención completa.
+
 ═══════════════════════════════════════════════════════════════════
 🧠 PRINCIPIOS OBLIGATORIOS
 ═══════════════════════════════════════════════════════════════════
@@ -257,6 +267,7 @@ Si wordCount<40 o turnCount<4 → analyticsUsability <= 40.
 5) cumplimientoProtocolo = true si protocoloScore >= 60.
 6) No strings vacíos en arrays: usar [] si no hay evidencia.
 7) Si grabacionCortadaCliente=true o grabacionCortadaManual=true, aplica siempre los topes de calidad por grabación incompleta.
+8) Si wordCount<40 o turnCount<4, aplica siempre los topes por input insuficiente aunque el saludo haya sido correcto.
 
 Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
 """;
@@ -357,7 +368,7 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
 
             log.info("Received analysis response from ChatGPT");
             AnalysisResult result = parseAnalysisResponse(response);
-            enforceIncompleteRecordingPenalty(result, transcriptionText);
+            enforceIncompleteOrInsufficientPenalty(result, transcriptionText);
             
             // Post-processing: Override ChatGPT decision if clear sale signals are detected
             String saleSignal = detectSaleSignals(transcriptionText);
@@ -383,13 +394,20 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
         }
     }
 
-    private void enforceIncompleteRecordingPenalty(AnalysisResult result, String transcriptionText) {
+    private void enforceIncompleteOrInsufficientPenalty(AnalysisResult result, String transcriptionText) {
         if (result == null) {
             return;
         }
+        boolean insufficientInput = hasInsufficientInput(transcriptionText);
         boolean incompleteRecording = result.isGrabacionCortadaCliente()
                 || result.isGrabacionCortadaManual()
                 || hasAbruptEnding(transcriptionText);
+
+        if (insufficientInput) {
+            applyInsufficientInputPenalty(result);
+            return;
+        }
+
         if (!incompleteRecording) return;
 
         result.setSellerScore(Math.min(result.getSellerScore(), 4));
@@ -415,6 +433,51 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
         } else if (!summary.toLowerCase().contains("ciclo completo")) {
             result.setExecutiveSummary(summary + " " + cutReason + " No se puede evaluar el ciclo completo de atención.");
         }
+    }
+
+    private void applyInsufficientInputPenalty(AnalysisResult result) {
+        result.setSellerScore(Math.min(result.getSellerScore(), 3));
+        result.setProtocoloScore(Math.min(result.getProtocoloScore(), 30));
+        result.setCumplimientoProtocolo(false);
+        result.setEscuchaActivaScore(Math.min(result.getEscuchaActivaScore(), 3));
+        result.setCsatScore(Math.min(result.getCsatScore(), 2));
+        result.setAnalysisConfidence(Math.min(result.getAnalysisConfidence(), 35));
+
+        if (!result.isSaleCompleted() || result.getSaleEvidence() == null || result.getSaleEvidence().isBlank()
+                || "Sin evidencia de venta".equalsIgnoreCase(result.getSaleEvidence())) {
+            result.setSaleCompleted(false);
+            result.setSaleStatus("UNINTERPRETABLE");
+            result.setSaleEvidence("Sin evidencia de venta");
+        }
+
+        List<String> weaknesses = result.getSellerWeaknesses() != null
+                ? new ArrayList<>(result.getSellerWeaknesses())
+                : new ArrayList<>();
+        String reason = "La transcripción es demasiado breve para evaluar la atención completa.";
+        if (weaknesses.stream().noneMatch(w -> w != null && w.toLowerCase().contains("demasiado breve"))) {
+            weaknesses.add(reason);
+        }
+        result.setSellerWeaknesses(weaknesses);
+
+        String summary = result.getExecutiveSummary();
+        if (summary == null || summary.isBlank()) {
+            result.setExecutiveSummary(reason + " No se puede medir el ciclo completo de atención.");
+        } else if (!summary.toLowerCase().contains("demasiado breve")) {
+            result.setExecutiveSummary(summary + " " + reason + " No se puede medir el ciclo completo de atención.");
+        }
+    }
+
+    private boolean hasInsufficientInput(String transcriptionText) {
+        if (transcriptionText == null || transcriptionText.isBlank()) {
+            return true;
+        }
+        String cleaned = transcriptionText.replaceAll("\\[Persona \\d+\\]:", " ");
+        String[] words = cleaned.trim().isEmpty() ? new String[0] : cleaned.trim().split("\\s+");
+        long turnCount = Arrays.stream(transcriptionText.split("\\R+"))
+                .map(String::trim)
+                .filter(line -> line.startsWith("[Persona "))
+                .count();
+        return words.length < 40 || turnCount < 4;
     }
 
     private boolean hasAbruptEnding(String transcriptionText) {
