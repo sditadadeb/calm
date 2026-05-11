@@ -33,7 +33,7 @@ public class UserController {
      * Lista todos los usuarios (solo ADMIN)
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
         List<Map<String, Object>> users = userRepository.findAll().stream()
                 .map(user -> {
@@ -54,7 +54,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> createUser(@RequestBody Map<String, Object> request) {
         String username = (String) request.get("username");
         String password = (String) request.get("password");
@@ -70,7 +70,7 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "El nombre de usuario ya existe"));
         }
 
-        if (!role.equals("ADMIN") && !role.equals("USER") && !role.equals("VIEWER")) {
+        if (!role.equals("SUPERADMIN") && !role.equals("ADMIN") && !role.equals("USER") && !role.equals("VIEWER")) {
             role = "USER";
         }
 
@@ -105,7 +105,7 @@ public class UserController {
      * Elimina un usuario (solo ADMIN)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         User user = userRepository.findById(id)
                 .orElse(null);
@@ -115,9 +115,9 @@ public class UserController {
         }
 
         // No permitir eliminar al único admin
-        if (user.getRole().equals("ADMIN")) {
+        if (user.getRole().equals("ADMIN") || user.getRole().equals("SUPERADMIN")) {
             long adminCount = userRepository.findAll().stream()
-                    .filter(u -> u.getRole().equals("ADMIN"))
+                    .filter(u -> u.getRole().equals("ADMIN") || u.getRole().equals("SUPERADMIN"))
                     .count();
             if (adminCount <= 1) {
                 return ResponseEntity.badRequest()
@@ -135,12 +135,12 @@ public class UserController {
      * Actualiza el rol de un usuario (solo ADMIN)
      */
     @PatchMapping("/{id}/role")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String newRole = request.get("role");
 
-        if (newRole == null || (!newRole.equals("ADMIN") && !newRole.equals("USER") && !newRole.equals("VIEWER"))) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Rol inválido. Use ADMIN, USER o VIEWER"));
+        if (newRole == null || (!newRole.equals("SUPERADMIN") && !newRole.equals("ADMIN") && !newRole.equals("USER") && !newRole.equals("VIEWER"))) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Rol inválido. Use SUPERADMIN, ADMIN, USER o VIEWER"));
         }
 
         User user = userRepository.findById(id).orElse(null);
@@ -149,9 +149,9 @@ public class UserController {
         }
 
         // No permitir degradar al único admin
-        if (user.getRole().equals("ADMIN") && newRole.equals("USER")) {
+        if ((user.getRole().equals("ADMIN") || user.getRole().equals("SUPERADMIN")) && (newRole.equals("USER") || newRole.equals("VIEWER"))) {
             long adminCount = userRepository.findAll().stream()
-                    .filter(u -> u.getRole().equals("ADMIN"))
+                    .filter(u -> u.getRole().equals("ADMIN") || u.getRole().equals("SUPERADMIN"))
                     .count();
             if (adminCount <= 1) {
                 return ResponseEntity.badRequest()
@@ -171,7 +171,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/seller")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> updateUserSeller(@PathVariable Long id, @RequestBody Map<String, Object> request) {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) {

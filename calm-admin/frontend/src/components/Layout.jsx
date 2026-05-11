@@ -18,7 +18,7 @@ export default function Layout({ children }) {
   const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0 });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = user.role === 'ADMIN';
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
 
   const pageConfig = {
     '/':               { name: t('nav.dashboard'),       subtitle: t('nav.dashboardSub'),       icon: LayoutDashboard },

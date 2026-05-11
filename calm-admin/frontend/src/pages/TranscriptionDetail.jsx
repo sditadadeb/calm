@@ -253,6 +253,10 @@ export default function TranscriptionDetail() {
           const xhr = new XMLHttpRequest();
           xhr.open('GET', streamUrl, true);
           xhr.responseType = 'blob';
+          const token = localStorage.getItem('token');
+          if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          }
           
           xhr.onprogress = (event) => {
             if (event.lengthComputable) {

@@ -3,8 +3,10 @@ package com.bancooccidente.admin.controller;
 import com.bancooccidente.admin.dto.DashboardMetricsDTO;
 import com.bancooccidente.admin.dto.FilterDTO;
 import com.bancooccidente.admin.dto.TranscriptionDTO;
+import com.bancooccidente.admin.model.User;
 import com.bancooccidente.admin.model.TranscriptionComment;
 import com.bancooccidente.admin.repository.TranscriptionCommentRepository;
+import com.bancooccidente.admin.repository.UserRepository;
 import com.bancooccidente.admin.service.S3Service;
 import com.bancooccidente.admin.service.TranscriptionService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -32,19 +34,26 @@ public class TranscriptionController {
     private final TranscriptionService transcriptionService;
     private final S3Service s3Service;
     private final TranscriptionCommentRepository commentRepository;
+    private final UserRepository userRepository;
     
     // Only allow alphanumeric recording IDs (prevent path traversal)
     private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
 
     public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
-                                   TranscriptionCommentRepository commentRepository) {
+                                   TranscriptionCommentRepository commentRepository,
+                                   UserRepository userRepository) {
         this.transcriptionService = transcriptionService;
         this.s3Service = s3Service;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardMetricsDTO> getDashboardMetrics() {
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null) {
+            return ResponseEntity.ok(transcriptionService.getDashboardMetricsForSeller(scopedSellerId));
+        }
         return ResponseEntity.ok(transcriptionService.getDashboardMetrics());
     }
 
@@ -74,6 +83,14 @@ public class TranscriptionController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dateFrom no puede ser posterior a dateTo");
         }
 
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null) {
+            if (userId != null && !userId.equals(scopedSellerId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado para consultar otro vendedor");
+            }
+            userId = scopedSellerId;
+        }
+
         FilterDTO filter = new FilterDTO();
         filter.setUserId(userId);
         filter.setBranchId(branchId);
@@ -89,21 +106,26 @@ public class TranscriptionController {
     @GetMapping("/transcriptions/{recordingId}")
     public ResponseEntity<TranscriptionDTO> getTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
-        return ResponseEntity.ok(transcriptionService.getTranscription(recordingId));
+        TranscriptionDTO transcription = transcriptionService.getTranscription(recordingId);
+        enforceTranscriptionAccess(transcription);
+        return ResponseEntity.ok(transcription);
     }
 
     @PostMapping("/transcriptions/{recordingId}/analyze")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<TranscriptionDTO> analyzeTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         return ResponseEntity.ok(transcriptionService.analyzeTranscription(recordingId));
     }
 
     @PostMapping("/sync")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> syncTranscriptions() {
         return ResponseEntity.ok(transcriptionService.forceSync());
     }
 
     @PostMapping("/transcriptions/check-new")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> checkNewTranscriptions() {
         return ResponseEntity.ok(transcriptionService.quickSync());
     }
@@ -112,6 +134,7 @@ public class TranscriptionController {
      * Sync with Server-Sent Events for real-time progress updates.
      */
     @GetMapping(value = "/sync/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public SseEmitter syncWithProgress(jakarta.servlet.http.HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-cache, no-transform");
         response.setHeader("Connection", "keep-alive");
@@ -121,11 +144,40 @@ public class TranscriptionController {
 
     @GetMapping("/sellers")
     public ResponseEntity<List<Map<String, Object>>> getSellers() {
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null) {
+            User currentUser = getCurrentUser();
+            String sellerName = currentUser != null && currentUser.getSellerName() != null
+                    ? currentUser.getSellerName()
+                    : currentUser != null ? currentUser.getUsername() : "Usuario";
+            return ResponseEntity.ok(List.of(Map.of("id", scopedSellerId, "name", sellerName)));
+        }
         return ResponseEntity.ok(transcriptionService.getSellers());
     }
 
     @GetMapping("/branches")
     public ResponseEntity<List<Map<String, Object>>> getBranches() {
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null) {
+            FilterDTO filter = new FilterDTO();
+            filter.setUserId(scopedSellerId);
+            List<Map<String, Object>> branches = transcriptionService.getTranscriptions(filter).stream()
+                    .filter(t -> t.getBranchId() != null)
+                    .collect(Collectors.toMap(
+                            TranscriptionDTO::getBranchId,
+                            t -> {
+                                Map<String, Object> branch = new HashMap<>();
+                                branch.put("id", t.getBranchId());
+                                branch.put("name", t.getBranchName());
+                                return branch;
+                            },
+                            (a, b) -> a
+                    ))
+                    .values()
+                    .stream()
+                    .toList();
+            return ResponseEntity.ok(branches);
+        }
         return ResponseEntity.ok(transcriptionService.getBranches());
     }
     
@@ -134,6 +186,7 @@ public class TranscriptionController {
      * ├Ütil para corregir errores de detecci├│n despu├®s de mejorar el prompt.
      */
     @PostMapping("/reanalyze-no-sales")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
         return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
     }
@@ -144,7 +197,7 @@ public class TranscriptionController {
      * Solo para administradores.
      */
     @GetMapping(value = "/reanalyze-all/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public SseEmitter reanalyzeAllWithProgress(jakarta.servlet.http.HttpServletResponse response) {
         // Headers needed for SSE through proxies (Render, etc)
         response.setHeader("Cache-Control", "no-cache, no-transform");
@@ -158,7 +211,7 @@ public class TranscriptionController {
      * Solo para administradores.
      */
     @DeleteMapping("/transcriptions/{recordingId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Map<String, Object>> deleteTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         transcriptionService.deleteTranscription(recordingId);
@@ -189,6 +242,14 @@ public class TranscriptionController {
         if (q.length() > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El t├®rmino de b├║squeda no puede exceder 100 caracteres");
         }
+
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null) {
+            if (userId != null && !userId.equals(scopedSellerId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado para consultar otro vendedor");
+            }
+            userId = scopedSellerId;
+        }
         
         return ResponseEntity.ok(transcriptionService.searchTranscriptions(q, userId, branchId, saleCompleted));
     }
@@ -199,6 +260,7 @@ public class TranscriptionController {
     @GetMapping("/transcriptions/{recordingId}/audio")
     public ResponseEntity<Map<String, Object>> getAudioInfo(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
+        enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
         
         boolean exists = s3Service.audioExists(recordingId);
         
@@ -228,6 +290,7 @@ public class TranscriptionController {
             @RequestHeader(value = "Range", required = false) String rangeHeader
     ) {
         validateRecordingId(recordingId);
+        enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
         
         // Primero obtener el tama├▒o total del archivo
         long totalSize = s3Service.getAudioSize(recordingId);
@@ -303,11 +366,41 @@ public class TranscriptionController {
         }
     }
 
+    private Long getScopedSellerIdOrNull() {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no encontrado");
+        }
+        if ("ADMIN".equals(currentUser.getRole()) || "SUPERADMIN".equals(currentUser.getRole())) {
+            return null;
+        }
+        if (currentUser.getSellerId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario sin vendedor asignado");
+        }
+        return currentUser.getSellerId();
+    }
+
+    private void enforceTranscriptionAccess(TranscriptionDTO transcription) {
+        Long scopedSellerId = getScopedSellerIdOrNull();
+        if (scopedSellerId != null && !scopedSellerId.equals(transcription.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado para consultar esta transcripción");
+        }
+    }
+
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
+            return null;
+        }
+        return userRepository.findByUsername(auth.getName()).orElse(null);
+    }
+
     // ===== COMMENTS =====
 
     @GetMapping("/transcriptions/{recordingId}/comments")
     public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
+        enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
         List<Map<String, Object>> comments = commentRepository
                 .findByRecordingIdOrderByCreatedAtAsc(recordingId)
                 .stream()
@@ -328,6 +421,7 @@ public class TranscriptionController {
             @PathVariable String recordingId,
             @RequestBody Map<String, String> request) {
         validateRecordingId(recordingId);
+        enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
 
         String content = request.get("content");
         if (content == null || content.trim().isEmpty()) {
@@ -352,7 +446,7 @@ public class TranscriptionController {
     }
 
     @DeleteMapping("/transcriptions/{recordingId}/comments/{commentId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Map<String, String>> deleteComment(
             @PathVariable String recordingId,
             @PathVariable Long commentId) {

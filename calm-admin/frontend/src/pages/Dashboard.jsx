@@ -85,9 +85,15 @@ export default function Dashboard() {
   const totalTranscriptions = userSellerId ? myTranscriptions.length : rawMetrics.totalTranscriptions;
   const totalSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === true).length : rawMetrics.totalSales;
   const totalNoSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === false).length : rawMetrics.totalNoSales;
-  const conversionRate = totalTranscriptions > 0 ? Math.round((totalSales / totalTranscriptions) * 100) : 0;
+  const analyzedTranscriptions = userSellerId
+    ? myTranscriptions.filter(t => t.analyzed === true || t.saleCompleted === true || t.saleCompleted === false).length
+    : rawMetrics.analyzedTranscriptions;
+  const conversionRate = analyzedTranscriptions > 0 ? Math.round((totalSales / analyzedTranscriptions) * 100) : 0;
+  const sellerScores = myTranscriptions
+    .map(t => t.sellerScore)
+    .filter(score => score !== null && score !== undefined);
   const averageSellerScore = userSellerId 
-    ? (myTranscriptions.filter(t => t.sellerScore).reduce((sum, t) => sum + t.sellerScore, 0) / (myTranscriptions.filter(t => t.sellerScore).length || 1))
+    ? (sellerScores.reduce((sum, score) => sum + score, 0) / (sellerScores.length || 1))
     : rawMetrics.averageSellerScore;
   const sellerMetrics = rawMetrics.sellerMetrics;
   const branchMetrics = rawMetrics.branchMetrics;
@@ -522,7 +528,7 @@ export default function Dashboard() {
 
             {/* Cumplimiento protocolo */}
             <div className={`rounded-2xl p-5 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Protocolo</p>
+              <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Cumplimiento Protocolo</p>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-bold text-green-400">
                   {rawMetrics.protocolComplianceRate > 0 ? Math.round(rawMetrics.protocolComplianceRate) : 0}

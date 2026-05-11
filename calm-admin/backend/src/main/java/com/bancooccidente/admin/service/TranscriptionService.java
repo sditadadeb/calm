@@ -338,13 +338,78 @@ public class TranscriptionService {
         return metrics;
     }
 
+    public DashboardMetricsDTO getDashboardMetricsForSeller(Long sellerId) {
+        List<Transcription> transcriptions = repository.findByUserId(sellerId);
+        List<Transcription> analyzedList = transcriptions.stream()
+                .filter(t -> Boolean.TRUE.equals(t.getAnalyzed()))
+                .toList();
+
+        long analyzed = analyzedList.size();
+        long sales = analyzedList.stream().filter(t -> Boolean.TRUE.equals(t.getSaleCompleted())).count();
+        long noSales = analyzedList.stream().filter(t -> Boolean.FALSE.equals(t.getSaleCompleted())).count();
+
+        DashboardMetricsDTO metrics = new DashboardMetricsDTO();
+        metrics.setTotalTranscriptions(transcriptions.size());
+        metrics.setAnalyzedTranscriptions(analyzed);
+        metrics.setPendingAnalysis(transcriptions.stream().filter(t -> !Boolean.TRUE.equals(t.getAnalyzed())).count());
+        metrics.setTotalSales(sales);
+        metrics.setTotalNoSales(noSales);
+        metrics.setConversionRate(calculateRate(sales, analyzed));
+        metrics.setAverageSellerScore(analyzedList.stream()
+                .map(Transcription::getSellerScore)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0));
+
+        metrics.setSellerMetrics(buildSellerMetrics(analyzedList));
+        metrics.setBranchMetrics(buildBranchMetrics(analyzedList));
+        metrics.setNoSaleReasons(countStringValues(analyzedList.stream()
+                .filter(t -> Boolean.FALSE.equals(t.getSaleCompleted()))
+                .map(Transcription::getNoSaleReason)
+                .toList()));
+
+        metrics.setAverageCsat(analyzedList.stream()
+                .map(Transcription::getCsatScore)
+                .filter(score -> score != null && score > 0)
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0));
+        metrics.setAverageEscuchaActiva(analyzedList.stream()
+                .map(Transcription::getEscuchaActivaScore)
+                .filter(score -> score != null && score > 0)
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0));
+        metrics.setProtocolComplianceRate(calculateRate(
+                analyzedList.stream().filter(t -> Boolean.TRUE.equals(t.getCumplimientoProtocolo())).count(),
+                analyzed
+        ));
+        metrics.setProductOfferingRate(calculateRate(
+                analyzedList.stream().filter(t -> Boolean.TRUE.equals(t.getProductoOfrecido())).count(),
+                analyzed
+        ));
+        metrics.setGrabacionesCortadasCliente(analyzedList.stream().filter(t -> Boolean.TRUE.equals(t.getGrabacionCortadaCliente())).count());
+        metrics.setGrabacionesCortadasManual(analyzedList.stream().filter(t -> Boolean.TRUE.equals(t.getGrabacionCortadaManual())).count());
+        metrics.setVisitReasonDistribution(countStringValues(analyzedList.stream().map(Transcription::getMotivoVisita).toList()));
+        metrics.setEmotionalStateDistribution(countStringValues(analyzedList.stream().map(Transcription::getEstadoEmocional).toList()));
+        metrics.setProtocoloPasoScores(calcularPromedioPasos(transcriptions));
+        metrics.setProtocoloDetalleCount(contarTranscripcionesConProtocoloDetalle(transcriptions));
+
+        return metrics;
+    }
+
     private static final List<String> PROTOCOLO_PASOS = List.of(
             "paso1_saludo", "paso2_atencion", "paso3_lenguaje",
             "paso4_acompanamiento", "paso5_cierre", "paso6_despedida"
     );
 
     private Map<String, Double> calcularPromedioPasos() {
-        List<Transcription> withDetalle = repository.findAll().stream()
+        return calcularPromedioPasos(repository.findAll());
+    }
+
+    private Map<String, Double> calcularPromedioPasos(List<Transcription> transcriptions) {
+        List<Transcription> withDetalle = transcriptions.stream()
                 .filter(t -> t.getProtocoloDetalle() != null && !t.getProtocoloDetalle().isBlank())
                 .toList();
 
@@ -385,9 +450,80 @@ public class TranscriptionService {
     }
 
     private long contarTranscripcionesConProtocoloDetalle() {
-        return repository.findAll().stream()
+        return contarTranscripcionesConProtocoloDetalle(repository.findAll());
+    }
+
+    private long contarTranscripcionesConProtocoloDetalle(List<Transcription> transcriptions) {
+        return transcriptions.stream()
                 .filter(t -> t.getProtocoloDetalle() != null && !t.getProtocoloDetalle().isBlank())
                 .count();
+    }
+
+    private Map<String, Long> countStringValues(List<String> values) {
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .collect(Collectors.groupingBy(
+                        value -> value,
+                        LinkedHashMap::new,
+                        Collectors.counting()
+                ));
+    }
+
+    private List<DashboardMetricsDTO.SellerMetrics> buildSellerMetrics(List<Transcription> analyzedList) {
+        return analyzedList.stream()
+                .collect(Collectors.groupingBy(t -> String.valueOf(t.getUserId()) + "|" + String.valueOf(t.getUserName()) + "|" + String.valueOf(t.getBranchName())))
+                .values()
+                .stream()
+                .map(group -> {
+                    Transcription first = group.get(0);
+                    long total = group.size();
+                    long sales = group.stream().filter(t -> Boolean.TRUE.equals(t.getSaleCompleted())).count();
+                    DashboardMetricsDTO.SellerMetrics sm = new DashboardMetricsDTO.SellerMetrics();
+                    sm.setUserId(first.getUserId());
+                    sm.setUserName(first.getUserName());
+                    sm.setBranchName(first.getBranchName());
+                    sm.setTotalInteractions(total);
+                    sm.setSales(sales);
+                    sm.setNoSales(group.stream().filter(t -> Boolean.FALSE.equals(t.getSaleCompleted())).count());
+                    sm.setConversionRate(calculateRate(sales, total));
+                    sm.setAverageScore(group.stream()
+                            .map(Transcription::getSellerScore)
+                            .filter(Objects::nonNull)
+                            .mapToInt(Integer::intValue)
+                            .average()
+                            .orElse(0.0));
+                    return sm;
+                })
+                .sorted((a, b) -> Double.compare(b.getConversionRate(), a.getConversionRate()))
+                .toList();
+    }
+
+    private List<DashboardMetricsDTO.BranchMetrics> buildBranchMetrics(List<Transcription> analyzedList) {
+        return analyzedList.stream()
+                .collect(Collectors.groupingBy(t -> String.valueOf(t.getBranchId()) + "|" + String.valueOf(t.getBranchName())))
+                .values()
+                .stream()
+                .map(group -> {
+                    Transcription first = group.get(0);
+                    long total = group.size();
+                    long sales = group.stream().filter(t -> Boolean.TRUE.equals(t.getSaleCompleted())).count();
+                    DashboardMetricsDTO.BranchMetrics bm = new DashboardMetricsDTO.BranchMetrics();
+                    bm.setBranchId(first.getBranchId());
+                    bm.setBranchName(first.getBranchName());
+                    bm.setTotalInteractions(total);
+                    bm.setSales(sales);
+                    bm.setNoSales(group.stream().filter(t -> Boolean.FALSE.equals(t.getSaleCompleted())).count());
+                    bm.setConversionRate(calculateRate(sales, total));
+                    bm.setAverageScore(group.stream()
+                            .map(Transcription::getSellerScore)
+                            .filter(Objects::nonNull)
+                            .mapToInt(Integer::intValue)
+                            .average()
+                            .orElse(0.0));
+                    return bm;
+                })
+                .sorted((a, b) -> Double.compare(b.getConversionRate(), a.getConversionRate()))
+                .toList();
     }
 
     public List<Map<String, Object>> getSellers() {

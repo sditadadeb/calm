@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
     private final DataSource dataSource;
+    private final Environment environment;
 
     @Value("${admin.username:admin}")
     private String adminUsername;
@@ -30,11 +32,12 @@ public class DataInitializer implements CommandLineRunner {
     private String adminPassword;
 
     public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           JdbcTemplate jdbcTemplate, DataSource dataSource) {
+                           JdbcTemplate jdbcTemplate, DataSource dataSource, Environment environment) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
+        this.environment = environment;
     }
 
     @Override
@@ -42,9 +45,27 @@ public class DataInitializer implements CommandLineRunner {
         ensureTranscriptionSchema();
         syncAdminUser();
         
-        // Create viewer user (always exists)
-        String viewerUsername = "viewer";
-        String viewerPassword = "calm2026!";
+        syncOptionalViewerUser();
+
+        applyTimezoneCorrection();
+    }
+
+    private void syncOptionalViewerUser() {
+        String viewerUsername = environment.getProperty("viewer.username");
+        String viewerPassword = environment.getProperty("viewer.password");
+
+        if (viewerUsername == null || viewerUsername.isBlank() || viewerPassword == null || viewerPassword.isBlank()) {
+            userRepository.findByUsername("viewer").ifPresent(existingViewer -> {
+                if (Boolean.TRUE.equals(existingViewer.getEnabled())) {
+                    existingViewer.setEnabled(false);
+                    userRepository.save(existingViewer);
+                    log.warn("Usuario viewer por defecto deshabilitado; configure viewer.username/viewer.password si necesita un viewer");
+                }
+            });
+            log.info("Usuario viewer no configurado por variables de entorno; se omite creación automática");
+            return;
+        }
+
         if (!userRepository.existsByUsername(viewerUsername)) {
             User viewer = new User();
             viewer.setUsername(viewerUsername);
@@ -52,12 +73,10 @@ public class DataInitializer implements CommandLineRunner {
             viewer.setRole("VIEWER");
             viewer.setEnabled(true);
             userRepository.save(viewer);
-            log.info("Usuario viewer creado");
+            log.info("Usuario viewer creado desde configuración: {}", viewerUsername);
         } else {
-            log.info("Usuario viewer ya existe");
+            log.info("Usuario viewer configurado ya existe: {}", viewerUsername);
         }
-
-        applyTimezoneCorrection();
     }
 
     private void ensureTranscriptionSchema() {

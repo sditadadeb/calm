@@ -414,7 +414,7 @@ public class S3Service {
         try {
             String key = metadataPrefix + recordingId + ".webm";
             
-            log.info("Streaming audio from S3: bucket={}, key={}, range={}", metadataBucket, key, range);
+            log.debug("Streaming audio from S3 for recording {}, range={}", recordingId, range);
             
             GetObjectRequest.Builder requestBuilder = GetObjectRequest.builder()
                     .bucket(metadataBucket)

@@ -65,7 +65,6 @@ public class SecurityConfig {
                 
                 // Health check endpoints (for load balancers / Render)
                 auth.requestMatchers("/actuator/health").permitAll();
-                auth.requestMatchers("/actuator/**").permitAll();
                 // Let Spring return the real controller error instead of masking it as 401/403.
                 auth.requestMatchers("/error").permitAll();
                 

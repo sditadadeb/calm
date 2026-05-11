@@ -58,13 +58,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         
-        // Fallback to query parameter (needed for SSE/EventSource which can't set headers)
+        // Fallback to query parameter only for SSE/EventSource endpoints
+        // (EventSource cannot set Authorization headers). Avoid accepting JWTs
+        // in URLs for normal API/audio requests, because query strings are
+        // commonly captured in browser history and proxy logs.
         String tokenParam = request.getParameter("token");
-        if (StringUtils.hasText(tokenParam)) {
+        String path = request.getRequestURI();
+        if (StringUtils.hasText(tokenParam) && isSseEndpoint(path)) {
             return tokenParam;
         }
         
         return null;
+    }
+
+    private boolean isSseEndpoint(String path) {
+        return path != null && (
+                path.endsWith("/api/sync/stream") ||
+                path.endsWith("/api/reanalyze-all/stream") ||
+                path.endsWith("/api/recommendations/analyze/stream") ||
+                path.endsWith("/api/recommendations/retry/stream")
+        );
     }
 }
 

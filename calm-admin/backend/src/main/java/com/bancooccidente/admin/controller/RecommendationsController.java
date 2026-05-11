@@ -12,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recommendations")
+@PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
 public class RecommendationsController {
     
     private final AdvancedAnalyzerService advancedAnalyzerService;
@@ -41,7 +42,6 @@ public class RecommendationsController {
      * Solo ADMIN puede ejecutar
      */
     @GetMapping(value = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
     public SseEmitter runAnalysisWithProgress() {
         return advancedAnalyzerService.runAdvancedAnalysisWithProgress();
     }
@@ -59,7 +59,6 @@ public class RecommendationsController {
      * Solo ADMIN puede ejecutar
      */
     @GetMapping(value = "/retry/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
     public SseEmitter retryMissing() {
         return advancedAnalyzerService.retryMissingAnalyses();
     }
@@ -69,7 +68,6 @@ public class RecommendationsController {
      * Solo ADMIN puede ejecutar
      */
     @DeleteMapping("/clear")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> clearAnalyses() {
         long deleted = advancedAnalyzerService.clearAllAnalyses();
         return ResponseEntity.ok(Map.of(
