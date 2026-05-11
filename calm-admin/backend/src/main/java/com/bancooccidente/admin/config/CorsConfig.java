@@ -40,16 +40,25 @@ public class CorsConfig {
         if (!isProd()) {
             config.addAllowedOriginPattern("http://localhost:*");
             config.addAllowedOriginPattern("http://127.0.0.1:*");
+        } else {
+            // El sitio productivo puede resolver con o sin www.
+            config.addAllowedOriginPattern("https://numia.co");
+            config.addAllowedOriginPattern("https://*.numia.co");
+            config.addAllowedOriginPattern("https://bancodeoccidente.analytics.numia.co");
+            config.addAllowedOriginPattern("https://banco-occidente-frontend.onrender.com");
         }
 
-        // Allow all headers (Authorization, Content-Type, etc.)
+        // Headers usados por API JSON y streaming de audio.
         config.setAllowedHeaders(List.of(
             "Authorization", "Content-Type", "X-Requested-With",
             "Accept", "Origin", "Access-Control-Request-Method",
-            "Access-Control-Request-Headers", "Cache-Control"
+            "Access-Control-Request-Headers", "Cache-Control", "Range"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        config.setExposedHeaders(List.of(
+            "Authorization", "Content-Type", "Content-Length",
+            "Content-Range", "Accept-Ranges"
+        ));
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
