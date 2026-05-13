@@ -7,17 +7,18 @@ import com.isl.admin.config.PromptDefaults;
 import com.isl.admin.repository.SystemConfigRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.completion.chat.ChatMessageRole;
-import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
 import jakarta.annotation.PostConstruct;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,16 +35,18 @@ public class ChatGPTAnalyzerService {
     private static final String MAX_TOKENS_KEY = "openai_max_tokens";
 
     private static final String DEFAULT_PROMPT = PromptDefaults.DEFAULT_ANALYSIS_PROMPT;
+    private static final String DEFAULT_BEDROCK_MODEL = "anthropic.claude-sonnet-4-20250514-v1:0";
 
-    @Value("${openai.api.key}")
-    private String apiKey;
+    @Value("${aws.bedrock.region:us-east-1}")
+    private String bedrockRegion;
 
-    @Value("${openai.model}")
-    private String defaultModel;
+    @Value("${aws.bedrock.model:}")
+    private String bedrockModel;
 
-    private OpenAiService openAiService;
+    private BedrockRuntimeClient bedrockClient;
     private final ObjectMapper objectMapper;
     private final SystemConfigRepository configRepository;
+    private boolean serviceReady = false;
 
     public ChatGPTAnalyzerService(ObjectMapper objectMapper, SystemConfigRepository configRepository) {
         this.objectMapper = objectMapper;
@@ -52,11 +55,16 @@ public class ChatGPTAnalyzerService {
 
     @PostConstruct
     public void init() {
-        if (apiKey != null && !apiKey.equals("sk-placeholder") && !apiKey.isEmpty()) {
-            this.openAiService = new OpenAiService(apiKey, Duration.ofSeconds(120));
-            log.info("OpenAI service initialized with model: {}", defaultModel);
-        } else {
-            log.warn("OpenAI API key not configured. Analysis will be disabled.");
+        try {
+            this.bedrockClient = BedrockRuntimeClient.builder()
+                    .region(Region.of(bedrockRegion))
+                    .credentialsProvider(DefaultCredentialsProvider.create())
+                    .build();
+            String modelId = getModelId();
+            log.info("Bedrock service initialized (default credentials). Region: {}, Model: {}", bedrockRegion, modelId);
+            serviceReady = true;
+        } catch (Exception e) {
+            log.error("Failed to initialize Bedrock client: {}", e.getMessage());
         }
     }
 
@@ -66,10 +74,13 @@ public class ChatGPTAnalyzerService {
                 .orElse(DEFAULT_PROMPT);
     }
 
-    private String getModel() {
-        return configRepository.findByConfigKey(MODEL_KEY)
+    private String getModelId() {
+        String dbModel = configRepository.findByConfigKey(MODEL_KEY)
                 .map(SystemConfig::getConfigValue)
-                .orElse(defaultModel);
+                .orElse(null);
+        if (dbModel != null && dbModel.startsWith("anthropic.")) return dbModel;
+        if (bedrockModel != null && !bedrockModel.isBlank()) return bedrockModel;
+        return DEFAULT_BEDROCK_MODEL;
     }
 
     private Double getTemperature() {
@@ -81,18 +92,18 @@ public class ChatGPTAnalyzerService {
     private Integer getMaxTokens() {
         return configRepository.findByConfigKey(MAX_TOKENS_KEY)
                 .map(c -> Integer.parseInt(c.getConfigValue()))
-                .orElse(3000);
+                .orElse(4096);
     }
 
     public AnalysisResult analyzeTranscription(String transcriptionText, String sellerName, String branchName) {
-        if (openAiService == null) {
-            log.warn("OpenAI service not initialized, returning mock analysis");
+        if (!serviceReady || bedrockClient == null) {
+            log.warn("Bedrock service not initialized, returning mock analysis");
             return createMockAnalysis();
         }
 
         try {
             String systemPrompt = getSystemPrompt();
-            String model = getModel();
+            String modelId = getModelId();
             Double temperature = getTemperature();
             Integer maxTokens = getMaxTokens();
 
@@ -105,29 +116,34 @@ public class ChatGPTAnalyzerService {
                 Proporciona un análisis completo en formato JSON.
                 """, branchName, sellerName, transcriptionText);
 
-            List<ChatMessage> messages = new ArrayList<>();
-            messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
-            messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
+            String requestBody = objectMapper.writeValueAsString(java.util.Map.of(
+                    "anthropic_version", "bedrock-2023-05-31",
+                    "max_tokens", maxTokens,
+                    "temperature", temperature,
+                    "system", systemPrompt,
+                    "messages", List.of(
+                            java.util.Map.of("role", "user", "content", userPrompt)
+                    )
+            ));
 
-            // Modelos GPT-5.* usan restricciones distintas de temperature/max_tokens.
-            boolean isGpt5Family = model != null && model.startsWith("gpt-5");
-            ChatCompletionRequest request = isGpt5Family
-                    ? ChatCompletionRequest.builder().model(model).messages(messages).build()
-                    : ChatCompletionRequest.builder().model(model).messages(messages)
-                            .temperature(temperature).maxTokens(maxTokens != null ? maxTokens : 4096).build();
+            InvokeModelRequest request = InvokeModelRequest.builder()
+                    .modelId(modelId)
+                    .contentType("application/json")
+                    .accept("application/json")
+                    .body(SdkBytes.fromUtf8String(requestBody))
+                    .build();
 
-            String response = openAiService.createChatCompletion(request)
-                    .getChoices()
-                    .get(0)
-                    .getMessage()
-                    .getContent();
+            InvokeModelResponse invokeResponse = bedrockClient.invokeModel(request);
+            String responseBody = invokeResponse.body().asUtf8String();
 
-            log.info("Received analysis response from ChatGPT");
-            AnalysisResult result = parseAnalysisResponse(response);
-            return result;
+            JsonNode responseJson = objectMapper.readTree(responseBody);
+            String content = responseJson.path("content").get(0).path("text").asText();
+
+            log.info("Received analysis response from Bedrock (Claude)");
+            return parseAnalysisResponse(content);
 
         } catch (Exception e) {
-            log.error("Error analyzing transcription with ChatGPT: {}", e.getMessage());
+            log.error("Error analyzing transcription with Bedrock: {}", e.getMessage());
             return createMockAnalysis();
         }
     }

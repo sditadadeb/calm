@@ -6,17 +6,18 @@ import com.isl.admin.repository.AdvancedAnalysisRepository;
 import com.isl.admin.repository.TranscriptionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.service.OpenAiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -30,9 +31,6 @@ public class AdvancedAnalyzerService {
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final TranscriptionRepository transcriptionRepository;
     private final ObjectMapper objectMapper;
-    
-    @Value("${openai.api.key:}")
-    private String openaiApiKey;
     
     private static final String ADVANCED_ANALYSIS_PROMPT = """
         Eres un experto en análisis de conversaciones de atención. Analiza la siguiente transcripción de una interacción (presencial o por llamada) entre un agente y un ciudadano en un organismo de atención y extrae métricas detalladas.
@@ -114,30 +112,39 @@ public class AdvancedAnalyzerService {
     /**
      * Analiza una transcripción individual con el prompt avanzado
      */
+    @Value("${aws.bedrock.region:us-east-1}")
+    private String bedrockRegion;
+
     public AdvancedAnalysis analyzeTranscription(Transcription transcription) {
-        if (openaiApiKey == null || openaiApiKey.isEmpty()) {
-            logger.warn("OpenAI API key not configured");
-            return null;
-        }
-        
         try {
-            OpenAiService service = new OpenAiService(openaiApiKey, Duration.ofSeconds(120));
-            
-            String fullPrompt = ADVANCED_ANALYSIS_PROMPT + "\n\n" + transcription.getTranscriptionText();
-            
-            // GPT 5.1 no admite max_tokens ni temperature distinto de 1; solo model y messages
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model("gpt-5.1-chat-latest")
-                    .messages(List.of(
-                            new ChatMessage("system", "Eres un analista experto en conversaciones de atención. Responde solo con JSON válido."),
-                            new ChatMessage("user", fullPrompt)
-                    ))
+            BedrockRuntimeClient client = BedrockRuntimeClient.builder()
+                    .region(Region.of(bedrockRegion))
+                    .credentialsProvider(DefaultCredentialsProvider.create())
                     .build();
             
-            String response = service.createChatCompletion(request)
-                    .getChoices().get(0).getMessage().getContent();
+            String fullPrompt = ADVANCED_ANALYSIS_PROMPT + "\n\n" + transcription.getTranscriptionText();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "anthropic_version", "bedrock-2023-05-31",
+                    "max_tokens", 4096,
+                    "temperature", 0.3,
+                    "system", "Eres un analista experto en conversaciones de atención. Responde solo con JSON válido.",
+                    "messages", List.of(Map.of("role", "user", "content", fullPrompt))
+            ));
+
+            InvokeModelRequest request = InvokeModelRequest.builder()
+                    .modelId("anthropic.claude-sonnet-4-20250514-v1:0")
+                    .contentType("application/json")
+                    .accept("application/json")
+                    .body(SdkBytes.fromUtf8String(requestBody))
+                    .build();
+
+            String responseBody = client.invokeModel(request).body().asUtf8String();
+            JsonNode responseJson = objectMapper.readTree(responseBody);
+            String response = responseJson.path("content").get(0).path("text").asText();
             
             logger.info("Advanced analysis response received for {}", transcription.getRecordingId());
+            client.close();
             
             return parseAndSaveAnalysis(transcription.getRecordingId(), response);
             

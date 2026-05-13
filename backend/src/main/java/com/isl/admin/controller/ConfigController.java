@@ -16,7 +16,7 @@ public class ConfigController {
 
     private final SystemConfigRepository configRepository;
 
-    @Value("${openai.model}")
+    @Value("${aws.bedrock.model:anthropic.claude-sonnet-4-20250514-v1:0}")
     private String defaultModel;
 
     private static final String PROMPT_KEY = "analysis_prompt";

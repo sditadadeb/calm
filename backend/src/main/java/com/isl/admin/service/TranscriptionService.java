@@ -381,6 +381,72 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public Map<String, Object> analyzeRandomTranscription() {
+        List<Transcription> withText = repository.findAll().stream()
+                .filter(t -> t.getTranscriptionText() != null && t.getTranscriptionText().length() > 50)
+                .collect(Collectors.toList());
+
+        if (withText.isEmpty()) {
+            return Map.of("success", false, "error", "No hay transcripciones con texto disponible");
+        }
+
+        Transcription random = withText.get(new java.util.Random().nextInt(withText.size()));
+        log.info("Analyzing random transcription: {}", random.getRecordingId());
+
+        try {
+            AnalysisResult result = chatGPTAnalyzerService.analyzeTranscription(
+                    random.getTranscriptionText(),
+                    random.getUserName() != null ? random.getUserName() : "Desconocido",
+                    random.getBranchName() != null ? random.getBranchName() : "Desconocida"
+            );
+
+            boolean isMock = "UNINTERPRETABLE".equals(result.getSaleStatus());
+            if (!isMock) {
+                random.setSaleCompleted(result.getSaleCompleted());
+                random.setSaleStatus(result.getSaleStatus());
+                random.setAnalysisConfidence(result.getAnalysisConfidence());
+                random.setConfidenceTrace(result.getConfidenceTrace());
+                random.setSaleEvidence(result.getSaleEvidence());
+                random.setSaleEvidenceMeta(result.getSaleEvidenceMeta());
+                random.setNoSaleReason(result.getNoSaleReason());
+                random.setMotivoPrincipal(result.getProductsDiscussed() != null && !result.getProductsDiscussed().isEmpty()
+                        ? result.getProductsDiscussed().get(0) : null);
+                random.setResultadoLlamada(result.getSaleStatus());
+                random.setProductsDiscussed(result.getProductsDiscussed() != null ? String.join(", ", result.getProductsDiscussed()) : null);
+                random.setCustomerObjections(result.getCustomerObjections() != null ? String.join(", ", result.getCustomerObjections()) : null);
+                random.setImprovementSuggestions(result.getImprovementSuggestions() != null ? String.join(", ", result.getImprovementSuggestions()) : null);
+                random.setAnalysisPayload(result.getAnalysisPayload());
+                random.setFollowUpRecommendation(result.getFollowUpRecommendation());
+                random.setExecutiveSummary(result.getExecutiveSummary());
+                random.setSellerScore(result.getSellerScore());
+                random.setSellerStrengths(result.getSellerStrengths() != null ? String.join(", ", result.getSellerStrengths()) : null);
+                random.setSellerWeaknesses(result.getSellerWeaknesses() != null ? String.join(", ", result.getSellerWeaknesses()) : null);
+                random.setAnalyzed(true);
+                random.setAnalyzedAt(java.time.LocalDateTime.now());
+                repository.save(random);
+            }
+
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", !isMock);
+            response.put("recordingId", random.getRecordingId());
+            response.put("provider", "bedrock-claude-sonnet");
+            response.put("saleStatus", result.getSaleStatus());
+            response.put("sellerScore", result.getSellerScore());
+            response.put("executiveSummary", result.getExecutiveSummary());
+            response.put("motivoPrincipal", result.getProductsDiscussed() != null && !result.getProductsDiscussed().isEmpty()
+                    ? result.getProductsDiscussed().get(0) : null);
+            response.put("confidence", result.getAnalysisConfidence());
+            if (isMock) {
+                response.put("error", "Bedrock no respondió. Verificar permisos del task role.");
+            }
+            return response;
+        } catch (Exception e) {
+            log.error("Error analyzing random transcription: {}", e.getMessage());
+            return Map.of("success", false, "recordingId", random.getRecordingId(), "error", e.getMessage());
+        }
+    }
+
     public long countAll() {
         return repository.count();
     }

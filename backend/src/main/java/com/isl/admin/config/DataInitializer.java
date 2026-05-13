@@ -23,7 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${admin.username:Admin}")
     private String adminUsername;
 
-    @Value("${admin.password:#{null}}")
+    @Value("${admin.password:Admin123}")
     private String adminPassword;
 
     @Value("${viewer.username:viewer}")
@@ -90,9 +90,9 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         SystemConfig modelConfig = systemConfigRepository.findByConfigKey("openai_model")
-                .orElse(new SystemConfig("openai_model", "gpt-5.2", "OpenAI model to use"));
-        if (modelConfig.getConfigValue() == null || modelConfig.getConfigValue().isBlank()) {
-            modelConfig.setConfigValue("gpt-5.2");
+                .orElse(new SystemConfig("openai_model", "anthropic.claude-sonnet-4-20250514-v1:0", "Bedrock model to use"));
+        if (modelConfig.getConfigValue() == null || modelConfig.getConfigValue().isBlank() || modelConfig.getConfigValue().startsWith("gpt-")) {
+            modelConfig.setConfigValue("anthropic.claude-sonnet-4-20250514-v1:0");
             systemConfigRepository.save(modelConfig);
         }
     }

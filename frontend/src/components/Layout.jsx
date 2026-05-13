@@ -9,11 +9,16 @@ import {
   Sun,
   Moon,
   Search,
-  Lightbulb
+  Lightbulb,
+  FlaskConical,
+  Loader2,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 // Configuración de páginas con subtítulos
 const pageConfig = {
@@ -61,6 +66,34 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  const [testState, setTestState] = useState('idle'); // idle | loading | success | error
+  const [testResult, setTestResult] = useState(null);
+
+  const handleTestAnalysis = async () => {
+    if (testState === 'loading') return;
+    setTestState('loading');
+    setTestResult(null);
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.post('/api/analyze-random', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 120000
+      });
+      if (data.success) {
+        setTestState('success');
+        setTestResult(data);
+        setTimeout(() => setTestState('idle'), 8000);
+      } else {
+        setTestState('error');
+        setTestResult(data);
+        setTimeout(() => setTestState('idle'), 8000);
+      }
+    } catch (err) {
+      setTestState('error');
+      setTestResult({ error: err.response?.data?.message || err.message });
+      setTimeout(() => setTestState('idle'), 8000);
+    }
+  };
 
   return (
     <div className={`min-h-screen flex ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
@@ -130,7 +163,53 @@ export default function Layout({ children }) {
                     </Link>
                   );
                 })}
-                
+
+                <div className={`border-t my-4 ${isDark ? 'border-zinc-800' : 'border-gray-200'}`}></div>
+                <button
+                  onClick={handleTestAnalysis}
+                  disabled={testState === 'loading'}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    testState === 'success'
+                      ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800'
+                      : testState === 'error'
+                      ? 'bg-red-900/30 text-red-400 border border-red-800'
+                      : testState === 'loading'
+                      ? isDark ? 'bg-zinc-900 text-amber-400 border border-zinc-700' : 'bg-amber-50 text-amber-600 border border-amber-200'
+                      : isDark
+                      ? 'text-zinc-400 hover:bg-zinc-900 hover:text-amber-400 border border-transparent'
+                      : 'text-gray-600 hover:bg-amber-50 hover:text-amber-700 border border-transparent'
+                  }`}
+                >
+                  {testState === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> 
+                   : testState === 'success' ? <CheckCircle2 className="w-5 h-5" />
+                   : testState === 'error' ? <XCircle className="w-5 h-5" />
+                   : <FlaskConical className="w-5 h-5" />}
+                  <span className="font-medium text-sm">
+                    {testState === 'loading' ? 'Analizando...' 
+                     : testState === 'success' ? 'OK!' 
+                     : testState === 'error' ? 'Error'
+                     : 'Test Bedrock'}
+                  </span>
+                </button>
+                {testResult && testState !== 'idle' && (
+                  <div className={`mx-2 mt-2 p-3 rounded-lg text-xs space-y-1 ${
+                    testState === 'success' 
+                      ? isDark ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-900' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : isDark ? 'bg-red-950/50 text-red-300 border border-red-900' : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {testResult.success ? (
+                      <>
+                        <p className="font-semibold">Claude Sonnet</p>
+                        <p className="truncate">ID: {testResult.recordingId?.slice(0,8)}...</p>
+                        <p>Score: {testResult.sellerScore}/10</p>
+                        <p>Motivo: {testResult.motivoPrincipal}</p>
+                        <p className="opacity-70 truncate">{testResult.executiveSummary?.slice(0, 80)}...</p>
+                      </>
+                    ) : (
+                      <p>{testResult.error}</p>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

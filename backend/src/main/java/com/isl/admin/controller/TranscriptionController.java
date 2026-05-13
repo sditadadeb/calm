@@ -167,6 +167,12 @@ public class TranscriptionController {
         ));
     }
 
+    @PostMapping("/analyze-random")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> analyzeRandomTranscription() {
+        return ResponseEntity.ok(transcriptionService.analyzeRandomTranscription());
+    }
+
     @GetMapping("/transcriptions/count")
     public ResponseEntity<Map<String, Object>> getTranscriptionCounts() {
         long total = transcriptionService.countAll();
