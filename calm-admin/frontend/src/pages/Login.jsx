@@ -44,7 +44,7 @@ const Login = () => {
 
         {/* Logo en caja blanca para mantener los colores originales */}
         <div className="bg-white rounded-2xl px-10 py-8 mb-10 shadow-lg">
-          <img src="/logo-vertical.png" alt="Banco de Occidente"
+          <img src="/numia-logo.svg" alt="Numia"
             className="w-40" style={{ objectFit: 'contain' }} />
         </div>
 
@@ -61,7 +61,7 @@ const Login = () => {
 
         {/* Logo visible solo en mobile */}
         <div className="lg:hidden mb-8">
-          <img src="/logo-vertical.png" alt="Banco de Occidente" className="h-20 mx-auto" />
+          <img src="/numia-logo.svg" alt="Numia" className="h-20 mx-auto" />
         </div>
 
         <div className="w-full max-w-sm">
