@@ -483,7 +483,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-[#0081FF]-full" />
             <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              Métricas de Calidad — Banco de Occidente
+              Métricas de Calidad — Numia
             </h2>
           </div>
 
