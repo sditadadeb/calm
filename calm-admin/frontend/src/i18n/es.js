@@ -69,7 +69,7 @@ export default {
     passwordPlaceholder: 'Ingresá tu contraseña',
     signingIn: 'Ingresando...',
     submit: 'Ingresar',
-    footer: '© 2026 Banco de Occidente - Panel de Administración',
+    footer: '© 2026 Numia - Panel de Administración',
     error: 'Error al iniciar sesión',
   },
   dashboard: {

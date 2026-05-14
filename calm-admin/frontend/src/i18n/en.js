@@ -69,7 +69,7 @@ export default {
     passwordPlaceholder: 'Enter your password',
     signingIn: 'Signing in...',
     submit: 'Sign in',
-    footer: '© 2026 Banco de Occidente - Administration Panel',
+    footer: '© 2026 Numia - Administration Panel',
     error: 'Error signing in',
   },
   dashboard: {

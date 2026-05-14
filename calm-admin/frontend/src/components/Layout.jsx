@@ -98,7 +98,7 @@ export default function Layout({ children }) {
         <div className={`px-4 py-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
           <div className={isDark ? 'bg-white rounded-xl px-3 py-2 inline-block' : undefined}>
             <img
-              src="/numia-logo.svg"
+              src="/numia-logo.png"
               alt="Numia"
               className="h-16 w-auto object-contain"
               style={{ mixBlendMode: 'multiply' }}
