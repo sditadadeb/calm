@@ -43,9 +43,9 @@ const Login = () => {
         style={{ background: 'linear-gradient(160deg, #0862C5 0%, #0081FF 100%)' }}>
 
         {/* Logo en caja blanca para mantener los colores originales */}
-        <div className="bg-white rounded-2xl px-10 py-8 mb-10 shadow-lg">
+        <div className="bg-white rounded-2xl px-6 py-4 mb-10 shadow-lg">
           <img src="/numia-logo.png" alt="Numia"
-            className="w-40" style={{ objectFit: 'contain' }} />
+            className="w-64" style={{ objectFit: 'contain' }} />
         </div>
 
         <h2 className="text-white text-3xl font-bold text-center leading-snug">
@@ -61,7 +61,7 @@ const Login = () => {
 
         {/* Logo visible solo en mobile */}
         <div className="lg:hidden mb-8">
-          <img src="/numia-logo.png" alt="Numia" className="h-20 mx-auto" />
+          <img src="/numia-logo.png" alt="Numia" className="w-56 mx-auto" />
         </div>
 
         <div className="w-full max-w-sm">

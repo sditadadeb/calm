@@ -100,7 +100,7 @@ export default function Layout({ children }) {
             <img
               src="/numia-logo.png"
               alt="Numia"
-              className="h-16 w-auto object-contain"
+              className="h-12 w-auto object-contain"
               style={{ mixBlendMode: 'multiply' }}
             />
           </div>
