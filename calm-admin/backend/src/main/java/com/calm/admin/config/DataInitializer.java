@@ -102,11 +102,15 @@ public class DataInitializer implements CommandLineRunner {
     }
     
     private void purgeExcludedBranches() {
-        List<Transcription> toRemove = transcriptionRepository.findByBranchIdIn(EXCLUDED_BRANCH_IDS);
-        if (!toRemove.isEmpty()) {
-            log.info("Eliminando {} transcripciones de sucursales excluidas (IDs: {})", toRemove.size(), EXCLUDED_BRANCH_IDS);
-            transcriptionRepository.deleteAll(toRemove);
-            log.info("Transcripciones de sucursales excluidas eliminadas correctamente");
+        try {
+            List<Transcription> toRemove = transcriptionRepository.findByBranchIdIn(EXCLUDED_BRANCH_IDS);
+            if (!toRemove.isEmpty()) {
+                log.info("Eliminando {} transcripciones de sucursales excluidas (IDs: {})", toRemove.size(), EXCLUDED_BRANCH_IDS);
+                transcriptionRepository.deleteAll(toRemove);
+                log.info("Transcripciones de sucursales excluidas eliminadas correctamente");
+            }
+        } catch (Exception e) {
+            log.error("Error purgando sucursales excluidas: {}", e.getMessage());
         }
     }
 }

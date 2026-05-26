@@ -98,7 +98,7 @@ public class TranscriptionService {
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
         
-        Long branchIdValue = metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null;
+        Long branchIdValue = parseLong(metadata.get("branchId"));
         if (branchIdValue != null && EXCLUDED_BRANCH_IDS.contains(branchIdValue)) {
             log.info("Skipping recording {} from excluded branch {}", recordingId, branchIdValue);
             return null;
@@ -126,9 +126,9 @@ public class TranscriptionService {
         
         Transcription transcription = new Transcription();
         transcription.setRecordingId(recordingId);
-        transcription.setUserId(metadata.get("userId") != null ? (Long) metadata.get("userId") : null);
+        transcription.setUserId(parseLong(metadata.get("userId")));
         transcription.setUserName(userName);
-        transcription.setBranchId(metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null);
+        transcription.setBranchId(branchIdValue);
         transcription.setBranchName(branchName);
         transcription.setTranscriptionText(transcriptionText);
         transcription.setRecordingDate(recordingDate);
@@ -348,7 +348,7 @@ public class TranscriptionService {
                 for (String recordingId : recordingIds) {
                     if (!repository.existsByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
                         Map<String, Object> meta = s3Service.getMetadata(recordingId);
-                        Long bId = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
+                        Long bId = parseLong(meta.get("branchId"));
                         if (bId != null && EXCLUDED_BRANCH_IDS.contains(bId)) {
                             log.info("Skipping recording {} from excluded branch {}", recordingId, bId);
                             continue;
@@ -878,5 +878,16 @@ public class TranscriptionService {
             index += lowerTerm.length();
         }
         return count;
+    }
+    
+    private Long parseLong(Object value) {
+        if (value == null) return null;
+        if (value instanceof Long) return (Long) value;
+        if (value instanceof Number) return ((Number) value).longValue();
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
