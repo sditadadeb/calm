@@ -71,23 +71,35 @@ public class S3Service {
         }
         
         try {
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(metadataBucket)
-                    .prefix(metadataPrefix)
-                    .build();
-
-            ListObjectsV2Response response = metadataS3Client.listObjectsV2(request);
+            String continuationToken = null;
+            int pages = 0;
             
-            for (S3Object object : response.contents()) {
-                String key = object.key();
-                if (key.endsWith(".json")) {
-                    String fileName = key.substring(key.lastIndexOf("/") + 1);
-                    String recordingId = fileName.replace(".json", "");
-                    recordingIds.add(recordingId);
+            do {
+                ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
+                        .bucket(metadataBucket)
+                        .prefix(metadataPrefix);
+                
+                if (continuationToken != null) {
+                    requestBuilder.continuationToken(continuationToken);
                 }
-            }
+
+                ListObjectsV2Response response = metadataS3Client.listObjectsV2(requestBuilder.build());
+                pages++;
+                
+                for (S3Object object : response.contents()) {
+                    String key = object.key();
+                    if (key.endsWith(".json")) {
+                        String fileName = key.substring(key.lastIndexOf("/") + 1);
+                        String recordingId = fileName.replace(".json", "");
+                        recordingIds.add(recordingId);
+                    }
+                }
+                
+                continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
+                
+            } while (continuationToken != null);
             
-            log.info("Found {} recording IDs in metadata bucket", recordingIds.size());
+            log.info("Found {} recording IDs in metadata bucket ({} pages)", recordingIds.size(), pages);
         } catch (Exception e) {
             log.error("Error listing objects from metadata bucket: {}", e.getMessage());
         }

@@ -97,6 +97,8 @@ public class TranscriptionService {
     @Transactional
     public Transcription importTranscription(String recordingId) {
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
+        log.info("Import {} - metadata keys: {}, branchId raw: {}, userId raw: {}", 
+                recordingId, metadata.keySet(), metadata.get("branchId"), metadata.get("userId"));
         
         Long branchIdValue = parseLong(metadata.get("branchId"));
         if (branchIdValue != null && EXCLUDED_BRANCH_IDS.contains(branchIdValue)) {
