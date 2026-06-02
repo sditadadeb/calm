@@ -18,6 +18,7 @@ export default function Transcriptions() {
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -149,21 +150,24 @@ export default function Transcriptions() {
       setFilters(urlFilters);
     }
     
-    const COOLDOWN_MS = 60 * 60 * 1000;
-    const lastCheck = parseInt(localStorage.getItem('lastS3Check') || '0', 10);
-    const now = Date.now();
-    const shouldCheck = (now - lastCheck) >= COOLDOWN_MS;
+    const checkedThisSession = sessionStorage.getItem('s3Checked');
 
     const loadData = async () => {
-      if (shouldCheck) {
+      if (!checkedThisSession) {
         setSyncing(true);
+        setSyncMessage(t('transcriptions.checkingNew'));
         try {
-          await checkNewTranscriptions();
-          localStorage.setItem('lastS3Check', String(Date.now()));
+          const res = await checkNewTranscriptions();
+          const imported = res?.data?.imported || 0;
+          if (imported > 0) {
+            setSyncMessage(`${imported} ${imported === 1 ? 'nueva atención encontrada' : 'nuevas atenciones encontradas'}, analizando...`);
+          }
+          sessionStorage.setItem('s3Checked', '1');
         } catch (err) {
           console.error('Auto-check failed:', err);
         } finally {
           setSyncing(false);
+          setSyncMessage('');
         }
       }
       fetchTranscriptions();
@@ -242,7 +246,7 @@ export default function Transcriptions() {
         {syncing ? (
           <>
             <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
-            <span>{t('transcriptions.checkingNew')}</span>
+            <span>{syncMessage || t('transcriptions.checkingNew')}</span>
           </>
         ) : (
           <>
