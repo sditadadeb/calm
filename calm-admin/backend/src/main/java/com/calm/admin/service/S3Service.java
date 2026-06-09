@@ -59,65 +59,181 @@ public class S3Service {
     }
 
     public boolean isConfigured() {
-        return metadataS3Client != null && transcriptionsS3Client != null;
+        return metadataS3Client != null;
     }
 
     public List<String> listAllRecordingIds() {
         List<String> recordingIds = new ArrayList<>();
-        
+
         if (metadataS3Client == null) {
             log.warn("S3 metadata client not configured. Returning empty list.");
             return recordingIds;
         }
-        
+
+        try {
+            // List subfolders (branches) using delimiter
+            List<String> subfolderPrefixes = new ArrayList<>();
+            String subfolderToken = null;
+            do {
+                ListObjectsV2Request.Builder req = ListObjectsV2Request.builder()
+                        .bucket(metadataBucket)
+                        .prefix(metadataPrefix)
+                        .delimiter("/");
+                if (subfolderToken != null) req.continuationToken(subfolderToken);
+
+                ListObjectsV2Response resp = metadataS3Client.listObjectsV2(req.build());
+                for (CommonPrefix cp : resp.commonPrefixes()) {
+                    subfolderPrefixes.add(cp.prefix());
+                }
+                subfolderToken = resp.isTruncated() ? resp.nextContinuationToken() : null;
+            } while (subfolderToken != null);
+
+            log.info("Found {} subfolders under prefix '{}'", subfolderPrefixes.size(), metadataPrefix);
+
+            if (subfolderPrefixes.isEmpty()) {
+                // Fallback: flat listing (legacy format, no subfolders)
+                log.info("No subfolders found, falling back to flat listing");
+                return listAllRecordingIdsFlat();
+            }
+
+            // For each subfolder, list its files and extract IDs from .json filenames
+            for (String subfolderPrefix : subfolderPrefixes) {
+                String continuationToken = null;
+                do {
+                    ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
+                            .bucket(metadataBucket)
+                            .prefix(subfolderPrefix);
+                    if (continuationToken != null) requestBuilder.continuationToken(continuationToken);
+
+                    ListObjectsV2Response response = metadataS3Client.listObjectsV2(requestBuilder.build());
+
+                    for (S3Object object : response.contents()) {
+                        String key = object.key();
+                        if (key.endsWith(".json")) {
+                            // recordingId = path relative to metadataPrefix, without extension
+                            // e.g. "in-person-recording/4477/abc123.json" -> "4477/abc123"
+                            String relativePath = key.substring(metadataPrefix.length());
+                            String recordingId = relativePath.replace(".json", "");
+                            recordingIds.add(recordingId);
+                        }
+                    }
+
+                    continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
+                } while (continuationToken != null);
+            }
+
+            log.info("Found {} recording IDs across {} subfolders in metadata bucket",
+                    recordingIds.size(), subfolderPrefixes.size());
+        } catch (Exception e) {
+            log.error("Error listing objects from metadata bucket: {}", e.getMessage());
+        }
+
+        return recordingIds;
+    }
+
+    private List<String> listAllRecordingIdsFlat() {
+        List<String> recordingIds = new ArrayList<>();
         try {
             String continuationToken = null;
             int pages = 0;
-            
             do {
                 ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(metadataBucket)
                         .prefix(metadataPrefix);
-                
-                if (continuationToken != null) {
-                    requestBuilder.continuationToken(continuationToken);
-                }
+                if (continuationToken != null) requestBuilder.continuationToken(continuationToken);
 
                 ListObjectsV2Response response = metadataS3Client.listObjectsV2(requestBuilder.build());
                 pages++;
-                
+
                 for (S3Object object : response.contents()) {
                     String key = object.key();
                     if (key.endsWith(".json")) {
                         String fileName = key.substring(key.lastIndexOf("/") + 1);
-                        String recordingId = fileName.replace(".json", "");
-                        recordingIds.add(recordingId);
+                        recordingIds.add(fileName.replace(".json", ""));
                     }
                 }
-                
+
                 continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
-                
             } while (continuationToken != null);
-            
-            log.info("Found {} recording IDs in metadata bucket ({} pages)", recordingIds.size(), pages);
+
+            log.info("Flat listing: found {} recording IDs ({} pages)", recordingIds.size(), pages);
         } catch (Exception e) {
-            log.error("Error listing objects from metadata bucket: {}", e.getMessage());
+            log.error("Error in flat listing: {}", e.getMessage());
         }
-        
         return recordingIds;
     }
 
     public Map<String, Object> getMetadata(String recordingId) {
-        Map<String, Object> metadata = new HashMap<>();
-        
         if (metadataS3Client == null) {
             log.warn("S3 metadata client not configured.");
-            return metadata;
+            return new HashMap<>();
         }
-        
+
+        // Try CSV first (new format: {prefix}{subfolder}/{id}.csv)
+        Map<String, Object> csvMetadata = readMetadataFromCsv(recordingId);
+        if (!csvMetadata.isEmpty()) {
+            return csvMetadata;
+        }
+
+        // Fallback to JSON (legacy format: {prefix}{id}.json)
+        return readMetadataFromJson(recordingId);
+    }
+
+    private Map<String, Object> readMetadataFromCsv(String recordingId) {
+        Map<String, Object> metadata = new HashMap<>();
         try {
-            String key = metadataPrefix + recordingId + ".json";
-            
+            String key = metadataPrefix + recordingId + ".csv";
+
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(metadataBucket)
+                    .key(key)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> response = metadataS3Client.getObject(request);
+            List<String> lines = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.toList());
+
+            if (lines.size() < 2) {
+                log.warn("CSV metadata for {} has no data rows", recordingId);
+                return metadata;
+            }
+
+            String[] headers = lines.get(0).split(",", -1);
+            String[] values = lines.get(1).split(",", -1);
+
+            for (int i = 0; i < headers.length && i < values.length; i++) {
+                String header = headers[i].trim().toLowerCase().replaceAll("[\"']", "");
+                String value = values[i].trim().replaceAll("[\"']", "");
+
+                switch (header) {
+                    case "user_id", "userid" -> {
+                        try { metadata.put("userId", Long.parseLong(value)); } catch (NumberFormatException ignored) {}
+                    }
+                    case "user_name", "username", "user" -> metadata.put("userName", value);
+                    case "branch_id", "branchid" -> {
+                        try { metadata.put("branchId", Long.parseLong(value)); } catch (NumberFormatException ignored) {}
+                    }
+                    case "branch_name", "branchname", "branch" -> metadata.put("branchName", value);
+                }
+            }
+
+            log.info("Retrieved CSV metadata for recording {}", recordingId);
+        } catch (NoSuchKeyException e) {
+            // Expected when CSV doesn't exist (old format)
+        } catch (Exception e) {
+            log.error("Error reading CSV metadata for recording {}: {}", recordingId, e.getMessage());
+        }
+        return metadata;
+    }
+
+    private Map<String, Object> readMetadataFromJson(String recordingId) {
+        Map<String, Object> metadata = new HashMap<>();
+        try {
+            // Legacy: file is at {prefix}{recordingId}.json (flat, no subfolder)
+            String flatId = recordingId.contains("/") ? recordingId.substring(recordingId.lastIndexOf("/") + 1) : recordingId;
+            String key = metadataPrefix + flatId + ".json";
+
             GetObjectRequest request = GetObjectRequest.builder()
                     .bucket(metadataBucket)
                     .key(key)
@@ -129,44 +245,44 @@ public class S3Service {
                     .collect(Collectors.joining("\n"));
 
             JsonNode root = objectMapper.readTree(content);
-            
+
             if (root.has("user")) {
                 JsonNode user = root.get("user");
                 metadata.put("userId", user.has("id") ? user.get("id").asLong() : null);
                 metadata.put("userName", user.has("name") ? user.get("name").asText() : null);
             }
-            
+
             if (root.has("branch")) {
                 JsonNode branch = root.get("branch");
                 metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
                 metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
             }
-            
-            log.info("Retrieved metadata for recording {}", recordingId);
+
+            log.info("Retrieved JSON metadata for recording {}", recordingId);
         } catch (NoSuchKeyException e) {
             log.warn("Metadata not found for recording {}", recordingId);
         } catch (Exception e) {
-            log.error("Error reading metadata for recording {}: {}", recordingId, e.getMessage());
+            log.error("Error reading JSON metadata for recording {}: {}", recordingId, e.getMessage());
         }
-        
         return metadata;
     }
 
     public String getTranscription(String recordingId) {
-        if (transcriptionsS3Client == null) {
-            log.warn("S3 transcriptions client not configured.");
+        if (metadataS3Client == null) {
+            log.warn("S3 metadata client not configured.");
             return null;
         }
-        
+
         try {
-            String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
+            // New format: {prefix}{subfolder}/{id}.json (subfolder is part of recordingId)
+            String key = metadataPrefix + recordingId + ".json";
             
             GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(transcriptionsBucket)
+                    .bucket(metadataBucket)
                     .key(key)
                     .build();
 
-            ResponseInputStream<GetObjectResponse> response = transcriptionsS3Client.getObject(request);
+            ResponseInputStream<GetObjectResponse> response = metadataS3Client.getObject(request);
             String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.joining("\n"));
@@ -323,19 +439,19 @@ public class S3Service {
     }
 
     public boolean transcriptionExists(String recordingId) {
-        if (transcriptionsS3Client == null) {
+        if (metadataS3Client == null) {
             return false;
         }
-        
+
         try {
-            String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
-            
+            String key = metadataPrefix + recordingId + ".json";
+
             HeadObjectRequest request = HeadObjectRequest.builder()
-                    .bucket(transcriptionsBucket)
+                    .bucket(metadataBucket)
                     .key(key)
                     .build();
 
-            transcriptionsS3Client.headObject(request);
+            metadataS3Client.headObject(request);
             return true;
         } catch (NoSuchKeyException e) {
             return false;
@@ -344,25 +460,21 @@ public class S3Service {
             return false;
         }
     }
-    
-    /**
-     * Obtiene la fecha de creación/modificación del archivo de transcripción en S3.
-     * Esta fecha representa cuándo se creó la grabación/atención.
-     */
+
     public java.time.Instant getTranscriptionDate(String recordingId) {
-        if (transcriptionsS3Client == null) {
+        if (metadataS3Client == null) {
             return null;
         }
-        
+
         try {
-            String key = transcriptionsPrefix + "in-person-recording-" + recordingId + ".webm-transcription.json";
-            
+            String key = metadataPrefix + recordingId + ".json";
+
             HeadObjectRequest request = HeadObjectRequest.builder()
-                    .bucket(transcriptionsBucket)
+                    .bucket(metadataBucket)
                     .key(key)
                     .build();
 
-            HeadObjectResponse response = transcriptionsS3Client.headObject(request);
+            HeadObjectResponse response = metadataS3Client.headObject(request);
             return response.lastModified();
         } catch (NoSuchKeyException e) {
             log.warn("Transcription file not found for recording {}", recordingId);
