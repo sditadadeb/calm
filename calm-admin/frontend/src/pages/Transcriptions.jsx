@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +19,8 @@ export default function Transcriptions() {
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 25;
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
@@ -104,6 +106,17 @@ export default function Transcriptions() {
       return 0;
     });
   }, [filteredTranscriptions, sortConfig]);
+
+  const totalPages = Math.ceil(sortedTranscriptions.length / pageSize);
+  const paginatedTranscriptions = useMemo(() => {
+    const start = currentPage * pageSize;
+    return sortedTranscriptions.slice(start, start + pageSize);
+  }, [sortedTranscriptions, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [filters, sortConfig]);
 
   // Componente para header ordenable
   const SortableHeader = ({ label, sortKey, className = '' }) => {
@@ -275,6 +288,7 @@ export default function Transcriptions() {
             <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('transcriptions.adjustFilters')}</p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
@@ -290,7 +304,7 @@ export default function Transcriptions() {
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                {sortedTranscriptions.map((transcription, index) => (
+                {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
                     className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
@@ -431,6 +445,34 @@ export default function Transcriptions() {
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className={`flex items-center justify-between px-6 py-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, sortedTranscriptions.length)} de {sortedTranscriptions.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  className={`p-2 rounded-lg transition-colors ${currentPage === 0 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                  {currentPage + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={currentPage >= totalPages - 1}
+                  className={`p-2 rounded-lg transition-colors ${currentPage >= totalPages - 1 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>
