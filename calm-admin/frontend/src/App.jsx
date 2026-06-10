@@ -31,7 +31,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/transcriptions" element={<Transcriptions />} />
-                  <Route path="/transcriptions/:id" element={<TranscriptionDetail />} />
+                  <Route path="/transcriptions/*" element={<TranscriptionDetail />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/sellers" element={<Sellers />} />
                   <Route path="/branches" element={<Branches />} />

@@ -33,8 +33,7 @@ public class TranscriptionController {
     private final S3Service s3Service;
     private final TranscriptionCommentRepository commentRepository;
     
-    // Only allow alphanumeric recording IDs (prevent path traversal)
-    private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
+    private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9 _/.\\-]+$");
 
     public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
                                    TranscriptionCommentRepository commentRepository) {
@@ -92,10 +91,22 @@ public class TranscriptionController {
         return ResponseEntity.ok(transcriptionService.getTranscription(recordingId));
     }
 
+    @GetMapping("/transcriptions/{subfolder}/{recordingId}")
+    public ResponseEntity<TranscriptionDTO> getTranscriptionWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return getTranscription(subfolder + "/" + recordingId);
+    }
+
     @PostMapping("/transcriptions/{recordingId}/analyze")
     public ResponseEntity<TranscriptionDTO> analyzeTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         return ResponseEntity.ok(transcriptionService.analyzeTranscription(recordingId));
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/analyze")
+    public ResponseEntity<TranscriptionDTO> analyzeTranscriptionWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return analyzeTranscription(subfolder + "/" + recordingId);
     }
 
     @PostMapping("/sync")
@@ -164,9 +175,16 @@ public class TranscriptionController {
         transcriptionService.deleteTranscription(recordingId);
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "Transcripci├│n eliminada correctamente",
+            "message", "Transcripcion eliminada correctamente",
             "recordingId", recordingId
         ));
+    }
+
+    @DeleteMapping("/transcriptions/{subfolder}/{recordingId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> deleteTranscriptionWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return deleteTranscription(subfolder + "/" + recordingId);
     }
     
     /**
@@ -205,7 +223,7 @@ public class TranscriptionController {
         if (!exists) {
             return ResponseEntity.ok(Map.of(
                 "available", false,
-                "message", "Audio no disponible para esta transcripci├│n"
+                "message", "Audio no disponible para esta transcripcion"
             ));
         }
         
@@ -218,10 +236,23 @@ public class TranscriptionController {
         ));
     }
     
+    @GetMapping("/transcriptions/{subfolder}/{recordingId}/audio")
+    public ResponseEntity<Map<String, Object>> getAudioInfoWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return getAudioInfo(subfolder + "/" + recordingId);
+    }
+    
     /**
      * Sirve el audio como proxy desde S3 (evita problemas de CORS).
      * Soporta Range requests para permitir seeking en el reproductor.
      */
+    @GetMapping("/transcriptions/{subfolder}/{recordingId}/audio/stream")
+    public ResponseEntity<org.springframework.core.io.InputStreamResource> streamAudioWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId,
+            @RequestHeader(value = "Range", required = false) String rangeHeader) {
+        return streamAudio(subfolder + "/" + recordingId, rangeHeader);
+    }
+
     @GetMapping("/transcriptions/{recordingId}/audio/stream")
     public ResponseEntity<org.springframework.core.io.InputStreamResource> streamAudio(
             @PathVariable String recordingId,
@@ -305,6 +336,12 @@ public class TranscriptionController {
 
     // ===== COMMENTS =====
 
+    @GetMapping("/transcriptions/{subfolder}/{recordingId}/comments")
+    public ResponseEntity<List<Map<String, Object>>> getCommentsWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return getComments(subfolder + "/" + recordingId);
+    }
+
     @GetMapping("/transcriptions/{recordingId}/comments")
     public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
@@ -321,6 +358,13 @@ public class TranscriptionController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/comments")
+    public ResponseEntity<Map<String, Object>> addCommentWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId,
+            @RequestBody Map<String, String> request) {
+        return addComment(subfolder + "/" + recordingId, request);
     }
 
     @PostMapping("/transcriptions/{recordingId}/comments")
@@ -349,6 +393,14 @@ public class TranscriptionController {
         response.put("content", comment.getContent());
         response.put("createdAt", comment.getCreatedAt());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/transcriptions/{subfolder}/{recordingId}/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteCommentWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId,
+            @PathVariable Long commentId) {
+        return deleteComment(subfolder + "/" + recordingId, commentId);
     }
 
     @DeleteMapping("/transcriptions/{recordingId}/comments/{commentId}")

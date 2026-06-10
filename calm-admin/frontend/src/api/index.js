@@ -63,20 +63,20 @@ export const getTranscriptions = (filters = {}) => {
   return api.get(`/transcriptions?${params.toString()}`);
 };
 
-export const getTranscription = (recordingId) => api.get(`/transcriptions/${recordingId}`);
+export const getTranscription = (recordingId) => api.get(`/transcriptions/${encodeURI(recordingId)}`);
 
-export const getAudioUrl = (recordingId) => api.get(`/transcriptions/${recordingId}/audio`);
+export const getAudioUrl = (recordingId) => api.get(`/transcriptions/${encodeURI(recordingId)}/audio`);
 
 export const getAudioStreamUrl = (recordingId) => {
   const token = localStorage.getItem('token');
-  return `${API_URL}/transcriptions/${recordingId}/audio/stream?token=${token}`;
+  return `${API_URL}/transcriptions/${encodeURI(recordingId)}/audio/stream?token=${token}`;
 };
 
-export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${recordingId}/analyze`);
+export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/analyze`);
 
 export const checkNewTranscriptions = () => api.post('/transcriptions/check-new');
 
-export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${recordingId}`);
+export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${encodeURI(recordingId)}`);
 
 // Search
 export const searchTranscriptions = (query, filters = {}) => {

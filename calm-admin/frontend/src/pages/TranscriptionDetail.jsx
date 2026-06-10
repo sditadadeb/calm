@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
   User, 
@@ -180,7 +180,8 @@ const SALE_STATUS_CONFIG = {
 };
 
 export default function TranscriptionDetail() {
-  const { id } = useParams();
+  const location = useLocation();
+  const id = decodeURIComponent(location.pathname.replace('/transcriptions/', ''));
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { t } = useLanguage();
@@ -335,7 +336,7 @@ export default function TranscriptionDetail() {
     const fetchComments = async () => {
       try {
         setCommentsLoading(true);
-        const response = await api.get(`/transcriptions/${id}/comments`);
+        const response = await api.get(`/transcriptions/${encodeURI(id)}/comments`);
         setComments(response.data);
       } catch (err) {
         console.error('Error fetching comments:', err);
@@ -349,7 +350,7 @@ export default function TranscriptionDetail() {
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     try {
-      const response = await api.post(`/transcriptions/${id}/comments`, { content: newComment.trim() });
+      const response = await api.post(`/transcriptions/${encodeURI(id)}/comments`, { content: newComment.trim() });
       setComments([...comments, response.data]);
       setNewComment('');
     } catch (err) {
@@ -360,7 +361,7 @@ export default function TranscriptionDetail() {
   const handleDeleteComment = async (commentId) => {
     if (!confirm(t('detail.deleteCommentConfirm'))) return;
     try {
-      await api.delete(`/transcriptions/${id}/comments/${commentId}`);
+      await api.delete(`/transcriptions/${encodeURI(id)}/comments/${commentId}`);
       setComments(comments.filter(c => c.id !== commentId));
     } catch (err) {
       console.error('Error deleting comment:', err);
