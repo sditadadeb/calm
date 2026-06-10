@@ -120,8 +120,11 @@ public class DataInitializer implements CommandLineRunner {
             int deleted = jdbcTemplate.update(
                 "DELETE FROM transcriptions WHERE transcription_text LIKE '{\"user\":%' OR transcription_text LIKE '{\"branch\":%'"
             );
-            if (deleted > 0) {
-                log.info("Eliminadas {} transcripciones con metadata JSON como texto (se re-importaran)", deleted);
+            int deletedNoMeta = jdbcTemplate.update(
+                "DELETE FROM transcriptions WHERE transcription_text LIKE '[Audio disponible%' AND user_id IS NULL AND branch_id IS NULL"
+            );
+            if (deleted + deletedNoMeta > 0) {
+                log.info("Eliminadas {} transcripciones corruptas (se re-importaran)", deleted + deletedNoMeta);
             }
         } catch (Exception e) {
             log.error("Error purgando transcripciones con metadata como texto: {}", e.getMessage());

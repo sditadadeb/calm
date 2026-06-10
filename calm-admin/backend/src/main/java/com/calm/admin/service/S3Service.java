@@ -230,35 +230,71 @@ public class S3Service {
     private Map<String, Object> readMetadataFromJson(String recordingId) {
         Map<String, Object> metadata = new HashMap<>();
         try {
-            // Legacy: file is at {prefix}{recordingId}.json (flat, no subfolder)
-            String flatId = recordingId.contains("/") ? recordingId.substring(recordingId.lastIndexOf("/") + 1) : recordingId;
-            String key = metadataPrefix + flatId + ".json";
+            // Try full path first (new format: {prefix}{subfolder}/{id}.json)
+            String key = metadataPrefix + recordingId + ".json";
 
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(metadataBucket)
-                    .key(key)
-                    .build();
+            try {
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(metadataBucket)
+                        .key(key)
+                        .build();
 
-            ResponseInputStream<GetObjectResponse> response = metadataS3Client.getObject(request);
-            String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
-                    .lines()
-                    .collect(Collectors.joining("\n"));
+                ResponseInputStream<GetObjectResponse> response = metadataS3Client.getObject(request);
+                String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
 
-            JsonNode root = objectMapper.readTree(content);
+                JsonNode root = objectMapper.readTree(content);
 
-            if (root.has("user")) {
-                JsonNode user = root.get("user");
-                metadata.put("userId", user.has("id") ? user.get("id").asLong() : null);
-                metadata.put("userName", user.has("name") ? user.get("name").asText() : null);
+                if (root.has("user")) {
+                    JsonNode user = root.get("user");
+                    metadata.put("userId", user.has("id") ? user.get("id").asLong() : null);
+                    metadata.put("userName", user.has("name") ? user.get("name").asText() : null);
+                }
+
+                if (root.has("branch")) {
+                    JsonNode branch = root.get("branch");
+                    metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
+                    metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
+                }
+
+                log.info("Retrieved JSON metadata for recording {}", recordingId);
+                return metadata;
+            } catch (NoSuchKeyException e) {
+                // Full path not found, try legacy flat path
             }
 
-            if (root.has("branch")) {
-                JsonNode branch = root.get("branch");
-                metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
-                metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
-            }
+            // Fallback: legacy flat path (strip subfolder)
+            if (recordingId.contains("/")) {
+                String flatId = recordingId.substring(recordingId.lastIndexOf("/") + 1);
+                String flatKey = metadataPrefix + flatId + ".json";
 
-            log.info("Retrieved JSON metadata for recording {}", recordingId);
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(metadataBucket)
+                        .key(flatKey)
+                        .build();
+
+                ResponseInputStream<GetObjectResponse> response = metadataS3Client.getObject(request);
+                String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+
+                JsonNode root = objectMapper.readTree(content);
+
+                if (root.has("user")) {
+                    JsonNode user = root.get("user");
+                    metadata.put("userId", user.has("id") ? user.get("id").asLong() : null);
+                    metadata.put("userName", user.has("name") ? user.get("name").asText() : null);
+                }
+
+                if (root.has("branch")) {
+                    JsonNode branch = root.get("branch");
+                    metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
+                    metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
+                }
+
+                log.info("Retrieved JSON metadata (flat) for recording {}", recordingId);
+            }
         } catch (NoSuchKeyException e) {
             log.warn("Metadata not found for recording {}", recordingId);
         } catch (Exception e) {
