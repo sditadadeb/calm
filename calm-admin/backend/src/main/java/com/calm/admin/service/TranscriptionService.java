@@ -109,8 +109,13 @@ public class TranscriptionService {
         String transcriptionText = s3Service.getTranscription(recordingId);
         
         if (transcriptionText == null || transcriptionText.isEmpty()) {
-            log.warn("No transcription text found for recording {}", recordingId);
-            return null;
+            if (s3Service.audioExists(recordingId)) {
+                transcriptionText = "[Audio disponible - Transcripción pendiente de procesamiento]";
+                log.info("No transcription text for {}, but audio exists", recordingId);
+            } else {
+                log.warn("No transcription text found for recording {}", recordingId);
+                return null;
+            }
         }
         
         java.time.Instant s3Date = s3Service.getTranscriptionDate(recordingId);

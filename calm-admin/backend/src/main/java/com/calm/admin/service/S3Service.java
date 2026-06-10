@@ -289,6 +289,12 @@ public class S3Service {
 
             JsonNode root = objectMapper.readTree(content);
             StringBuilder transcriptionText = new StringBuilder();
+
+            // Detect metadata-only JSON (not a transcription)
+            if (root.isObject() && (root.has("user") || root.has("branch")) && !root.has("text") && !root.has("transcript") && !root.has("results")) {
+                log.info("File for {} is metadata, not transcription", recordingId);
+                return null;
+            }
             
             if (root.isArray()) {
                 String lastSpeaker = null;

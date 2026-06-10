@@ -70,6 +70,7 @@ public class DataInitializer implements CommandLineRunner {
 
         applyTimezoneCorrection();
         purgeExcludedBranches();
+        purgeMetadataAsText();
     }
 
     private void applyTimezoneCorrection() {
@@ -111,6 +112,19 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.error("Error purgando sucursales excluidas: {}", e.getMessage());
+        }
+    }
+
+    private void purgeMetadataAsText() {
+        try {
+            int deleted = jdbcTemplate.update(
+                "DELETE FROM transcriptions WHERE transcription_text LIKE '{\"user\":%' OR transcription_text LIKE '{\"branch\":%'"
+            );
+            if (deleted > 0) {
+                log.info("Eliminadas {} transcripciones con metadata JSON como texto (se re-importaran)", deleted);
+            }
+        } catch (Exception e) {
+            log.error("Error purgando transcripciones con metadata como texto: {}", e.getMessage());
         }
     }
 }
