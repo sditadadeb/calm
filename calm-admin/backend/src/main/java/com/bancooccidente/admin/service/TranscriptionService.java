@@ -290,6 +290,7 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
         
         Map<String, Long> noSaleReasons = repository.countByNoSaleReason().stream()
+                .filter(row -> row[0] != null)
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> ((Number) row[1]).longValue(),
@@ -327,6 +328,7 @@ public class TranscriptionService {
         metrics.setGrabacionesCortadasManual(repository.countGrabacionesCortadasManual());
 
         Map<String, Long> visitReasons = repository.getVisitReasonDistribution().stream()
+                .filter(row -> row[0] != null)
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> ((Number) row[1]).longValue(),
@@ -336,6 +338,7 @@ public class TranscriptionService {
         metrics.setVisitReasonDistribution(visitReasons);
 
         Map<String, Long> emotionalStates = repository.getEmotionalStateDistribution().stream()
+                .filter(row -> row[0] != null)
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> ((Number) row[1]).longValue(),

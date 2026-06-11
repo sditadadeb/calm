@@ -1,0 +1,1 @@
+-- Baseline para bases PostgreSQL existentes en Render antes de Flyway.

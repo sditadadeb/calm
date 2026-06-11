@@ -18,6 +18,7 @@ import java.sql.DatabaseMetaData;
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+    private static final String DB_SCHEMA = "public";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -80,6 +81,11 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void ensureTranscriptionSchema() {
+        try {
+            jdbcTemplate.execute("SET search_path TO " + DB_SCHEMA);
+        } catch (Exception e) {
+            log.warn("No se pudo fijar search_path a {}: {}", DB_SCHEMA, e.getMessage());
+        }
         ensureUsersSchema();
         addColumnIfMissing("transcriptions", "sale_status", "VARCHAR(255)");
         addColumnIfMissing("transcriptions", "analysis_confidence", "INTEGER");
@@ -110,7 +116,9 @@ public class DataInitializer implements CommandLineRunner {
     private void widenRecordingIdColumn() {
         try {
             if (columnExists("transcriptions", "recording_id")) {
-                jdbcTemplate.execute("ALTER TABLE transcriptions ALTER COLUMN recording_id TYPE VARCHAR(255)");
+                jdbcTemplate.execute(
+                    "ALTER TABLE " + qualifiedTable("transcriptions") + " ALTER COLUMN recording_id TYPE VARCHAR(255)"
+                );
                 log.info("Columna transcriptions.recording_id ampliada a VARCHAR(255)");
             }
         } catch (Exception e) {
@@ -120,9 +128,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private void addColumnIfMissing(String tableName, String columnName, String columnDefinition) {
         try {
+            if (!tableExists(tableName)) {
+                log.warn("Tabla {}.{} no existe; se omite migracion de columna {}", DB_SCHEMA, tableName, columnName);
+                return;
+            }
             if (!columnExists(tableName, columnName)) {
                 jdbcTemplate.execute(
-                    "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition
+                    "ALTER TABLE " + qualifiedTable(tableName) + " ADD COLUMN " + columnName + " " + columnDefinition
                 );
                 log.info("Columna creada: {}.{}", tableName, columnName);
             }
@@ -131,11 +143,27 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private String qualifiedTable(String tableName) {
+        return DB_SCHEMA + "." + tableName;
+    }
+
+    private boolean tableExists(String tableName) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM information_schema.tables " +
+            "WHERE table_schema = ? AND table_name = ?",
+            Integer.class,
+            DB_SCHEMA,
+            tableName
+        );
+        return count != null && count > 0;
+    }
+
     private boolean columnExists(String tableName, String columnName) {
         Integer count = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM information_schema.columns " +
-            "WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?",
+            "WHERE table_schema = ? AND table_name = ? AND column_name = ?",
             Integer.class,
+            DB_SCHEMA,
             tableName,
             columnName
         );

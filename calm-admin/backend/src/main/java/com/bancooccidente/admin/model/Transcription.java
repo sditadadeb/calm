@@ -15,7 +15,7 @@ public class Transcription {
     private String branchName;
 
     /** Ruta S3 base (carpeta) donde viven metadata, audio y transcripción. */
-    @Column(length = 512)
+    @Column(name = "s3_base_key", length = 512)
     private String s3BaseKey;
 
     @Column(columnDefinition = "TEXT")
