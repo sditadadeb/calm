@@ -9,6 +9,7 @@ import ScoreBadge from '../components/ScoreBadge';
 import { checkNewTranscriptions } from '../api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatRecordingIdShort } from '../utils/recordingId';
 
 export default function Transcriptions() {
   const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters, filters } = useStore();
@@ -279,7 +280,7 @@ export default function Transcriptions() {
             <table className="w-full">
               <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                 <tr>
-                  <SortableHeader label={t('transcriptions.id')} sortKey="recordingId" />
+                  <SortableHeader label={t('transcriptions.id')} sortKey="recordingId" className="w-28" />
                   <SortableHeader label={t('transcriptions.seller')} sortKey="userName" />
                   <SortableHeader label={t('transcriptions.branch')} sortKey="branchName" />
                   <SortableHeader label={t('transcriptions.date')} sortKey="recordingDate" />
@@ -296,8 +297,13 @@ export default function Transcriptions() {
                     className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-[#0081FF]">#{transcription.recordingId}</span>
+                    <td className="px-4 py-4 w-28 max-w-[7rem]">
+                      <span
+                        className="font-mono text-sm font-medium text-[#0081FF] cursor-help truncate block max-w-[6rem]"
+                        title={transcription.recordingId}
+                      >
+                        {formatRecordingIdShort(transcription.recordingId)}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
