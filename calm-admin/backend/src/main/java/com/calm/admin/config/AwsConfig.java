@@ -35,6 +35,15 @@ public class AwsConfig {
     @Value("${aws.s3.transcriptions.region:us-east-1}")
     private String transcriptionsRegion;
 
+    @Value("${aws.s3.newbucket.accessKeyId:}")
+    private String newBucketAccessKeyId;
+
+    @Value("${aws.s3.newbucket.secretAccessKey:}")
+    private String newBucketSecretKey;
+
+    @Value("${aws.s3.newbucket.region:us-east-1}")
+    private String newBucketRegion;
+
     @Bean(name = "metadataS3Client")
     public S3Client metadataS3Client() {
         if (metadataAccessKeyId == null || metadataAccessKeyId.isBlank() ||
@@ -63,6 +72,20 @@ public class AwsConfig {
                 .build();
     }
     
+    @Bean(name = "newBucketS3Client")
+    public S3Client newBucketS3Client() {
+        if (newBucketAccessKeyId == null || newBucketAccessKeyId.isBlank() ||
+            newBucketSecretKey == null || newBucketSecretKey.isBlank()) {
+            log.warn("AWS new bucket S3 credentials not configured.");
+            return null;
+        }
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(newBucketAccessKeyId, newBucketSecretKey);
+        return S3Client.builder()
+                .region(Region.of(newBucketRegion))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .build();
+    }
+
     @Bean(name = "transcriptionsS3Presigner")
     public S3Presigner transcriptionsS3Presigner() {
         if (transcriptionsAccessKeyId == null || transcriptionsAccessKeyId.isBlank() ||

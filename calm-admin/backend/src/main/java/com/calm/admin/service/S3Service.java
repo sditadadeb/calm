@@ -31,6 +31,7 @@ public class S3Service {
 
     private final S3Client metadataS3Client;
     private final S3Client transcriptionsS3Client;
+    private final S3Client newBucketS3Client;
     private final S3Presigner metadataS3Presigner;
     private final ObjectMapper objectMapper;
 
@@ -46,27 +47,40 @@ public class S3Service {
     @Value("${aws.s3.transcriptions.prefix}")
     private String transcriptionsPrefix;
 
+    @Value("${aws.s3.newbucket.bucket}")
+    private String newBucket;
+
+    @Value("${aws.s3.newbucket.prefix}")
+    private String newBucketPrefix;
+
     @Autowired
     public S3Service(
             @Qualifier("metadataS3Client") @Nullable S3Client metadataS3Client,
             @Qualifier("transcriptionsS3Client") @Nullable S3Client transcriptionsS3Client,
+            @Qualifier("newBucketS3Client") @Nullable S3Client newBucketS3Client,
             @Qualifier("metadataS3Presigner") @Nullable S3Presigner metadataS3Presigner,
             ObjectMapper objectMapper) {
         this.metadataS3Client = metadataS3Client;
         this.transcriptionsS3Client = transcriptionsS3Client;
+        this.newBucketS3Client = newBucketS3Client;
         this.metadataS3Presigner = metadataS3Presigner;
         this.objectMapper = objectMapper;
     }
 
     public boolean isConfigured() {
-        return metadataS3Client != null;
+        return metadataS3Client != null || newBucketS3Client != null;
     }
 
     public List<String> listAllRecordingIds() {
         List<String> recordingIds = new ArrayList<>();
 
+        if (metadataS3Client == null && newBucketS3Client == null) {
+            log.warn("No S3 clients configured. Returning empty list.");
+            return recordingIds;
+        }
+
         if (metadataS3Client == null) {
-            log.warn("S3 metadata client not configured. Returning empty list.");
+            recordingIds.addAll(listRecordingIdsFromNewBucket());
             return recordingIds;
         }
 
@@ -128,7 +142,61 @@ public class S3Service {
             log.error("Error listing objects from metadata bucket: {}", e.getMessage());
         }
 
+        // Also list from new bucket
+        recordingIds.addAll(listRecordingIdsFromNewBucket());
+
         return recordingIds;
+    }
+
+    private List<String> listRecordingIdsFromNewBucket() {
+        List<String> ids = new ArrayList<>();
+        if (newBucketS3Client == null) return ids;
+
+        try {
+            List<String> subfolderPrefixes = new ArrayList<>();
+            String token = null;
+            do {
+                ListObjectsV2Request.Builder req = ListObjectsV2Request.builder()
+                        .bucket(newBucket)
+                        .prefix(newBucketPrefix)
+                        .delimiter("/");
+                if (token != null) req.continuationToken(token);
+                ListObjectsV2Response resp = newBucketS3Client.listObjectsV2(req.build());
+                for (CommonPrefix cp : resp.commonPrefixes()) {
+                    subfolderPrefixes.add(cp.prefix());
+                }
+                token = resp.isTruncated() ? resp.nextContinuationToken() : null;
+            } while (token != null);
+
+            for (String subfolderPrefix : subfolderPrefixes) {
+                String continuationToken = null;
+                do {
+                    ListObjectsV2Request.Builder rb = ListObjectsV2Request.builder()
+                            .bucket(newBucket)
+                            .prefix(subfolderPrefix);
+                    if (continuationToken != null) rb.continuationToken(continuationToken);
+                    ListObjectsV2Response response = newBucketS3Client.listObjectsV2(rb.build());
+
+                    for (S3Object object : response.contents()) {
+                        String key = object.key();
+                        // Use .json (metadata) to identify recordings, exclude .transcripcion.json
+                        if (key.endsWith(".json") && !key.endsWith(".transcripcion.json")) {
+                            String relativePath = key.substring(newBucketPrefix.length());
+                            String recordingId = relativePath.replace(".json", "");
+                            ids.add(recordingId);
+                        }
+                    }
+                    continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
+                } while (continuationToken != null);
+            }
+
+            if (!ids.isEmpty()) {
+                log.info("Found {} recording IDs in new bucket (calm-grabaciones)", ids.size());
+            }
+        } catch (Exception e) {
+            log.error("Error listing from new bucket: {}", e.getMessage());
+        }
+        return ids;
     }
 
     private List<String> listAllRecordingIdsFlat() {
@@ -164,19 +232,60 @@ public class S3Service {
     }
 
     public Map<String, Object> getMetadata(String recordingId) {
+        // Try new bucket first
+        Map<String, Object> newBucketMeta = readMetadataFromNewBucket(recordingId);
+        if (!newBucketMeta.isEmpty()) return newBucketMeta;
+
         if (metadataS3Client == null) {
             log.warn("S3 metadata client not configured.");
             return new HashMap<>();
         }
 
-        // Try CSV first (new format: {prefix}{subfolder}/{id}.csv)
+        // Try CSV (new format in old bucket)
         Map<String, Object> csvMetadata = readMetadataFromCsv(recordingId);
-        if (!csvMetadata.isEmpty()) {
-            return csvMetadata;
-        }
+        if (!csvMetadata.isEmpty()) return csvMetadata;
 
-        // Fallback to JSON (legacy format: {prefix}{id}.json)
+        // Fallback to JSON
         return readMetadataFromJson(recordingId);
+    }
+
+    private Map<String, Object> readMetadataFromNewBucket(String recordingId) {
+        Map<String, Object> metadata = new HashMap<>();
+        if (newBucketS3Client == null) return metadata;
+        try {
+            String key = newBucketPrefix + recordingId + ".json";
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(newBucket)
+                    .key(key)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> response = newBucketS3Client.getObject(request);
+            String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+
+            JsonNode root = objectMapper.readTree(content);
+
+            if (root.has("user")) {
+                JsonNode user = root.get("user");
+                metadata.put("userId", user.has("id") ? user.get("id").asLong() : null);
+                metadata.put("userName", user.has("name") ? user.get("name").asText() : null);
+            }
+            if (root.has("branch")) {
+                JsonNode branch = root.get("branch");
+                metadata.put("branchId", branch.has("id") ? branch.get("id").asLong() : null);
+                metadata.put("branchName", branch.has("name") ? branch.get("name").asText() : null);
+            }
+
+            if (!metadata.isEmpty()) {
+                log.info("Retrieved metadata from new bucket for {}", recordingId);
+            }
+        } catch (NoSuchKeyException e) {
+            // Not in new bucket
+        } catch (Exception e) {
+            log.error("Error reading metadata from new bucket for {}: {}", recordingId, e.getMessage());
+        }
+        return metadata;
     }
 
     private Map<String, Object> readMetadataFromCsv(String recordingId) {
@@ -303,14 +412,75 @@ public class S3Service {
         return metadata;
     }
 
+    private String getTranscriptionFromNewBucket(String recordingId) {
+        if (newBucketS3Client == null) return null;
+        try {
+            String key = newBucketPrefix + recordingId + ".transcripcion.json";
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(newBucket)
+                    .key(key)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> response = newBucketS3Client.getObject(request);
+            String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+
+            // Parse transcription JSON (same logic as existing parser)
+            JsonNode root = objectMapper.readTree(content);
+            StringBuilder text = new StringBuilder();
+
+            if (root.isArray()) {
+                String lastSpeaker = null;
+                for (JsonNode segment : root) {
+                    String segText = segment.has("text") ? segment.get("text").asText() :
+                                     segment.has("transcript") ? segment.get("transcript").asText() : null;
+                    String speaker = segment.has("speaker") ? segment.get("speaker").asText() :
+                                     segment.has("speaker_label") ? segment.get("speaker_label").asText() : null;
+                    if (segText != null && !segText.isBlank()) {
+                        if (speaker != null && !speaker.equals(lastSpeaker)) {
+                            if (text.length() > 0) text.append("\n\n");
+                            text.append("[").append(formatSpeakerLabel(speaker)).append("]: ");
+                            lastSpeaker = speaker;
+                        } else if (speaker == null && text.length() > 0) {
+                            text.append(" ");
+                        }
+                        text.append(segText);
+                    }
+                }
+            } else if (root.has("text")) {
+                text.append(root.get("text").asText());
+            } else if (root.has("transcript")) {
+                text.append(root.get("transcript").asText());
+            } else {
+                text.append(content);
+            }
+
+            String result = text.toString().trim();
+            if (!result.isEmpty()) {
+                log.info("Retrieved transcription from new bucket for {} ({} chars)", recordingId, result.length());
+                return result;
+            }
+        } catch (NoSuchKeyException e) {
+            // Not in new bucket
+        } catch (Exception e) {
+            log.error("Error reading transcription from new bucket for {}: {}", recordingId, e.getMessage());
+        }
+        return null;
+    }
+
     public String getTranscription(String recordingId) {
+        // Try new bucket first (.transcripcion.json format)
+        String fromNewBucket = getTranscriptionFromNewBucket(recordingId);
+        if (fromNewBucket != null) return fromNewBucket;
+
         if (metadataS3Client == null) {
             log.warn("S3 metadata client not configured.");
             return null;
         }
 
         try {
-            // New format: {prefix}{subfolder}/{id}.json (subfolder is part of recordingId)
+            // Old format: {prefix}{subfolder}/{id}.json (subfolder is part of recordingId)
             String key = metadataPrefix + recordingId + ".json";
             
             GetObjectRequest request = GetObjectRequest.builder()
@@ -504,22 +674,23 @@ public class S3Service {
     }
 
     public java.time.Instant getTranscriptionDate(String recordingId) {
-        if (metadataS3Client == null) {
-            return null;
+        // Try new bucket first
+        if (newBucketS3Client != null) {
+            try {
+                String key = newBucketPrefix + recordingId + ".json";
+                HeadObjectResponse resp = newBucketS3Client.headObject(
+                    HeadObjectRequest.builder().bucket(newBucket).key(key).build());
+                return resp.lastModified();
+            } catch (NoSuchKeyException e) { /* try old */ }
+            catch (Exception e) { /* try old */ }
         }
-
+        if (metadataS3Client == null) return null;
         try {
             String key = metadataPrefix + recordingId + ".json";
-
-            HeadObjectRequest request = HeadObjectRequest.builder()
-                    .bucket(metadataBucket)
-                    .key(key)
-                    .build();
-
-            HeadObjectResponse response = metadataS3Client.headObject(request);
+            HeadObjectResponse response = metadataS3Client.headObject(
+                HeadObjectRequest.builder().bucket(metadataBucket).key(key).build());
             return response.lastModified();
         } catch (NoSuchKeyException e) {
-            log.warn("Transcription file not found for recording {}", recordingId);
             return null;
         } catch (Exception e) {
             log.error("Error getting transcription date for {}: {}", recordingId, e.getMessage());
@@ -533,21 +704,20 @@ public class S3Service {
      * @return true si el audio existe, false en caso contrario
      */
     public boolean audioExists(String recordingId) {
-        if (metadataS3Client == null) {
-            return false;
+        // Check new bucket first
+        if (newBucketS3Client != null) {
+            try {
+                String key = newBucketPrefix + recordingId + ".webm";
+                newBucketS3Client.headObject(HeadObjectRequest.builder().bucket(newBucket).key(key).build());
+                return true;
+            } catch (NoSuchKeyException e) { /* not here */ }
+            catch (Exception e) { /* try old bucket */ }
         }
-        
+        if (metadataS3Client == null) return false;
         try {
             String key = metadataPrefix + recordingId + ".webm";
-            
-            HeadObjectRequest headRequest = HeadObjectRequest.builder()
-                    .bucket(metadataBucket)
-                    .key(key)
-                    .build();
-            
-            metadataS3Client.headObject(headRequest);
+            metadataS3Client.headObject(HeadObjectRequest.builder().bucket(metadataBucket).key(key).build());
             return true;
-            
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
@@ -572,6 +742,17 @@ public class S3Service {
      * @return InputStream del audio o null si no existe
      */
     public ResponseInputStream<GetObjectResponse> getAudioStream(String recordingId, String range) {
+        // Try new bucket first
+        if (newBucketS3Client != null) {
+            try {
+                String key = newBucketPrefix + recordingId + ".webm";
+                GetObjectRequest.Builder rb = GetObjectRequest.builder().bucket(newBucket).key(key);
+                if (range != null && !range.isEmpty()) rb.range(range);
+                return newBucketS3Client.getObject(rb.build());
+            } catch (NoSuchKeyException e) { /* try old bucket */ }
+            catch (Exception e) { /* try old bucket */ }
+        }
+
         if (metadataS3Client == null) {
             log.warn("S3 metadata client not configured. Audio streaming not available.");
             return null;
@@ -579,22 +760,15 @@ public class S3Service {
         
         try {
             String key = metadataPrefix + recordingId + ".webm";
-            
-            log.info("Streaming audio from S3: bucket={}, key={}, range={}", metadataBucket, key, range);
-            
             GetObjectRequest.Builder requestBuilder = GetObjectRequest.builder()
                     .bucket(metadataBucket)
                     .key(key);
-            
-            // Si hay un rango, agregarlo a la solicitud
             if (range != null && !range.isEmpty()) {
                 requestBuilder.range(range);
             }
-            
             return metadataS3Client.getObject(requestBuilder.build());
-            
         } catch (NoSuchKeyException e) {
-            log.warn("Audio file not found for recording {} in bucket {}", recordingId, metadataBucket);
+            log.warn("Audio file not found for recording {}", recordingId);
             return null;
         } catch (Exception e) {
             log.error("Error streaming audio for {}: {}", recordingId, e.getMessage());
@@ -608,21 +782,22 @@ public class S3Service {
      * @return tamaño en bytes o -1 si no existe
      */
     public long getAudioSize(String recordingId) {
-        if (metadataS3Client == null) {
-            return -1;
+        // Try new bucket first
+        if (newBucketS3Client != null) {
+            try {
+                String key = newBucketPrefix + recordingId + ".webm";
+                HeadObjectResponse resp = newBucketS3Client.headObject(
+                    HeadObjectRequest.builder().bucket(newBucket).key(key).build());
+                return resp.contentLength();
+            } catch (NoSuchKeyException e) { /* try old bucket */ }
+            catch (Exception e) { /* try old bucket */ }
         }
-        
+        if (metadataS3Client == null) return -1;
         try {
             String key = metadataPrefix + recordingId + ".webm";
-            
-            HeadObjectRequest headRequest = HeadObjectRequest.builder()
-                    .bucket(metadataBucket)
-                    .key(key)
-                    .build();
-            
-            HeadObjectResponse response = metadataS3Client.headObject(headRequest);
+            HeadObjectResponse response = metadataS3Client.headObject(
+                HeadObjectRequest.builder().bucket(metadataBucket).key(key).build());
             return response.contentLength();
-            
         } catch (Exception e) {
             return -1;
         }
