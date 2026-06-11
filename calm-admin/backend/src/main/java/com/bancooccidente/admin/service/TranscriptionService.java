@@ -261,7 +261,7 @@ public class TranscriptionService {
         List<DashboardMetricsDTO.SellerMetrics> sellerMetrics = repository.getSellerStats().stream()
                 .map(row -> {
                     DashboardMetricsDTO.SellerMetrics sm = new DashboardMetricsDTO.SellerMetrics();
-                    sm.setUserId((Long) row[0]);
+                    sm.setUserId(row[0] != null ? ((Number) row[0]).longValue() : null);
                     sm.setUserName((String) row[1]);
                     sm.setBranchName((String) row[2]);
                     sm.setTotalInteractions(((Number) row[3]).longValue());
@@ -277,7 +277,7 @@ public class TranscriptionService {
         List<DashboardMetricsDTO.BranchMetrics> branchMetrics = repository.getBranchStats().stream()
                 .map(row -> {
                     DashboardMetricsDTO.BranchMetrics bm = new DashboardMetricsDTO.BranchMetrics();
-                    bm.setBranchId((Long) row[0]);
+                    bm.setBranchId(row[0] != null ? ((Number) row[0]).longValue() : null);
                     bm.setBranchName((String) row[1]);
                     bm.setTotalInteractions(((Number) row[2]).longValue());
                     bm.setSales(((Number) row[3]).longValue());

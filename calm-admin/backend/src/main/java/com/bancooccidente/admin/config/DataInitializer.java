@@ -80,32 +80,66 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void ensureTranscriptionSchema() {
-        addColumnIfMissing("sale_status", "VARCHAR(255)");
-        addColumnIfMissing("analysis_confidence", "INTEGER");
-        addColumnIfMissing("confidence_trace", "TEXT");
-        addColumnIfMissing("sale_evidence", "TEXT");
-        addColumnIfMissing("sale_evidence_meta", "TEXT");
-        addColumnIfMissing("motivo_visita", "VARCHAR(255)");
-        addColumnIfMissing("estado_emocional", "VARCHAR(255)");
-        addColumnIfMissing("csat_score", "INTEGER");
-        addColumnIfMissing("escucha_activa_score", "INTEGER");
-        addColumnIfMissing("cumplimiento_protocolo", "BOOLEAN");
-        addColumnIfMissing("protocolo_score", "INTEGER");
-        addColumnIfMissing("protocolo_detalle", "TEXT");
-        addColumnIfMissing("producto_ofrecido", "BOOLEAN");
-        addColumnIfMissing("monto_ofrecido", "BIGINT");
-        addColumnIfMissing("cumplimiento_lineamiento", "BOOLEAN");
-        addColumnIfMissing("grabacion_cortada_cliente", "BOOLEAN");
-        addColumnIfMissing("grabacion_cortada_manual", "BOOLEAN");
-        addColumnIfMissing("s3_base_key", "VARCHAR(512)");
+        ensureUsersSchema();
+        addColumnIfMissing("transcriptions", "sale_status", "VARCHAR(255)");
+        addColumnIfMissing("transcriptions", "analysis_confidence", "INTEGER");
+        addColumnIfMissing("transcriptions", "confidence_trace", "TEXT");
+        addColumnIfMissing("transcriptions", "sale_evidence", "TEXT");
+        addColumnIfMissing("transcriptions", "sale_evidence_meta", "TEXT");
+        addColumnIfMissing("transcriptions", "motivo_visita", "VARCHAR(255)");
+        addColumnIfMissing("transcriptions", "estado_emocional", "VARCHAR(255)");
+        addColumnIfMissing("transcriptions", "csat_score", "INTEGER");
+        addColumnIfMissing("transcriptions", "escucha_activa_score", "INTEGER");
+        addColumnIfMissing("transcriptions", "cumplimiento_protocolo", "BOOLEAN");
+        addColumnIfMissing("transcriptions", "protocolo_score", "INTEGER");
+        addColumnIfMissing("transcriptions", "protocolo_detalle", "TEXT");
+        addColumnIfMissing("transcriptions", "producto_ofrecido", "BOOLEAN");
+        addColumnIfMissing("transcriptions", "monto_ofrecido", "BIGINT");
+        addColumnIfMissing("transcriptions", "cumplimiento_lineamiento", "BOOLEAN");
+        addColumnIfMissing("transcriptions", "grabacion_cortada_cliente", "BOOLEAN");
+        addColumnIfMissing("transcriptions", "grabacion_cortada_manual", "BOOLEAN");
+        addColumnIfMissing("transcriptions", "s3_base_key", "VARCHAR(512)");
+        widenRecordingIdColumn();
     }
 
-    private void addColumnIfMissing(String columnName, String columnDefinition) {
+    private void ensureUsersSchema() {
+        addColumnIfMissing("users", "seller_id", "BIGINT");
+        addColumnIfMissing("users", "seller_name", "VARCHAR(255)");
+    }
+
+    private void widenRecordingIdColumn() {
         try {
-            jdbcTemplate.execute("ALTER TABLE transcriptions ADD COLUMN IF NOT EXISTS " + columnName + " " + columnDefinition);
+            if (columnExists("transcriptions", "recording_id")) {
+                jdbcTemplate.execute("ALTER TABLE transcriptions ALTER COLUMN recording_id TYPE VARCHAR(255)");
+                log.info("Columna transcriptions.recording_id ampliada a VARCHAR(255)");
+            }
         } catch (Exception e) {
-            log.warn("No se pudo asegurar columna transcriptions.{}: {}", columnName, e.getMessage());
+            log.warn("No se pudo ampliar transcriptions.recording_id: {}", e.getMessage());
         }
+    }
+
+    private void addColumnIfMissing(String tableName, String columnName, String columnDefinition) {
+        try {
+            if (!columnExists(tableName, columnName)) {
+                jdbcTemplate.execute(
+                    "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition
+                );
+                log.info("Columna creada: {}.{}", tableName, columnName);
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo asegurar columna {}.{}: {}", tableName, columnName, e.getMessage());
+        }
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM information_schema.columns " +
+            "WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?",
+            Integer.class,
+            tableName,
+            columnName
+        );
+        return count != null && count > 0;
     }
 
     private void syncAdminUser() {

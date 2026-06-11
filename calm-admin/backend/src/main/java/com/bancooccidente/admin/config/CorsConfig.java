@@ -45,6 +45,7 @@ public class CorsConfig {
             config.addAllowedOriginPattern("https://numia.co");
             config.addAllowedOriginPattern("https://*.numia.co");
             config.addAllowedOriginPattern("https://bancodeoccidente.analytics.numia.co");
+            config.addAllowedOriginPattern("https://grabaciondemobanca.numia.co");
             config.addAllowedOriginPattern("https://banco-occidente-frontend.onrender.com");
         }
 
