@@ -426,32 +426,67 @@ public class S3Service {
                     .lines()
                     .collect(Collectors.joining("\n"));
 
-            // Parse transcription JSON (same logic as existing parser)
             JsonNode root = objectMapper.readTree(content);
             StringBuilder text = new StringBuilder();
 
-            if (root.isArray()) {
-                String lastSpeaker = null;
+            if (root.has("segments") && root.get("segments").isArray()) {
+                JsonNode segments = root.get("segments");
+                boolean hasSpeakers = false;
+                for (JsonNode seg : segments) {
+                    if (seg.has("speaker") || seg.has("speaker_label")) {
+                        hasSpeakers = true;
+                        break;
+                    }
+                }
+
+                if (hasSpeakers) {
+                    String lastSpeaker = null;
+                    for (JsonNode segment : segments) {
+                        String segText = segment.has("text") ? segment.get("text").asText() : null;
+                        String speaker = segment.has("speaker") ? segment.get("speaker").asText() :
+                                         segment.has("speaker_label") ? segment.get("speaker_label").asText() : null;
+                        if (segText != null && !segText.isBlank()) {
+                            if (speaker != null && !speaker.equals(lastSpeaker)) {
+                                if (text.length() > 0) text.append("\n\n");
+                                text.append("[").append(formatSpeakerLabel(speaker)).append("]: ");
+                                lastSpeaker = speaker;
+                            } else if (text.length() > 0) {
+                                text.append(" ");
+                            }
+                            text.append(segText);
+                        }
+                    }
+                } else {
+                    // No speakers: format with line breaks between segments for GPT diarization
+                    double lastEnd = -1;
+                    for (JsonNode segment : segments) {
+                        String segText = segment.has("text") ? segment.get("text").asText() : null;
+                        if (segText != null && !segText.isBlank()) {
+                            double start = segment.has("start") ? segment.get("start").asDouble() : 0;
+                            // New line when there's a gap > 1.5s (likely speaker change)
+                            if (lastEnd >= 0 && (start - lastEnd) > 1.5) {
+                                text.append("\n");
+                            } else if (text.length() > 0) {
+                                text.append(" ");
+                            }
+                            text.append(segText);
+                            lastEnd = segment.has("end") ? segment.get("end").asDouble() : start;
+                        }
+                    }
+                }
+            } else if (root.isArray()) {
                 for (JsonNode segment : root) {
                     String segText = segment.has("text") ? segment.get("text").asText() :
                                      segment.has("transcript") ? segment.get("transcript").asText() : null;
-                    String speaker = segment.has("speaker") ? segment.get("speaker").asText() :
-                                     segment.has("speaker_label") ? segment.get("speaker_label").asText() : null;
                     if (segText != null && !segText.isBlank()) {
-                        if (speaker != null && !speaker.equals(lastSpeaker)) {
-                            if (text.length() > 0) text.append("\n\n");
-                            text.append("[").append(formatSpeakerLabel(speaker)).append("]: ");
-                            lastSpeaker = speaker;
-                        } else if (speaker == null && text.length() > 0) {
-                            text.append(" ");
-                        }
+                        if (text.length() > 0) text.append(" ");
                         text.append(segText);
                     }
                 }
-            } else if (root.has("text")) {
-                text.append(root.get("text").asText());
             } else if (root.has("transcript")) {
                 text.append(root.get("transcript").asText());
+            } else if (root.has("text")) {
+                text.append(root.get("text").asText());
             } else {
                 text.append(content);
             }

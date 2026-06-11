@@ -190,6 +190,12 @@ public class TranscriptionService {
         transcription.setAnalyzed(true);
         transcription.setAnalyzedAt(LocalDateTime.now());
         
+        // If GPT provided diarized transcript, update the stored text
+        if (analysis.getDiarizedTranscript() != null && !analysis.getDiarizedTranscript().isBlank()) {
+            transcription.setTranscriptionText(analysis.getDiarizedTranscript());
+            log.info("Updated transcription text with GPT-diarized version for {}", recordingId);
+        }
+        
         repository.save(transcription);
         log.info("Analysis completed for transcription {}", recordingId);
         
@@ -687,6 +693,10 @@ public class TranscriptionService {
         transcription.setSellerWeaknesses(String.join(", ", analysis.getSellerWeaknesses()));
         transcription.setAnalyzed(true);
         transcription.setAnalyzedAt(LocalDateTime.now());
+        
+        if (analysis.getDiarizedTranscript() != null && !analysis.getDiarizedTranscript().isBlank()) {
+            transcription.setTranscriptionText(analysis.getDiarizedTranscript());
+        }
         
         repository.save(transcription);
     }

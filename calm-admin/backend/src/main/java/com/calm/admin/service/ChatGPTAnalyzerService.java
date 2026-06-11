@@ -298,14 +298,30 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             Double temperature = getTemperature();
             Integer maxTokens = getMaxTokens();
 
+            boolean hasSpeakerLabels = transcriptionText.contains("[Vendedor]:") || transcriptionText.contains("[Cliente]:");
+            
+            String diarizationInstruction = "";
+            if (!hasSpeakerLabels) {
+                diarizationInstruction = """
+                
+                IMPORTANTE: Esta transcripción NO tiene identificación de hablantes. 
+                Debes identificar quién es el Vendedor y quién es el Cliente basándote en el contexto 
+                (el vendedor saluda, ofrece productos, da precios; el cliente pregunta, consulta, decide).
+                Agrega al JSON un campo adicional "diarizedTranscript" con la conversación reformateada así:
+                [Vendedor]: texto del vendedor
+                [Cliente]: texto del cliente
+                Separa cada cambio de hablante con doble salto de línea.
+                """;
+            }
+
             String userPrompt = String.format("""
                 Analiza la siguiente transcripción de una atención en la sucursal "%s" por el vendedor "%s":
                 
                 TRANSCRIPCIÓN:
                 %s
-                
+                %s
                 Proporciona un análisis completo en formato JSON.
-                """, branchName, sellerName, transcriptionText);
+                """, branchName, sellerName, transcriptionText, diarizationInstruction);
 
             List<ChatMessage> messages = new ArrayList<>();
             messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
@@ -837,6 +853,11 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             result.setSellerWeaknesses(jsonArrayToList(root.get("sellerWeaknesses")));
             result.setFollowUpRecommendation(root.has("followUpRecommendation") 
                     ? root.get("followUpRecommendation").asText() : null);
+            
+            if (root.has("diarizedTranscript") && !root.get("diarizedTranscript").isNull()) {
+                result.setDiarizedTranscript(root.get("diarizedTranscript").asText());
+            }
+            
             return result;
 
         } catch (Exception e) {
