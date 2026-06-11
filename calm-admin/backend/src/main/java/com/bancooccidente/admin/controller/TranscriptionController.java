@@ -37,7 +37,7 @@ public class TranscriptionController {
     private final UserRepository userRepository;
     
     // Only allow alphanumeric recording IDs (prevent path traversal)
-    private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,50}$");
+    private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9_-]{1,120}$");
 
     public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
                                    TranscriptionCommentRepository commentRepository,
@@ -264,8 +264,9 @@ public class TranscriptionController {
     public ResponseEntity<Map<String, Object>> getAudioInfo(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
+        String s3BaseKey = transcriptionService.getS3BaseKey(recordingId);
         
-        boolean exists = s3Service.audioExists(recordingId);
+        boolean exists = s3Service.audioExists(recordingId, s3BaseKey);
         
         if (!exists) {
             return ResponseEntity.ok(Map.of(
@@ -274,7 +275,7 @@ public class TranscriptionController {
             ));
         }
         
-        long size = s3Service.getAudioSize(recordingId);
+        long size = s3Service.getAudioSize(recordingId, s3BaseKey);
         
         return ResponseEntity.ok(Map.of(
             "available", true,
@@ -294,9 +295,10 @@ public class TranscriptionController {
     ) {
         validateRecordingId(recordingId);
         enforceTranscriptionAccess(transcriptionService.getTranscription(recordingId));
+        String s3BaseKey = transcriptionService.getS3BaseKey(recordingId);
         
         // Primero obtener el tama├▒o total del archivo
-        long totalSize = s3Service.getAudioSize(recordingId);
+        long totalSize = s3Service.getAudioSize(recordingId, s3BaseKey);
         if (totalSize <= 0) {
             return ResponseEntity.notFound().build();
         }
@@ -327,7 +329,7 @@ public class TranscriptionController {
                 long contentLength = end - start + 1;
                 
                 // Obtener stream con rango
-                var audioStream = s3Service.getAudioStream(recordingId, rangeHeader);
+                var audioStream = s3Service.getAudioStream(recordingId, rangeHeader, s3BaseKey);
                 if (audioStream == null) {
                     return ResponseEntity.notFound().build();
                 }
@@ -345,7 +347,7 @@ public class TranscriptionController {
         }
         
         // Sin Range header o Range inv├ílido: devolver archivo completo
-        var audioStream = s3Service.getAudioStream(recordingId);
+        var audioStream = s3Service.getAudioStream(recordingId, null, s3BaseKey);
         if (audioStream == null) {
             return ResponseEntity.notFound().build();
         }

@@ -97,6 +97,7 @@ public class DataInitializer implements CommandLineRunner {
         addColumnIfMissing("cumplimiento_lineamiento", "BOOLEAN");
         addColumnIfMissing("grabacion_cortada_cliente", "BOOLEAN");
         addColumnIfMissing("grabacion_cortada_manual", "BOOLEAN");
+        addColumnIfMissing("s3_base_key", "VARCHAR(512)");
     }
 
     private void addColumnIfMissing(String columnName, String columnDefinition) {

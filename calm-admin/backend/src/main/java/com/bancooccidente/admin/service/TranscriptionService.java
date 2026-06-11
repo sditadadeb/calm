@@ -2,6 +2,7 @@ package com.bancooccidente.admin.service;
 
 import com.bancooccidente.admin.dto.DashboardMetricsDTO;
 import com.bancooccidente.admin.dto.FilterDTO;
+import com.bancooccidente.admin.dto.S3RecordingRef;
 import com.bancooccidente.admin.dto.SearchResultDTO;
 import com.bancooccidente.admin.dto.TranscriptionDTO;
 import com.bancooccidente.admin.model.AnalysisResult;
@@ -50,23 +51,23 @@ public class TranscriptionService {
     public void syncTranscriptions() {
         log.info("Starting transcription sync from S3...");
         
-        List<String> recordingIds = s3Service.listAllRecordingIds();
+        List<S3RecordingRef> recordings = s3Service.listAllRecordings();
         int newCount = 0;
         
-        for (String recordingId : recordingIds) {
-            if (!repository.existsByRecordingId(recordingId)) {
-                Map<String, Object> meta = s3Service.getMetadata(recordingId);
+        for (S3RecordingRef ref : recordings) {
+            if (!repository.existsByRecordingId(ref.recordingId())) {
+                Map<String, Object> meta = s3Service.getMetadata(ref.recordingId(), ref.s3BaseKey());
                 Long bid = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
                 if (bid != null && !ALLOWED_BRANCH_IDS.contains(bid)) {
-                    log.debug("Skipping {} - branch {} not allowed", recordingId, bid);
+                    log.debug("Skipping {} - branch {} not allowed", ref.recordingId(), bid);
                     continue;
                 }
-                if (s3Service.transcriptionExists(recordingId)) {
+                if (s3Service.transcriptionExists(ref.recordingId(), ref.s3BaseKey())) {
                     try {
-                        importTranscription(recordingId);
+                        importTranscription(ref.recordingId(), ref.s3BaseKey());
                         newCount++;
                     } catch (Exception e) {
-                        log.error("Error importing transcription {}: {}", recordingId, e.getMessage());
+                        log.error("Error importing transcription {}: {}", ref.recordingId(), e.getMessage());
                     }
                 }
             }
@@ -77,17 +78,17 @@ public class TranscriptionService {
 
     @Transactional
     public Map<String, Object> quickSync() {
-        List<String> s3Ids = s3Service.listAllRecordingIds();
+        List<S3RecordingRef> recordings = s3Service.listAllRecordings();
         int imported = 0;
 
-        for (String recordingId : s3Ids) {
-            if (!repository.existsByRecordingId(recordingId)) {
-                if (s3Service.transcriptionExists(recordingId)) {
+        for (S3RecordingRef ref : recordings) {
+            if (!repository.existsByRecordingId(ref.recordingId())) {
+                if (s3Service.transcriptionExists(ref.recordingId(), ref.s3BaseKey())) {
                     try {
-                        importTranscription(recordingId);
+                        importTranscription(ref.recordingId(), ref.s3BaseKey());
                         imported++;
                     } catch (Exception e) {
-                        log.error("quickSync import error {}: {}", recordingId, e.getMessage());
+                        log.error("quickSync import error {}: {}", ref.recordingId(), e.getMessage());
                     }
                 }
             }
@@ -103,7 +104,12 @@ public class TranscriptionService {
 
     @Transactional
     public Transcription importTranscription(String recordingId) {
-        Map<String, Object> metadata = s3Service.getMetadata(recordingId);
+        return importTranscription(recordingId, null);
+    }
+
+    @Transactional
+    public Transcription importTranscription(String recordingId, String s3BaseKey) {
+        Map<String, Object> metadata = s3Service.getMetadata(recordingId, s3BaseKey);
 
         // Filtrar por sucursales permitidas de Banco de Occidente
         Long branchIdFromMeta = metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null;
@@ -112,14 +118,14 @@ public class TranscriptionService {
             return null;
         }
 
-        String transcriptionText = s3Service.getTranscription(recordingId);
+        String transcriptionText = s3Service.getTranscription(recordingId, s3BaseKey);
         
         if (transcriptionText == null || transcriptionText.isEmpty()) {
             log.warn("No transcription text found for recording {}", recordingId);
             return null;
         }
         
-        java.time.Instant s3Date = s3Service.getTranscriptionDate(recordingId);
+        java.time.Instant s3Date = s3Service.getTranscriptionDate(recordingId, s3BaseKey);
         LocalDateTime recordingDate = s3Date != null 
             ? LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault()).minusHours(3)
             : LocalDateTime.now();
@@ -134,6 +140,7 @@ public class TranscriptionService {
         
         Transcription transcription = new Transcription();
         transcription.setRecordingId(recordingId);
+        transcription.setS3BaseKey(s3BaseKey);
         transcription.setUserId(metadata.get("userId") != null ? (Long) metadata.get("userId") : null);
         transcription.setUserName(userName);
         transcription.setBranchId(metadata.get("branchId") != null ? (Long) metadata.get("branchId") : null);
@@ -143,6 +150,12 @@ public class TranscriptionService {
         transcription.setAnalyzed(false);
         
         return repository.save(transcription);
+    }
+
+    public String getS3BaseKey(String recordingId) {
+        return repository.findById(recordingId)
+                .map(Transcription::getS3BaseKey)
+                .orElse(null);
     }
 
     @Transactional
@@ -587,38 +600,37 @@ public class TranscriptionService {
                 // Phase 1: Import from S3
                 safeSendEvent(emitter, emitterAlive, "phase", "import", "Buscando nuevas transcripciones en S3...", 0, 0);
                 
-                List<String> recordingIds = s3Service.listAllRecordingIds();
+                List<S3RecordingRef> recordings = s3Service.listAllRecordings();
                 
                 // Count new ones first (only from allowed branches)
-                List<String> newIds = new ArrayList<>();
-                for (String recordingId : recordingIds) {
-                    if (!repository.existsByRecordingId(recordingId)) {
-                        // Pre-check branchId from metadata before fetching transcription
-                        Map<String, Object> meta = s3Service.getMetadata(recordingId);
+                List<S3RecordingRef> newRefs = new ArrayList<>();
+                for (S3RecordingRef ref : recordings) {
+                    if (!repository.existsByRecordingId(ref.recordingId())) {
+                        Map<String, Object> meta = s3Service.getMetadata(ref.recordingId(), ref.s3BaseKey());
                         Long bid = meta.get("branchId") != null ? (Long) meta.get("branchId") : null;
                         if (bid != null && !ALLOWED_BRANCH_IDS.contains(bid)) {
-                            log.debug("Skipping {} - branch {} not allowed", recordingId, bid);
+                            log.debug("Skipping {} - branch {} not allowed", ref.recordingId(), bid);
                             continue;
                         }
-                        if (s3Service.transcriptionExists(recordingId)) {
-                            newIds.add(recordingId);
+                        if (s3Service.transcriptionExists(ref.recordingId(), ref.s3BaseKey())) {
+                            newRefs.add(ref);
                         }
                     }
                 }
-                int totalToImport = newIds.size();
+                int totalToImport = newRefs.size();
                 
                 safeSendEvent(emitter, emitterAlive, "import_start", null, 
                         "Importando " + totalToImport + " transcripciones nuevas...", 0, totalToImport);
                 
                 int importedCount = 0;
-                for (String recordingId : newIds) {
+                for (S3RecordingRef ref : newRefs) {
                     try {
-                        importTranscription(recordingId);
+                        importTranscription(ref.recordingId(), ref.s3BaseKey());
                         importedCount++;
-                        safeSendEvent(emitter, emitterAlive, "import_progress", recordingId, 
-                                "Importando: " + recordingId, importedCount, totalToImport);
+                        safeSendEvent(emitter, emitterAlive, "import_progress", ref.recordingId(), 
+                                "Importando: " + ref.recordingId(), importedCount, totalToImport);
                     } catch (Exception e) {
-                        log.error("Error importing {}: {}", recordingId, e.getMessage());
+                        log.error("Error importing {}: {}", ref.recordingId(), e.getMessage());
                     }
                 }
                 

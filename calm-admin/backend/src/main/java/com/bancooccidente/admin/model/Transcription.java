@@ -14,6 +14,10 @@ public class Transcription {
     private Long branchId;
     private String branchName;
 
+    /** Ruta S3 base (carpeta) donde viven metadata, audio y transcripción. */
+    @Column(length = 512)
+    private String s3BaseKey;
+
     @Column(columnDefinition = "TEXT")
     private String transcriptionText;
 
@@ -126,6 +130,9 @@ public class Transcription {
     
     public String getBranchName() { return branchName; }
     public void setBranchName(String branchName) { this.branchName = branchName; }
+
+    public String getS3BaseKey() { return s3BaseKey; }
+    public void setS3BaseKey(String s3BaseKey) { this.s3BaseKey = s3BaseKey; }
     
     public String getTranscriptionText() { return transcriptionText; }
     public void setTranscriptionText(String transcriptionText) { this.transcriptionText = transcriptionText; }
