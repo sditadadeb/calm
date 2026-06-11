@@ -310,8 +310,10 @@ export default function Transcriptions() {
                     className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-[#F5A623]">#{transcription.recordingId}</span>
+                    <td className="px-6 py-4 max-w-[120px]">
+                      <span className="font-mono text-xs font-medium text-[#F5A623] block truncate" title={transcription.recordingId}>
+                        #{transcription.recordingId.length > 12 ? transcription.recordingId.slice(-12) : transcription.recordingId}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div>
