@@ -171,8 +171,10 @@ public class TranscriptionService {
 
         for (Transcription transcription : stale) {
             try {
+                String current = transcription.getTranscriptionText();
                 String text = s3Service.getTranscription(transcription.getRecordingId());
                 if (text == null || text.isBlank()) continue;
+                if (current != null && !isPlaceholderText(current) && text.length() <= current.length()) continue;
 
                 transcription.setTranscriptionText(text);
                 applyRecordingDateFromS3(transcription);
@@ -246,7 +248,15 @@ public class TranscriptionService {
     @Transactional
     public boolean refreshSingleIfStale(String recordingId) {
         Transcription transcription = repository.findById(recordingId).orElse(null);
-        if (transcription == null || !isPlaceholderText(transcription.getTranscriptionText())) {
+        if (transcription == null) {
+            return false;
+        }
+
+        String current = transcription.getTranscriptionText();
+        boolean needsRefresh = isPlaceholderText(current)
+                || s3Service.isSuspiciouslyShortForAudio(recordingId, current);
+
+        if (!needsRefresh) {
             return false;
         }
 
@@ -254,12 +264,16 @@ public class TranscriptionService {
         if (text == null || text.isBlank() || isPlaceholderText(text)) {
             return false;
         }
+        if (current != null && text.length() <= current.length()) {
+            return false;
+        }
 
         transcription.setTranscriptionText(text);
         applyRecordingDateFromS3(transcription);
         transcription.setAnalyzed(false);
         repository.save(transcription);
-        log.info("Refreshed transcription text from S3 for {}", recordingId);
+        log.info("Refreshed transcription text from S3 for {} ({} -> {} chars)",
+                recordingId, current != null ? current.length() : 0, text.length());
 
         try {
             analyzeTranscription(recordingId);
@@ -304,16 +318,25 @@ public class TranscriptionService {
         transcription.setAnalyzed(true);
         transcription.setAnalyzedAt(LocalDateTime.now());
         
-        // If GPT provided diarized transcript, update the stored text
-        if (analysis.getDiarizedTranscript() != null && !analysis.getDiarizedTranscript().isBlank()) {
-            transcription.setTranscriptionText(analysis.getDiarizedTranscript());
-            log.info("Updated transcription text with GPT-diarized version for {}", recordingId);
-        }
+        // If GPT provided diarized transcript, update the stored text (unless much shorter than original)
+        applyDiarizedTranscriptIfValid(transcription, analysis.getDiarizedTranscript(), recordingId);
         
         repository.save(transcription);
         log.info("Analysis completed for transcription {}", recordingId);
         
         return toDTO(transcription);
+    }
+
+    private void applyDiarizedTranscriptIfValid(Transcription transcription, String diarized, String recordingId) {
+        if (diarized == null || diarized.isBlank()) return;
+        String original = transcription.getTranscriptionText();
+        if (original == null || diarized.length() >= original.length() / 2) {
+            transcription.setTranscriptionText(diarized);
+            log.info("Updated transcription text with GPT-diarized version for {}", recordingId);
+        } else {
+            log.warn("Skipping short diarizedTranscript for {} ({} vs {} chars)",
+                    recordingId, diarized.length(), original != null ? original.length() : 0);
+        }
     }
 
     public List<TranscriptionDTO> getTranscriptions(FilterDTO filter) {
@@ -815,7 +838,7 @@ public class TranscriptionService {
         transcription.setAnalyzedAt(LocalDateTime.now());
         
         if (analysis.getDiarizedTranscript() != null && !analysis.getDiarizedTranscript().isBlank()) {
-            transcription.setTranscriptionText(analysis.getDiarizedTranscript());
+            applyDiarizedTranscriptIfValid(transcription, analysis.getDiarizedTranscript(), recordingId);
         }
         
         repository.save(transcription);
