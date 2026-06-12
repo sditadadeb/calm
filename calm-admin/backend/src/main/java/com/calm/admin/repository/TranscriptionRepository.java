@@ -80,6 +80,10 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     List<Object[]> getBranchStats();
 
     boolean existsByRecordingId(String recordingId);
+
+    boolean existsByRecordingIdLike(String pattern);
+
+    List<Transcription> findByTranscriptionTextStartingWith(String prefix);
     
     List<Transcription> findByBranchIdIn(java.util.Collection<Long> branchIds);
     

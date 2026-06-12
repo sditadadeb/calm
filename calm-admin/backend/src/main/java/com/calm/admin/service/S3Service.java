@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 public class S3Service {
 
     private static final Logger log = LoggerFactory.getLogger(S3Service.class);
+    /** Migration window: use old bucket dates for these days only */
+    private static final Set<String> MIGRATION_DATES = Set.of("20260609", "20260610", "20260611");
 
     private final S3Client metadataS3Client;
     private final S3Client transcriptionsS3Client;
@@ -72,20 +74,40 @@ public class S3Service {
     }
 
     public List<String> listAllRecordingIds() {
-        List<String> recordingIds = new ArrayList<>();
-
         if (metadataS3Client == null && newBucketS3Client == null) {
             log.warn("No S3 clients configured. Returning empty list.");
-            return recordingIds;
+            return new ArrayList<>();
         }
 
-        if (metadataS3Client == null) {
-            recordingIds.addAll(listRecordingIdsFromNewBucket());
-            return recordingIds;
+        List<String> fromNew = listRecordingIdsFromNewBucket();
+        Set<String> newFlatIds = fromNew.stream()
+                .map(S3Service::flatRecordingId)
+                .collect(Collectors.toSet());
+
+        List<String> result = new ArrayList<>(fromNew);
+
+        if (metadataS3Client != null) {
+            List<String> fromOld = listRecordingIdsFromOldBucket();
+            int skippedOverlap = 0;
+            for (String id : fromOld) {
+                if (newFlatIds.contains(flatRecordingId(id))) {
+                    skippedOverlap++;
+                } else {
+                    result.add(id);
+                }
+            }
+            log.info("Listed {} recordings ({} new bucket, {} old-only, {} skipped overlap with new)",
+                    result.size(), fromNew.size(), result.size() - fromNew.size(), skippedOverlap);
+        } else {
+            log.info("Listed {} recordings (new bucket only)", result.size());
         }
 
+        return result;
+    }
+
+    private List<String> listRecordingIdsFromOldBucket() {
+        List<String> recordingIds = new ArrayList<>();
         try {
-            // List subfolders (branches) using delimiter
             List<String> subfolderPrefixes = new ArrayList<>();
             String subfolderToken = null;
             do {
@@ -102,15 +124,10 @@ public class S3Service {
                 subfolderToken = resp.isTruncated() ? resp.nextContinuationToken() : null;
             } while (subfolderToken != null);
 
-            log.info("Found {} subfolders under prefix '{}'", subfolderPrefixes.size(), metadataPrefix);
-
             if (subfolderPrefixes.isEmpty()) {
-                // Fallback: flat listing (legacy format, no subfolders)
-                log.info("No subfolders found, falling back to flat listing");
                 return listAllRecordingIdsFlat();
             }
 
-            // For each subfolder, list its files and extract IDs from .json filenames
             for (String subfolderPrefix : subfolderPrefixes) {
                 String continuationToken = null;
                 do {
@@ -123,12 +140,9 @@ public class S3Service {
 
                     for (S3Object object : response.contents()) {
                         String key = object.key();
-                        if (key.endsWith(".json")) {
-                            // recordingId = path relative to metadataPrefix, without extension
-                            // e.g. "in-person-recording/4477/abc123.json" -> "4477/abc123"
+                        if (key.endsWith(".json") && !key.endsWith(".transcripcion.json")) {
                             String relativePath = key.substring(metadataPrefix.length());
-                            String recordingId = relativePath.replace(".json", "");
-                            recordingIds.add(recordingId);
+                            recordingIds.add(relativePath.replace(".json", ""));
                         }
                     }
 
@@ -136,16 +150,26 @@ public class S3Service {
                 } while (continuationToken != null);
             }
 
-            log.info("Found {} recording IDs across {} subfolders in metadata bucket",
-                    recordingIds.size(), subfolderPrefixes.size());
+            log.info("Found {} recording IDs in old metadata bucket", recordingIds.size());
         } catch (Exception e) {
             log.error("Error listing objects from metadata bucket: {}", e.getMessage());
         }
-
-        // Also list from new bucket
-        recordingIds.addAll(listRecordingIdsFromNewBucket());
-
         return recordingIds;
+    }
+
+    public static String flatRecordingId(String recordingId) {
+        if (recordingId == null) return null;
+        int slash = recordingId.lastIndexOf('/');
+        return slash >= 0 ? recordingId.substring(slash + 1) : recordingId;
+    }
+
+    public static boolean isMigrationPeriodRecording(String recordingId) {
+        String flat = flatRecordingId(recordingId);
+        if (flat == null) return false;
+        for (String date : MIGRATION_DATES) {
+            if (flat.contains("-" + date + "-")) return true;
+        }
+        return false;
     }
 
     private List<String> listRecordingIdsFromNewBucket() {
@@ -215,7 +239,7 @@ public class S3Service {
 
                 for (S3Object object : response.contents()) {
                     String key = object.key();
-                    if (key.endsWith(".json")) {
+                    if (key.endsWith(".json") && !key.endsWith(".transcripcion.json")) {
                         String fileName = key.substring(key.lastIndexOf("/") + 1);
                         recordingIds.add(fileName.replace(".json", ""));
                     }
@@ -686,49 +710,85 @@ public class S3Service {
     }
 
     public boolean transcriptionExists(String recordingId) {
-        if (metadataS3Client == null) {
-            return false;
+        if (existsInNewBucket(recordingId)) return true;
+        if (existsInOldBucket(recordingId)) return true;
+        return audioExists(recordingId);
+    }
+
+    private boolean existsInNewBucket(String recordingId) {
+        if (newBucketS3Client == null) return false;
+        for (String suffix : List.of(".transcripcion.json", ".json", ".webm")) {
+            try {
+                newBucketS3Client.headObject(HeadObjectRequest.builder()
+                        .bucket(newBucket)
+                        .key(newBucketPrefix + recordingId + suffix)
+                        .build());
+                return true;
+            } catch (NoSuchKeyException e) { /* try next */ }
+            catch (Exception e) {
+                log.error("Error checking new bucket for {}: {}", recordingId, e.getMessage());
+                return false;
+            }
         }
+        return false;
+    }
 
+    private boolean existsInOldBucket(String recordingId) {
+        if (metadataS3Client == null) return false;
         try {
-            String key = metadataPrefix + recordingId + ".json";
-
-            HeadObjectRequest request = HeadObjectRequest.builder()
+            metadataS3Client.headObject(HeadObjectRequest.builder()
                     .bucket(metadataBucket)
-                    .key(key)
-                    .build();
-
-            metadataS3Client.headObject(request);
+                    .key(metadataPrefix + recordingId + ".json")
+                    .build());
             return true;
         } catch (NoSuchKeyException e) {
             return false;
         } catch (Exception e) {
-            log.error("Error checking transcription existence for {}: {}", recordingId, e.getMessage());
+            log.error("Error checking old bucket for {}: {}", recordingId, e.getMessage());
             return false;
         }
     }
 
     public java.time.Instant getTranscriptionDate(String recordingId) {
-        // Try new bucket first
-        if (newBucketS3Client != null) {
-            try {
-                String key = newBucketPrefix + recordingId + ".json";
-                HeadObjectResponse resp = newBucketS3Client.headObject(
-                    HeadObjectRequest.builder().bucket(newBucket).key(key).build());
-                return resp.lastModified();
-            } catch (NoSuchKeyException e) { /* try old */ }
-            catch (Exception e) { /* try old */ }
+        // June 9-11: date from old bucket (migration window). After that: new bucket only.
+        if (isMigrationPeriodRecording(recordingId)) {
+            java.time.Instant oldDate = getMetadataDateFromOldBucket(recordingId);
+            if (oldDate != null) return oldDate;
+            return getMetadataDateFromNewBucket(recordingId);
         }
-        if (metadataS3Client == null) return null;
+        java.time.Instant newDate = getMetadataDateFromNewBucket(recordingId);
+        if (newDate != null) return newDate;
+        return getMetadataDateFromOldBucket(recordingId);
+    }
+
+    private java.time.Instant getMetadataDateFromNewBucket(String recordingId) {
+        if (newBucketS3Client == null) return null;
         try {
-            String key = metadataPrefix + recordingId + ".json";
-            HeadObjectResponse response = metadataS3Client.headObject(
-                HeadObjectRequest.builder().bucket(metadataBucket).key(key).build());
-            return response.lastModified();
+            HeadObjectResponse resp = newBucketS3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(newBucket)
+                    .key(newBucketPrefix + recordingId + ".json")
+                    .build());
+            return resp.lastModified();
         } catch (NoSuchKeyException e) {
             return null;
         } catch (Exception e) {
-            log.error("Error getting transcription date for {}: {}", recordingId, e.getMessage());
+            log.error("Error getting date from new bucket for {}: {}", recordingId, e.getMessage());
+            return null;
+        }
+    }
+
+    private java.time.Instant getMetadataDateFromOldBucket(String recordingId) {
+        if (metadataS3Client == null) return null;
+        try {
+            HeadObjectResponse resp = metadataS3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(metadataBucket)
+                    .key(metadataPrefix + recordingId + ".json")
+                    .build());
+            return resp.lastModified();
+        } catch (NoSuchKeyException e) {
+            return null;
+        } catch (Exception e) {
+            log.error("Error getting date from old bucket for {}: {}", recordingId, e.getMessage());
             return null;
         }
     }

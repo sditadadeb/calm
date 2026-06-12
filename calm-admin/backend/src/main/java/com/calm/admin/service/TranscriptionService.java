@@ -66,6 +66,11 @@ public class TranscriptionService {
         }
         
         log.info("Sync completed. Imported {} new transcriptions", newCount);
+        int refreshed = refreshStaleTranscriptions();
+        if (refreshed > 0) {
+            log.info("Sync refreshed {} stale transcriptions", refreshed);
+            analyzeUnprocessedTranscriptions();
+        }
     }
 
     @Transactional
@@ -77,8 +82,9 @@ public class TranscriptionService {
             if (!repository.existsByRecordingId(recordingId)) {
                 if (s3Service.transcriptionExists(recordingId)) {
                     try {
-                        importTranscription(recordingId);
-                        imported++;
+                        if (importTranscription(recordingId) != null) {
+                            imported++;
+                        }
                     } catch (Exception e) {
                         log.error("quickSync import error {}: {}", recordingId, e.getMessage());
                     }
@@ -86,16 +92,26 @@ public class TranscriptionService {
             }
         }
 
-        if (imported > 0) {
-            log.info("quickSync: imported {} new, analyzing...", imported);
+        int refreshed = refreshStaleTranscriptions();
+
+        if (imported > 0 || refreshed > 0) {
+            log.info("quickSync: imported {}, refreshed {}, analyzing...", imported, refreshed);
             analyzeUnprocessedTranscriptions();
         }
 
-        return Map.of("imported", imported);
+        return Map.of("imported", imported, "refreshed", refreshed);
     }
 
     @Transactional
     public Transcription importTranscription(String recordingId) {
+        // Skip flat IDs when full path version already exists (prevents duplicates)
+        if (!recordingId.contains("/")) {
+            if (repository.existsByRecordingIdLike("%/" + recordingId)) {
+                log.info("Skipping flat recording ID {} - full path version already exists", recordingId);
+                return null;
+            }
+        }
+
         Map<String, Object> metadata = s3Service.getMetadata(recordingId);
         log.info("Import {} - metadata keys: {}, branchId raw: {}, userId raw: {}", 
                 recordingId, metadata.keySet(), metadata.get("branchId"), metadata.get("userId"));
@@ -142,6 +158,76 @@ public class TranscriptionService {
         transcription.setAnalyzed(false);
         
         return repository.save(transcription);
+    }
+
+    /**
+     * Re-fetch transcription text from S3 for records stuck with placeholder text.
+     */
+    @Transactional
+    public int refreshStaleTranscriptions() {
+        List<Transcription> stale = repository.findByTranscriptionTextStartingWith("[Audio disponible");
+        int updated = 0;
+
+        for (Transcription transcription : stale) {
+            try {
+                String text = s3Service.getTranscription(transcription.getRecordingId());
+                if (text == null || text.isBlank()) continue;
+
+                transcription.setTranscriptionText(text);
+                applyRecordingDateFromS3(transcription);
+                transcription.setAnalyzed(false);
+                repository.save(transcription);
+                updated++;
+            } catch (Exception e) {
+                log.error("Error refreshing transcription {}: {}", transcription.getRecordingId(), e.getMessage());
+            }
+        }
+
+        if (updated > 0) {
+            log.info("Refreshed {} transcriptions from S3", updated);
+        }
+        return updated;
+    }
+
+    /**
+     * Fix recording dates for June 9-11 migration window (old bucket dates).
+     */
+    @Transactional
+    public int fixMigrationPeriodDates() {
+        List<Transcription> all = repository.findAll();
+        int updated = 0;
+
+        for (Transcription transcription : all) {
+            if (!S3Service.isMigrationPeriodRecording(transcription.getRecordingId())) continue;
+            try {
+                java.time.Instant before = transcription.getRecordingDate() != null
+                        ? transcription.getRecordingDate().atZone(java.time.ZoneId.systemDefault()).toInstant()
+                        : null;
+                applyRecordingDateFromS3(transcription);
+                java.time.Instant after = transcription.getRecordingDate() != null
+                        ? transcription.getRecordingDate().atZone(java.time.ZoneId.systemDefault()).toInstant()
+                        : null;
+                if (after != null && !after.equals(before)) {
+                    repository.save(transcription);
+                    updated++;
+                }
+            } catch (Exception e) {
+                log.error("Error fixing date for {}: {}", transcription.getRecordingId(), e.getMessage());
+            }
+        }
+
+        if (updated > 0) {
+            log.info("Updated recording dates for {} migration-period transcriptions (Jun 9-11)", updated);
+        }
+        return updated;
+    }
+
+    private void applyRecordingDateFromS3(Transcription transcription) {
+        java.time.Instant s3Date = s3Service.getTranscriptionDate(transcription.getRecordingId());
+        if (s3Date != null) {
+            transcription.setRecordingDate(
+                    LocalDateTime.ofInstant(s3Date, java.time.ZoneId.systemDefault()).minusHours(3));
+        }
     }
 
     @Transactional

@@ -4,6 +4,7 @@ import com.calm.admin.model.Transcription;
 import com.calm.admin.model.User;
 import com.calm.admin.repository.TranscriptionRepository;
 import com.calm.admin.repository.UserRepository;
+import com.calm.admin.service.TranscriptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final TranscriptionRepository transcriptionRepository;
+    private final TranscriptionService transcriptionService;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -33,9 +35,12 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${admin.password:admin123}")
     private String adminPassword;
 
-    public DataInitializer(UserRepository userRepository, TranscriptionRepository transcriptionRepository, PasswordEncoder passwordEncoder, JdbcTemplate jdbcTemplate) {
+    public DataInitializer(UserRepository userRepository, TranscriptionRepository transcriptionRepository,
+                           TranscriptionService transcriptionService, PasswordEncoder passwordEncoder,
+                           JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.transcriptionRepository = transcriptionRepository;
+        this.transcriptionService = transcriptionService;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -71,6 +76,78 @@ public class DataInitializer implements CommandLineRunner {
         applyTimezoneCorrection();
         purgeExcludedBranches();
         purgeMetadataAsText();
+        dedupeFlatRecordingIds();
+        runMigrationRefresh();
+    }
+
+    private void ensureMigrationsTable() {
+        jdbcTemplate.execute(
+            "CREATE TABLE IF NOT EXISTS applied_migrations (migration_id VARCHAR(100) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+        );
+    }
+
+    private boolean isMigrationApplied(String migrationId) {
+        ensureMigrationsTable();
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM applied_migrations WHERE migration_id = ?",
+            Integer.class,
+            migrationId
+        );
+        return count != null && count > 0;
+    }
+
+    private void markMigrationApplied(String migrationId) {
+        jdbcTemplate.update("INSERT INTO applied_migrations (migration_id) VALUES (?)", migrationId);
+    }
+
+    private void dedupeFlatRecordingIds() {
+        try {
+            if (isMigrationApplied("dedupe_flat_recording_ids")) {
+                return;
+            }
+
+            List<String> flatIds = jdbcTemplate.queryForList(
+                "SELECT recording_id FROM transcriptions WHERE recording_id NOT LIKE '%/%'",
+                String.class
+            );
+
+            int deleted = 0;
+            for (String flatId : flatIds) {
+                Integer fullPathCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM transcriptions WHERE recording_id LIKE ?",
+                    Integer.class,
+                    "%/" + flatId
+                );
+                if (fullPathCount != null && fullPathCount > 0) {
+                    jdbcTemplate.update("DELETE FROM transcriptions WHERE recording_id = ?", flatId);
+                    deleted++;
+                }
+            }
+
+            markMigrationApplied("dedupe_flat_recording_ids");
+            if (deleted > 0) {
+                log.info("Migracion dedupe: eliminadas {} transcripciones con ID plano duplicado", deleted);
+            }
+        } catch (Exception e) {
+            log.error("Error en migracion dedupe flat IDs: {}", e.getMessage());
+        }
+    }
+
+    private void runMigrationRefresh() {
+        try {
+            if (isMigrationApplied("bucket_migration_refresh_v1")) {
+                return;
+            }
+
+            int datesFixed = transcriptionService.fixMigrationPeriodDates();
+            int refreshed = transcriptionService.refreshStaleTranscriptions();
+
+            markMigrationApplied("bucket_migration_refresh_v1");
+            log.info("Migracion bucket refresh: {} fechas corregidas (Jun 9-11), {} transcripciones actualizadas",
+                    datesFixed, refreshed);
+        } catch (Exception e) {
+            log.error("Error en migracion bucket refresh: {}", e.getMessage());
+        }
     }
 
     private void applyTimezoneCorrection() {
@@ -120,11 +197,8 @@ public class DataInitializer implements CommandLineRunner {
             int deleted = jdbcTemplate.update(
                 "DELETE FROM transcriptions WHERE transcription_text LIKE '{\"user\":%' OR transcription_text LIKE '{\"branch\":%'"
             );
-            int deletedPlaceholder = jdbcTemplate.update(
-                "DELETE FROM transcriptions WHERE transcription_text LIKE '[Audio disponible%'"
-            );
-            if (deleted + deletedPlaceholder > 0) {
-                log.info("Eliminadas {} transcripciones con placeholder (se re-importaran con transcripcion real)", deleted + deletedPlaceholder);
+            if (deleted > 0) {
+                log.info("Eliminadas {} transcripciones corruptas (metadata como texto)", deleted);
             }
         } catch (Exception e) {
             log.error("Error purgando transcripciones con metadata como texto: {}", e.getMessage());
