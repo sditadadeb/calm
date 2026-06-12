@@ -110,6 +110,27 @@ const useStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Once per session: import new S3 recordings, refresh placeholder transcriptions,
+   * and trigger GPT analysis when text is now available.
+   */
+  checkPendingFromS3: async () => {
+    if (sessionStorage.getItem('s3Checked')) return null;
+    try {
+      const response = await api.checkNewTranscriptions();
+      sessionStorage.setItem('s3Checked', '1');
+      await Promise.all([
+        get().fetchDashboardMetrics(),
+        get().fetchTranscriptions(),
+      ]);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking pending transcriptions:', error);
+      sessionStorage.setItem('s3Checked', '1');
+      return null;
+    }
+  },
+
   syncFromS3: async () => {
     set({ loading: true, error: null });
     try {

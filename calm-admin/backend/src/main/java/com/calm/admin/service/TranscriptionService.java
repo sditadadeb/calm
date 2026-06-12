@@ -27,6 +27,7 @@ public class TranscriptionService {
     private static final Logger log = LoggerFactory.getLogger(TranscriptionService.class);
 
     private static final Set<Long> EXCLUDED_BRANCH_IDS = Set.of(4476L, 4495L, 4496L);
+    static final String PLACEHOLDER_PREFIX = "[Audio disponible";
 
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
@@ -126,7 +127,7 @@ public class TranscriptionService {
         
         if (transcriptionText == null || transcriptionText.isEmpty()) {
             if (s3Service.audioExists(recordingId)) {
-                transcriptionText = "[Audio disponible - Transcripción pendiente de procesamiento]";
+                transcriptionText = PLACEHOLDER_PREFIX + " - Transcripción pendiente de procesamiento]";
                 log.info("No transcription text for {}, but audio exists", recordingId);
             } else {
                 log.warn("No transcription text found for recording {}", recordingId);
@@ -165,7 +166,7 @@ public class TranscriptionService {
      */
     @Transactional
     public int refreshStaleTranscriptions() {
-        List<Transcription> stale = repository.findByTranscriptionTextStartingWith("[Audio disponible");
+        List<Transcription> stale = repository.findByTranscriptionTextStartingWith(PLACEHOLDER_PREFIX);
         int updated = 0;
 
         for (Transcription transcription : stale) {
@@ -224,12 +225,48 @@ public class TranscriptionService {
         log.info("Found {} unanalyzed transcriptions", unanalyzed.size());
         
         for (Transcription transcription : unanalyzed) {
+            if (isPlaceholderText(transcription.getTranscriptionText())) {
+                continue;
+            }
             try {
                 analyzeTranscription(transcription.getRecordingId());
             } catch (Exception e) {
                 log.error("Error analyzing transcription {}: {}", transcription.getRecordingId(), e.getMessage());
             }
         }
+    }
+
+    static boolean isPlaceholderText(String text) {
+        return text != null && text.startsWith(PLACEHOLDER_PREFIX);
+    }
+
+    /**
+     * If S3 now has the real transcription, replace placeholder and analyze.
+     */
+    @Transactional
+    public boolean refreshSingleIfStale(String recordingId) {
+        Transcription transcription = repository.findById(recordingId).orElse(null);
+        if (transcription == null || !isPlaceholderText(transcription.getTranscriptionText())) {
+            return false;
+        }
+
+        String text = s3Service.getTranscription(recordingId);
+        if (text == null || text.isBlank() || isPlaceholderText(text)) {
+            return false;
+        }
+
+        transcription.setTranscriptionText(text);
+        applyRecordingDateFromS3(transcription);
+        transcription.setAnalyzed(false);
+        repository.save(transcription);
+        log.info("Refreshed transcription text from S3 for {}", recordingId);
+
+        try {
+            analyzeTranscription(recordingId);
+        } catch (Exception e) {
+            log.error("Error analyzing refreshed transcription {}: {}", recordingId, e.getMessage());
+        }
+        return true;
     }
 
     @Transactional
@@ -239,6 +276,9 @@ public class TranscriptionService {
         
         if (transcription.getTranscriptionText() == null || transcription.getTranscriptionText().isEmpty()) {
             throw new RuntimeException("No transcription text available for analysis");
+        }
+        if (isPlaceholderText(transcription.getTranscriptionText())) {
+            throw new RuntimeException("Transcripción aún pendiente de procesamiento en S3");
         }
         
         AnalysisResult analysis = analyzerService.analyzeTranscription(
@@ -298,7 +338,9 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public TranscriptionDTO getTranscription(String recordingId) {
+        refreshSingleIfStale(recordingId);
         return repository.findById(recordingId)
                 .map(this::toDTO)
                 .orElseThrow(() -> new RuntimeException("Transcription not found: " + recordingId));

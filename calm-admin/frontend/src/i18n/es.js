@@ -56,6 +56,7 @@ export default {
     adminPanel: 'Panel de Administración',
     attendances: 'Atenciones',
     conversion: 'Conversión',
+    checkingPending: 'Verificando transcripciones pendientes...',
     lightTheme: 'Cambiar a tema claro',
     darkTheme: 'Cambiar a tema oscuro',
     user: 'Usuario',

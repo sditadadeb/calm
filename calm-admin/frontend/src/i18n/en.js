@@ -56,6 +56,7 @@ export default {
     adminPanel: 'Administration Panel',
     attendances: 'Attendances',
     conversion: 'Conversion',
+    checkingPending: 'Checking pending transcriptions...',
     lightTheme: 'Switch to light theme',
     darkTheme: 'Switch to dark theme',
     user: 'User',

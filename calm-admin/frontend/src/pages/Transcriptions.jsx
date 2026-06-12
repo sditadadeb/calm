@@ -6,7 +6,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import Filters from '../components/Filters';
 import ScoreBadge from '../components/ScoreBadge';
-import { checkNewTranscriptions } from '../api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -17,8 +16,6 @@ export default function Transcriptions() {
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 25;
   
@@ -181,29 +178,7 @@ export default function Transcriptions() {
       setFilters(urlFilters);
     }
     
-    const checkedThisSession = sessionStorage.getItem('s3Checked');
-
-    const loadData = async () => {
-      if (!checkedThisSession) {
-        setSyncing(true);
-        setSyncMessage(t('transcriptions.checkingNew'));
-        try {
-          const res = await checkNewTranscriptions();
-          const imported = res?.data?.imported || 0;
-          if (imported > 0) {
-            setSyncMessage(`${imported} ${imported === 1 ? 'nueva atención encontrada' : 'nuevas atenciones encontradas'}, analizando...`);
-          }
-          sessionStorage.setItem('s3Checked', '1');
-        } catch (err) {
-          console.error('Auto-check failed:', err);
-        } finally {
-          setSyncing(false);
-          setSyncMessage('');
-        }
-      }
-      fetchTranscriptions();
-    };
-    loadData();
+    fetchTranscriptions();
   }, [searchParams]);
 
   const handleAnalyze = async (recordingId, e) => {
@@ -274,17 +249,8 @@ export default function Transcriptions() {
 
       {/* Info */}
       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-        {syncing ? (
-          <>
-            <RefreshCw className="w-4 h-4 animate-spin text-[#F5A623]" />
-            <span>{syncMessage || t('transcriptions.checkingNew')}</span>
-          </>
-        ) : (
-          <>
-            <FileText className="w-4 h-4" />
-            <span>{filteredTranscriptions.length} {t('common.of')} {transcriptions.length} {t('common.records')}</span>
-          </>
-        )}
+        <FileText className="w-4 h-4" />
+        <span>{filteredTranscriptions.length} {t('common.of')} {transcriptions.length} {t('common.records')}</span>
       </div>
 
       {/* Filters - client-side, no need to re-fetch */}

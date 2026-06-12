@@ -23,10 +23,11 @@ import { useState, useEffect } from 'react';
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loading, fetchDashboardMetrics, fetchTranscriptions, dashboardMetrics } = useStore();
+  const { loading, fetchDashboardMetrics, fetchTranscriptions, dashboardMetrics, checkPendingFromS3 } = useStore();
   const { isDark, toggleTheme } = useTheme();
   const { t, lang, switchLang } = useLanguage();
   const [syncing, setSyncing] = useState(false);
+  const [backgroundSync, setBackgroundSync] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ message: '', current: 0, total: 0, percent: 0, phase: '' });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -60,9 +61,20 @@ export default function Layout({ children }) {
   ];
 
   useEffect(() => {
-    if (!dashboardMetrics) {
-      fetchDashboardMetrics();
-    }
+    const init = async () => {
+      if (!sessionStorage.getItem('s3Checked')) {
+        setBackgroundSync(true);
+      }
+      const result = await checkPendingFromS3();
+      if (!result && !dashboardMetrics) {
+        fetchDashboardMetrics();
+      }
+      if (!result) {
+        fetchTranscriptions();
+      }
+      setBackgroundSync(false);
+    };
+    init();
   }, []);
 
   const handleSync = () => {
@@ -130,6 +142,7 @@ export default function Layout({ children }) {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('s3Checked');
     navigate('/login');
   };
 
@@ -268,6 +281,12 @@ export default function Layout({ children }) {
                   
                   {/* Metrics */}
                   <div className="hidden md:flex items-center gap-8">
+                    {backgroundSync && (
+                      <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        {t('nav.checkingPending')}
+                      </span>
+                    )}
                     <div className="text-center">
                       <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.attendances')}</p>
                       <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</p>
