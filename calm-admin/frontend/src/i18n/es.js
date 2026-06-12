@@ -420,6 +420,7 @@ export default {
     systemPromptFieldTooltip: 'Editá este texto para cambiar los criterios de análisis.',
     modelTooltip: 'Modelo de OpenAI usado para el análisis.',
     recommended: 'recomendado',
+    cheaper: 'más económico',
     temperatureTooltip: 'Creatividad del modelo: 0 = determinista, 1 = creativo. Para análisis usá valores bajos.',
     maxTokensTooltip: 'Largo máximo de la respuesta del modelo.',
     analysisFields: 'Campos que Genera el Análisis',

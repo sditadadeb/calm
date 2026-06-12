@@ -279,10 +279,11 @@ const Settings = () => {
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
                 className={inputClasses}
               >
-                <option value="gpt-5.1-chat-latest">gpt-5.1-instant ({t('settings.recommended')})</option>
+                <option value="gpt-5.5">gpt-5.5 ({t('settings.recommended')})</option>
+                <option value="gpt-5.4-mini">gpt-5.4-mini ({t('settings.cheaper')})</option>
+                <option value="gpt-5.1-chat-latest">gpt-5.1-instant</option>
                 <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                 <option value="gpt-4.1">gpt-4.1</option>
-                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
               </select>
             </div>
 
