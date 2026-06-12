@@ -420,7 +420,7 @@ export default function Transcriptions() {
                 {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
-                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
+                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-75' : 'opacity-80') : ''} ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     {isAdmin && (
@@ -457,6 +457,12 @@ export default function Transcriptions() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
+                        {isPendingTranscription(transcription) ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400" title={t('transcriptions.reanalyzePending')}>
+                            <Clock className="w-3 h-3" /> {t('transcriptions.transcriptionPending')}
+                          </span>
+                        ) : (
+                        <>
                         {/* Sale Status Badge */}
                         {transcription.saleStatus === 'SALE_CONFIRMED' && (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400" title={t('transcriptions.saleConfirmed')}>
@@ -499,8 +505,10 @@ export default function Transcriptions() {
                             {t('transcriptions.pending')}
                           </span>
                         )}
+                        </>
+                        )}
                         {/* Confidence indicator */}
-                        {transcription.analysisConfidence !== null && transcription.analysisConfidence !== undefined && (
+                        {!isPendingTranscription(transcription) && transcription.analysisConfidence !== null && transcription.analysisConfidence !== undefined && (
                           <div className="flex items-center gap-1" title={`Confianza: ${transcription.analysisConfidence}%`}>
                             <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
                               <div 
@@ -522,7 +530,11 @@ export default function Transcriptions() {
                       <ScoreBadge score={transcription.sellerScore} size="small" />
                     </td>
                     <td className="px-6 py-4">
-                      {transcription.analyzed ? (
+                      {isPendingTranscription(transcription) ? (
+                        <span className="inline-flex items-center gap-1 text-amber-400 text-xs font-medium">
+                          <Clock className="w-3 h-3" /> {t('transcriptions.transcriptionPending')}
+                        </span>
+                      ) : transcription.analyzed ? (
                         <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
                           <CheckCircle className="w-3 h-3" /> {t('transcriptions.analyzed')}
                         </span>

@@ -279,6 +279,12 @@ public class TranscriptionService {
 
         String text = s3Service.getTranscription(recordingId);
         if (text == null || text.isBlank() || isPlaceholderText(text)) {
+            // Análisis previo sobre el placeholder (ej. UNINTERPRETABLE) es inválido
+            if (isPlaceholderText(current) && Boolean.TRUE.equals(transcription.getAnalyzed())) {
+                clearAnalysisForPendingTranscription(transcription);
+                repository.save(transcription);
+                log.info("Cleared bogus analysis for pending transcription {}", recordingId);
+            }
             return false;
         }
         if (current != null && text.length() <= current.length()) {
@@ -353,6 +359,26 @@ public class TranscriptionService {
 
     private static String joinList(List<String> items) {
         return items == null || items.isEmpty() ? "" : String.join(", ", items);
+    }
+
+    /** Quita análisis inválido cuando el texto real de S3 aún no llegó. */
+    private void clearAnalysisForPendingTranscription(Transcription transcription) {
+        transcription.setAnalyzed(false);
+        transcription.setAnalyzedAt(null);
+        transcription.setSaleCompleted(null);
+        transcription.setSaleStatus(null);
+        transcription.setAnalysisConfidence(null);
+        transcription.setConfidenceTrace(null);
+        transcription.setSaleEvidence(null);
+        transcription.setSaleEvidenceMeta(null);
+        transcription.setNoSaleReason(null);
+        transcription.setProductsDiscussed(null);
+        transcription.setCustomerObjections(null);
+        transcription.setImprovementSuggestions(null);
+        transcription.setExecutiveSummary(null);
+        transcription.setSellerScore(null);
+        transcription.setSellerStrengths(null);
+        transcription.setSellerWeaknesses(null);
     }
 
     private void applyDiarizedTranscriptIfValid(Transcription transcription, String diarized, String recordingId) {

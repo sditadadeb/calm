@@ -441,6 +441,28 @@ public class S3Service {
 
     private String getTranscriptionFromNewBucket(String recordingId) {
         if (newBucketS3Client == null) return null;
+
+        List<String> idCandidates = new ArrayList<>();
+        idCandidates.add(recordingId);
+        String flat = flatRecordingId(recordingId);
+        if (!flat.equals(recordingId)) {
+            idCandidates.add(flat);
+        }
+
+        for (String candidateId : idCandidates) {
+            String fromTranscripcion = readNewBucketTranscripcionJson(candidateId);
+            if (fromTranscripcion != null && !fromTranscripcion.isBlank()) {
+                return fromTranscripcion;
+            }
+            String fromMetadataJson = readNewBucketMetadataJsonAsTranscription(candidateId);
+            if (fromMetadataJson != null && !fromMetadataJson.isBlank()) {
+                return fromMetadataJson;
+            }
+        }
+        return null;
+    }
+
+    private String readNewBucketTranscripcionJson(String recordingId) {
         try {
             String key = newBucketPrefix + recordingId + ".transcripcion.json";
             GetObjectRequest request = GetObjectRequest.builder()
@@ -454,81 +476,105 @@ public class S3Service {
                     .collect(Collectors.joining("\n"));
 
             JsonNode root = objectMapper.readTree(content);
-            StringBuilder text = new StringBuilder();
-
-            if (root.has("segments") && root.get("segments").isArray()) {
-                JsonNode segments = root.get("segments");
-                boolean hasSpeakers = false;
-                for (JsonNode seg : segments) {
-                    if (seg.has("speaker") || seg.has("speaker_label")) {
-                        hasSpeakers = true;
-                        break;
-                    }
-                }
-
-                if (hasSpeakers) {
-                    String lastSpeaker = null;
-                    for (JsonNode segment : segments) {
-                        String segText = segment.has("text") ? segment.get("text").asText() : null;
-                        String speaker = segment.has("speaker") ? segment.get("speaker").asText() :
-                                         segment.has("speaker_label") ? segment.get("speaker_label").asText() : null;
-                        if (segText != null && !segText.isBlank()) {
-                            if (speaker != null && !speaker.equals(lastSpeaker)) {
-                                if (text.length() > 0) text.append("\n\n");
-                                text.append("[").append(formatSpeakerLabel(speaker)).append("]: ");
-                                lastSpeaker = speaker;
-                            } else if (text.length() > 0) {
-                                text.append(" ");
-                            }
-                            text.append(segText);
-                        }
-                    }
-                } else {
-                    // No speakers: format with line breaks between segments for GPT diarization
-                    double lastEnd = -1;
-                    for (JsonNode segment : segments) {
-                        String segText = segment.has("text") ? segment.get("text").asText() : null;
-                        if (segText != null && !segText.isBlank()) {
-                            double start = segment.has("start") ? segment.get("start").asDouble() : 0;
-                            // New line when there's a gap > 1.5s (likely speaker change)
-                            if (lastEnd >= 0 && (start - lastEnd) > 1.5) {
-                                text.append("\n");
-                            } else if (text.length() > 0) {
-                                text.append(" ");
-                            }
-                            text.append(segText);
-                            lastEnd = segment.has("end") ? segment.get("end").asDouble() : start;
-                        }
-                    }
-                }
-            } else if (root.isArray()) {
-                for (JsonNode segment : root) {
-                    String segText = segment.has("text") ? segment.get("text").asText() :
-                                     segment.has("transcript") ? segment.get("transcript").asText() : null;
-                    if (segText != null && !segText.isBlank()) {
-                        if (text.length() > 0) text.append(" ");
-                        text.append(segText);
-                    }
-                }
-            } else if (root.has("transcript")) {
-                text.append(root.get("transcript").asText());
-            } else if (root.has("text")) {
-                text.append(root.get("text").asText());
-            } else {
-                text.append(content);
-            }
-
-            String result = text.toString().trim();
-            if (!result.isEmpty()) {
+            String result = extractTextFromNewBucketTranscriptionRoot(root, content);
+            if (result != null && !result.isBlank()) {
                 log.info("Retrieved transcription from new bucket for {} ({} chars)", recordingId, result.length());
                 return result;
             }
         } catch (NoSuchKeyException e) {
-            // Not in new bucket
+            // Not in new bucket with this key
         } catch (Exception e) {
             log.error("Error reading transcription from new bucket for {}: {}", recordingId, e.getMessage());
         }
         return null;
+    }
+
+    private String readNewBucketMetadataJsonAsTranscription(String recordingId) {
+        try {
+            String key = newBucketPrefix + recordingId + ".json";
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(newBucket)
+                    .key(key)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> response = newBucketS3Client.getObject(request);
+            String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+
+            return parseTranscriptionJson(content, recordingId);
+        } catch (NoSuchKeyException e) {
+            return null;
+        } catch (Exception e) {
+            log.error("Error reading new bucket metadata json as transcription for {}: {}", recordingId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractTextFromNewBucketTranscriptionRoot(JsonNode root, String rawContent) {
+        StringBuilder text = new StringBuilder();
+
+        if (root.has("segments") && root.get("segments").isArray()) {
+            JsonNode segments = root.get("segments");
+            boolean hasSpeakers = false;
+            for (JsonNode seg : segments) {
+                if (seg.has("speaker") || seg.has("speaker_label")) {
+                    hasSpeakers = true;
+                    break;
+                }
+            }
+
+            if (hasSpeakers) {
+                String lastSpeaker = null;
+                for (JsonNode segment : segments) {
+                    String segText = segment.has("text") ? segment.get("text").asText() : null;
+                    String speaker = segment.has("speaker") ? segment.get("speaker").asText() :
+                                     segment.has("speaker_label") ? segment.get("speaker_label").asText() : null;
+                    if (segText != null && !segText.isBlank()) {
+                        if (speaker != null && !speaker.equals(lastSpeaker)) {
+                            if (text.length() > 0) text.append("\n\n");
+                            text.append("[").append(formatSpeakerLabel(speaker)).append("]: ");
+                            lastSpeaker = speaker;
+                        } else if (text.length() > 0) {
+                            text.append(" ");
+                        }
+                        text.append(segText);
+                    }
+                }
+            } else {
+                double lastEnd = -1;
+                for (JsonNode segment : segments) {
+                    String segText = segment.has("text") ? segment.get("text").asText() : null;
+                    if (segText != null && !segText.isBlank()) {
+                        double start = segment.has("start") ? segment.get("start").asDouble() : 0;
+                        if (lastEnd >= 0 && (start - lastEnd) > 1.5) {
+                            text.append("\n");
+                        } else if (text.length() > 0) {
+                            text.append(" ");
+                        }
+                        text.append(segText);
+                        lastEnd = segment.has("end") ? segment.get("end").asDouble() : start;
+                    }
+                }
+            }
+        } else if (root.isArray()) {
+            for (JsonNode segment : root) {
+                String segText = segment.has("text") ? segment.get("text").asText() :
+                                 segment.has("transcript") ? segment.get("transcript").asText() : null;
+                if (segText != null && !segText.isBlank()) {
+                    if (text.length() > 0) text.append(" ");
+                    text.append(segText);
+                }
+            }
+        } else if (root.has("transcript")) {
+            text.append(root.get("transcript").asText());
+        } else if (root.has("text")) {
+            text.append(root.get("text").asText());
+        } else {
+            text.append(rawContent);
+        }
+
+        return text.toString().trim();
     }
 
     private String getTranscriptionFromOldBucket(String recordingId) {
@@ -629,6 +675,7 @@ public class S3Service {
         if (audioSize > 10_000_000 && len < 500) return true;
         if (audioSize > 5_000_000 && len < 200) return true;
         if (audioSize > 2_000_000 && len < 80) return true;
+        if (audioSize > 1_000_000 && len < 100) return true;
         return false;
     }
 

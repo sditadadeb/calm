@@ -25,7 +25,8 @@ import {
   Pause,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import { getTranscriptions, analyzeTranscription } from '../api';
 import api from '../api';
@@ -177,6 +178,13 @@ const SALE_STATUS_CONFIG = {
     icon: HelpCircle,
     bgClass: 'bg-slate-500/20',
     textClass: 'text-slate-400',
+  },
+  TRANSCRIPTION_PENDING: {
+    labelKey: 'detail.transcriptionPending',
+    descKey: 'detail.transcriptionPendingDesc',
+    icon: Clock,
+    bgClass: 'bg-amber-500/20',
+    textClass: 'text-amber-400',
   }
 };
 
@@ -408,6 +416,9 @@ export default function TranscriptionDetail() {
     return { ...cfg, label: t(cfg.labelKey), description: t(cfg.descKey) };
   };
 
+  const isPendingTranscription = (trans) =>
+    trans?.transcriptionText?.startsWith('[Audio disponible');
+
   const hasParseError = (trans) => {
     const msg = trans?.noSaleReason || trans?.executiveSummary || '';
     return msg.toLowerCase().includes('error parseando');
@@ -455,7 +466,10 @@ export default function TranscriptionDetail() {
   }
 
   const trans = transcription;
-  const statusConfig = getStatusConfig(trans.saleStatus);
+  const pendingTranscription = isPendingTranscription(trans);
+  const statusConfig = pendingTranscription
+    ? getStatusConfig('TRANSCRIPTION_PENDING')
+    : getStatusConfig(trans.saleStatus);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -536,6 +550,12 @@ export default function TranscriptionDetail() {
               </span>
             </div>
             
+            {pendingTranscription && (
+              <p className={`mb-3 text-sm ${isDark ? 'text-amber-300/90' : 'text-amber-700'}`}>
+                {t('detail.transcriptionPendingDesc')}
+              </p>
+            )}
+
             <div className={`flex flex-wrap items-center gap-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -616,6 +636,7 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Analysis Grid */}
+      {!pendingTranscription && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Executive Summary */}
         {trans.executiveSummary && (
@@ -766,6 +787,7 @@ export default function TranscriptionDetail() {
           </div>
         )}
       </div>
+      )}
 
       {/* Full Transcription */}
       {trans.transcriptionText && (
@@ -776,8 +798,8 @@ export default function TranscriptionDetail() {
             </div>
             <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.fullTranscription')}</h3>
           </div>
-          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${pendingTranscription ? (isDark ? 'bg-amber-900/20 border border-amber-800/40' : 'bg-amber-50 border border-amber-200') : (isDark ? 'bg-slate-900' : 'bg-gray-50')}`}>
+            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${pendingTranscription ? (isDark ? 'text-amber-200/90' : 'text-amber-800') : (isDark ? 'text-slate-300' : 'text-gray-600')}`}>
               {trans.transcriptionText}
             </pre>
           </div>
