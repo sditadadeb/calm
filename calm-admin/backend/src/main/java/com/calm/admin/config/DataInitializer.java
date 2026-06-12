@@ -79,7 +79,6 @@ public class DataInitializer implements CommandLineRunner {
         dedupeFlatRecordingIds();
         runMigrationRefresh();
         applyCsvOriginalDates();
-        runParseErrorSweep();
     }
 
     private void ensureMigrationsTable() {
@@ -163,21 +162,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Migracion CSV fechas originales: {} registros actualizados (Jun 9-11)", datesFixed);
         } catch (Exception e) {
             log.error("Error aplicando fechas originales desde CSV: {}", e.getMessage());
-        }
-    }
-
-    private void runParseErrorSweep() {
-        try {
-            if (isMigrationApplied("parse_error_sweep_v1")) {
-                return;
-            }
-
-            var result = transcriptionService.reanalyzeParseErrors(2);
-            markMigrationApplied("parse_error_sweep_v1");
-            log.info("Migracion parse error sweep (2 meses): found={}, fixed={}, errors={}",
-                    result.get("found"), result.get("fixed"), result.get("errors"));
-        } catch (Exception e) {
-            log.error("Error en migracion parse error sweep: {}", e.getMessage());
         }
     }
 
