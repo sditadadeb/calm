@@ -737,14 +737,18 @@ public class S3Service {
 
         probe.put("sources", sources.stream().filter(Objects::nonNull).toList());
 
-        String merged = getTranscription(recordingId);
-        probe.put("mergedTextLength", merged != null ? merged.length() : 0);
-        if (merged != null && !merged.isBlank()) {
-            probe.put("mergedPreview", merged.length() > 200 ? merged.substring(0, 200) + "…" : merged);
-        } else {
-            probe.put("mergedPreview", null);
+        try {
+            String merged = getTranscription(recordingId);
+            probe.put("mergedTextLength", merged != null ? merged.length() : 0);
+            if (merged != null && !merged.isBlank()) {
+                probe.put("mergedPreview", merged.length() > 200 ? merged.substring(0, 200) + "…" : merged);
+            } else {
+                probe.put("mergedPreview", null);
+            }
+            probe.put("suspiciouslyShortForAudio", isSuspiciouslyShortForAudio(recordingId, merged));
+        } catch (Exception e) {
+            probe.put("mergeError", e.getMessage());
         }
-        probe.put("suspiciouslyShortForAudio", isSuspiciouslyShortForAudio(recordingId, merged));
         return probe;
     }
 
@@ -759,6 +763,12 @@ public class S3Service {
                     .bucket(bucket).key(key).build());
             entry.put("exists", true);
             entry.put("rawBytes", head.contentLength());
+
+            if (head.contentLength() > 10_000_000) {
+                entry.put("skippedParse", true);
+                entry.put("note", "Archivo muy grande; no se parsea en probe");
+                return entry;
+            }
 
             GetObjectRequest request = GetObjectRequest.builder().bucket(bucket).key(key).build();
             ResponseInputStream<GetObjectResponse> response = client.getObject(request);
