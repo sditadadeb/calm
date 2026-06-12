@@ -160,7 +160,7 @@ public class JsonRepairTest {
         json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
         json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
         json = json.replaceAll("\":\\s*\":\\s*", "\": ");
-        json = json.replaceAll("([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
+        json = json.replaceAll("([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*+), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
         json = json.replaceAll("(:\\s*)(true|false|null)\"(?=\\s*[,}\\]])", "$1$2");
         json = json.replaceAll("(:\\s*)(-?\\d+(?:\\.\\d+)?)\"(?=\\s*[,}\\]])", "$1$2");
         json = json.replaceAll(":\\s*True(?=\\s*[,}\\]])", ": true");

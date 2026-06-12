@@ -457,6 +457,15 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         
         return json;
     }
+
+    private static String safeReplaceAll(String input, String regex, String replacement) {
+        try {
+            return input.replaceAll(regex, replacement);
+        } catch (StackOverflowError e) {
+            log.warn("Regex stack overflow ({} chars), skipping pattern", input.length());
+            return input;
+        }
+    }
     
     /**
      * Repara JSON malformado que GPT a veces genera.
@@ -484,61 +493,50 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         // Normalizar line endings
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
-        // === FASE 2: Correcciones de valores ===
-        // GPT orphan commas before keys: { ","key" / , ","key" / { ,"key"
-        json = json.replaceAll("\\{\\s*\",\\s*\"", "{ \"");
-        json = json.replaceAll("\\[\\s*\",\\s*\"", "[ \"");
-        json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
-        json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
-        json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
-        // GPT artifact: "key":": value → "key": value
-        json = json.replaceAll("\":\\s*\":\\s*", "\": ");
-        // String sin cerrar antes de la siguiente key: : "value, "nextKey": → : "value", "nextKey":
-        // CRÍTICO: anclado a [:,\[] antes de la comilla para garantizar que es una comilla
-        // de APERTURA. Sin ancla, matcheaba comillas de cierre e insertaba comillas falsas
-        // tras } o ] en JSON válido de una línea.
-        json = json.replaceAll("([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
-        // Extra quote después de un valor BARE bool/number (": 420\"" → ": 420").
-        // CRÍTICO: anclado a ':' — la versión sin ancla comía la comilla de cierre de
-        // strings que terminan en dígitos (ej: "confidence_v4_2026-02",) y corrompía
-        // TODOS los análisis con confidenceTrace.
-        json = json.replaceAll("(:\\s*)(true|false|null)\"(?=\\s*[,}\\]])", "$1$2");
-        json = json.replaceAll("(:\\s*)(-?\\d+(?:\\.\\d+)?)\"(?=\\s*[,}\\]])", "$1$2");
-        // Python-style booleans/null (solo como valor bare completo)
-        json = json.replaceAll(":\\s*True(?=\\s*[,}\\]])", ": true");
-        json = json.replaceAll(":\\s*False(?=\\s*[,}\\]])", ": false");
-        json = json.replaceAll(":\\s*None(?=\\s*[,}\\]])", ": null");
-        
-        // English number words as bare values (GPT sometimes writes "fifty" instead of 50).
-        // Anclado a ",}]" para no tocar palabras dentro de strings.
-        json = json.replaceAll("(?i):\\s*zero(?=\\s*[,}\\]])", ": 0");
-        json = json.replaceAll("(?i):\\s*one(?=\\s*[,}\\]])", ": 1");
-        json = json.replaceAll("(?i):\\s*two(?=\\s*[,}\\]])", ": 2");
-        json = json.replaceAll("(?i):\\s*three(?=\\s*[,}\\]])", ": 3");
-        json = json.replaceAll("(?i):\\s*four(?=\\s*[,}\\]])", ": 4");
-        json = json.replaceAll("(?i):\\s*five(?=\\s*[,}\\]])", ": 5");
-        json = json.replaceAll("(?i):\\s*six(?=\\s*[,}\\]])", ": 6");
-        json = json.replaceAll("(?i):\\s*seven(?=\\s*[,}\\]])", ": 7");
-        json = json.replaceAll("(?i):\\s*eight(?=\\s*[,}\\]])", ": 8");
-        json = json.replaceAll("(?i):\\s*nine(?=\\s*[,}\\]])", ": 9");
-        json = json.replaceAll("(?i):\\s*ten(?=\\s*[,}\\]])", ": 10");
-        json = json.replaceAll("(?i):\\s*twenty(?=\\s*[,}\\]])", ": 20");
-        json = json.replaceAll("(?i):\\s*thirty(?=\\s*[,}\\]])", ": 30");
-        json = json.replaceAll("(?i):\\s*forty(?=\\s*[,}\\]])", ": 40");
-        json = json.replaceAll("(?i):\\s*fifty(?=\\s*[,}\\]])", ": 50");
-        json = json.replaceAll("(?i):\\s*sixty(?=\\s*[,}\\]])", ": 60");
-        json = json.replaceAll("(?i):\\s*seventy(?=\\s*[,}\\]])", ": 70");
-        json = json.replaceAll("(?i):\\s*eighty(?=\\s*[,}\\]])", ": 80");
-        json = json.replaceAll("(?i):\\s*ninety(?=\\s*[,}\\]])", ": 90");
-        json = json.replaceAll("(?i):\\s*hundred(?=\\s*[,}\\]])", ": 100");
-        // Decimales sin cero inicial: : .5 → : 0.5
-        json = json.replaceAll("(:\\s*)\\.(\\d)", "$10.$2");
-        // Punto suelto como valor (GPT a veces deja ": .,")
-        json = json.replaceAll("(:\\s*)\\.(?=\\s*[,}\\]])", ": 0");
+        // === FASE 2: Correcciones de valores (regex seguros, sin backtracking catastrófico) ===
+        json = safeReplaceAll(json, "\\{\\s*\",\\s*\"", "{ \"");
+        json = safeReplaceAll(json, "\\[\\s*\",\\s*\"", "[ \"");
+        json = safeReplaceAll(json, "\\{\\s*,\\s*\"", "{ \"");
+        json = safeReplaceAll(json, "\\[\\s*,\\s*\"", "[ \"");
+        json = safeReplaceAll(json, ",\\s*\",\\s*\"", ", \"");
+        json = safeReplaceAll(json, "\":\\s*\":\\s*", "\": ");
+        // String sin cerrar antes de key — solo en JSON razonable; *+ evita StackOverflowError
+        if (json.length() < 80_000) {
+            json = safeReplaceAll(json,
+                    "([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*+), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:",
+                    "$1\", \"$2\":");
+        }
+        json = safeReplaceAll(json, "(:\\s*)(true|false|null)\"(?=\\s*[,}\\]])", "$1$2");
+        json = safeReplaceAll(json, "(:\\s*)(-?\\d+(?:\\.\\d+)?)\"(?=\\s*[,}\\]])", "$1$2");
+        json = safeReplaceAll(json, ":\\s*True(?=\\s*[,}\\]])", ": true");
+        json = safeReplaceAll(json, ":\\s*False(?=\\s*[,}\\]])", ": false");
+        json = safeReplaceAll(json, ":\\s*None(?=\\s*[,}\\]])", ": null");
+        json = safeReplaceAll(json, "(?i):\\s*zero(?=\\s*[,}\\]])", ": 0");
+        json = safeReplaceAll(json, "(?i):\\s*one(?=\\s*[,}\\]])", ": 1");
+        json = safeReplaceAll(json, "(?i):\\s*two(?=\\s*[,}\\]])", ": 2");
+        json = safeReplaceAll(json, "(?i):\\s*three(?=\\s*[,}\\]])", ": 3");
+        json = safeReplaceAll(json, "(?i):\\s*four(?=\\s*[,}\\]])", ": 4");
+        json = safeReplaceAll(json, "(?i):\\s*five(?=\\s*[,}\\]])", ": 5");
+        json = safeReplaceAll(json, "(?i):\\s*six(?=\\s*[,}\\]])", ": 6");
+        json = safeReplaceAll(json, "(?i):\\s*seven(?=\\s*[,}\\]])", ": 7");
+        json = safeReplaceAll(json, "(?i):\\s*eight(?=\\s*[,}\\]])", ": 8");
+        json = safeReplaceAll(json, "(?i):\\s*nine(?=\\s*[,}\\]])", ": 9");
+        json = safeReplaceAll(json, "(?i):\\s*ten(?=\\s*[,}\\]])", ": 10");
+        json = safeReplaceAll(json, "(?i):\\s*twenty(?=\\s*[,}\\]])", ": 20");
+        json = safeReplaceAll(json, "(?i):\\s*thirty(?=\\s*[,}\\]])", ": 30");
+        json = safeReplaceAll(json, "(?i):\\s*forty(?=\\s*[,}\\]])", ": 40");
+        json = safeReplaceAll(json, "(?i):\\s*fifty(?=\\s*[,}\\]])", ": 50");
+        json = safeReplaceAll(json, "(?i):\\s*sixty(?=\\s*[,}\\]])", ": 60");
+        json = safeReplaceAll(json, "(?i):\\s*seventy(?=\\s*[,}\\]])", ": 70");
+        json = safeReplaceAll(json, "(?i):\\s*eighty(?=\\s*[,}\\]])", ": 80");
+        json = safeReplaceAll(json, "(?i):\\s*ninety(?=\\s*[,}\\]])", ": 90");
+        json = safeReplaceAll(json, "(?i):\\s*hundred(?=\\s*[,}\\]])", ": 100");
+        json = safeReplaceAll(json, "(:\\s*)\\.(\\d)", "$10.$2");
+        json = safeReplaceAll(json, "(:\\s*)\\.(?=\\s*[,}\\]])", ": 0");
         
         // === FASE 3: Trailing commas ===
-        json = json.replaceAll(",\\s*}", "}");
-        json = json.replaceAll(",\\s*]", "]");
+        json = safeReplaceAll(json, ",\\s*}", "}");
+        json = safeReplaceAll(json, ",\\s*]", "]");
         
         // === FASE 4: Insertar comas faltantes (character-by-character) ===
         // Nota: readString dentro de la máquina de estados ya escapa newlines y
@@ -568,7 +566,12 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         String json = raw;
         com.fasterxml.jackson.core.JsonProcessingException lastError = null;
         for (int pass = 0; pass < 3; pass++) {
-            json = repairJson(json);
+            try {
+                json = repairJson(json);
+            } catch (StackOverflowError e) {
+                log.error("JSON repair stack overflow on pass {}, aborting repair", pass + 1);
+                break;
+            }
             try {
                 return mapper.readTree(json.trim());
             } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
@@ -603,8 +606,15 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         int i = 0;
         int len = json.length();
         int state = ST_INITIAL;
+        int safety = 0;
+        int maxOps = len * 4 + 5000;
         
         while (i < len) {
+            if (++safety > maxOps) {
+                log.warn("insertMissingCommas: límite de seguridad alcanzado en pos {}", i);
+                result.append(json.substring(i));
+                break;
+            }
             char c = json.charAt(i);
             
             // Skipear whitespace (preservándolo)
