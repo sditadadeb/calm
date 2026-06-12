@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
+// Celda de KPI: pensada para vivir dentro de una franja única con divisores
+// (ver Dashboard). El color del valor es el único acento por variante.
 export default function MetricCard({ 
   title, 
   value, 
@@ -14,72 +16,43 @@ export default function MetricCard({
 }) {
   const { isDark } = useTheme();
   
-  // Variantes con colores CALM
-  const variants = {
-    default: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-[#F5A623] border border-slate-700'
-      : 'bg-white border-l-4 border-l-[#F5A623] border border-gray-200',
-    primary: 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white border-0',
-    success: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-green-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-green-500 border border-gray-200',
-    danger: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-red-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-red-500 border border-gray-200',
-    warning: isDark 
-      ? 'bg-slate-800 border-l-4 border-l-amber-500 border border-slate-700'
-      : 'bg-white border-l-4 border-l-amber-500 border border-gray-200',
-  };
+  const valueColor = {
+    default: isDark ? 'text-white' : 'text-gray-900',
+    primary: 'text-[#F5A623]',
+    success: 'text-emerald-400',
+    danger: 'text-red-400',
+    warning: 'text-[#F5A623]',
+  }[variant];
 
-  const iconBg = {
-    default: 'bg-[#F5A623]/20 text-[#F5A623]',
-    primary: 'bg-white/20 text-white',
-    success: 'bg-green-500/20 text-green-400',
-    danger: 'bg-red-500/20 text-red-400',
-    warning: 'bg-amber-500/20 text-amber-400',
-  };
-
-  const isPrimary = variant === 'primary';
-
-  const card = (
-    <div className={`rounded-2xl p-6 transition-all hover:shadow-lg hover:translate-y-[-2px] ${variants[variant]} ${to ? 'cursor-pointer' : ''}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className={`text-sm font-medium ${isPrimary ? 'text-white/70' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            {title}
-          </p>
-          <p className={`text-3xl font-bold mt-2 ${isPrimary ? 'text-white' : isDark ? 'text-white' : 'text-gray-800'}`}>
-            {value}
-          </p>
-          {subtitle && (
-            <p className={`text-sm mt-1 ${isPrimary ? 'text-white/60' : isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {Icon && (
-          <div className={`p-3 rounded-xl ${iconBg[variant]}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-        )}
+  const cell = (
+    <div className={`px-5 py-4 h-full transition-colors ${to ? 'cursor-pointer ' + (isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50') : ''}`}>
+      <div className="flex items-center gap-1.5">
+        {Icon && <Icon className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} strokeWidth={1.8} />}
+        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+          {title}
+        </p>
       </div>
-      
-      {trend !== undefined && (
-        <div className={`flex items-center gap-2 mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          {trend === 'up' && <TrendingUp className="w-4 h-4 text-green-400" />}
-          {trend === 'down' && <TrendingDown className="w-4 h-4 text-red-400" />}
-          <span className={`text-sm font-medium ${
-            trend === 'up' ? 'text-green-400' : 'text-red-400'
-          }`}>
+      <p className={`font-display text-[28px] font-semibold leading-tight mt-2 tabular-nums ${valueColor}`}>
+        {value}
+      </p>
+      <div className="flex items-center gap-2 mt-0.5">
+        {subtitle && (
+          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+            {subtitle}
+          </p>
+        )}
+        {trend !== undefined && (
+          <span className={`text-xs font-medium inline-flex items-center gap-1 ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
+            {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {trendValue}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
   if (to) {
-    return <Link to={to} className="block">{card}</Link>;
+    return <Link to={to} className="block h-full">{cell}</Link>;
   }
-  return card;
+  return cell;
 }

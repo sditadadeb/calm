@@ -53,7 +53,7 @@ export default function Branches() {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.activeBranches')}</p>
@@ -64,7 +64,7 @@ export default function Branches() {
             </div>
           </div>
         </div>
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.bestConversion')}</p>
@@ -77,7 +77,7 @@ export default function Branches() {
             </div>
           </div>
         </div>
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-blue-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-blue-500 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.totalAttendances')}</p>
@@ -95,7 +95,7 @@ export default function Branches() {
       {/* Charts */}
       {branches.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
             <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('branches.conversionByBranch')}</h3>
             <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.closureRate')}</p>
             <ResponsiveContainer width="100%" height={300}>
@@ -108,7 +108,7 @@ export default function Branches() {
             </ResponsiveContainer>
           </div>
 
-          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <div className={`rounded-2xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
             <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('branches.scoreByBranch')}</h3>
             <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.avgSellerScore')}</p>
             <ResponsiveContainer width="100%" height={300}>
@@ -125,7 +125,7 @@ export default function Branches() {
 
       {/* Branches Table */}
       {branches.length === 0 ? (
-        <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
             <Building2 className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
           </div>
@@ -133,9 +133,9 @@ export default function Branches() {
           <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>{t('branches.syncData')}</p>
         </div>
       ) : (
-        <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <table className="w-full">
-            <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
+            <thead className={isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}>
               <tr>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.position')}</th>
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('branches.branch')}</th>
@@ -147,9 +147,9 @@ export default function Branches() {
                 <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
+            <tbody className={`divide-y ${isDark ? 'divide-line' : 'divide-gray-200'}`}>
               {branches.map((branch, index) => (
-                <tr key={branch.branchId} className={`transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}>
+                <tr key={branch.branchId} className={`transition-colors ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}`}>
                   <td className="px-6 py-4">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                       index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :

@@ -529,6 +529,7 @@ export default {
     points: 'points',
     clear: 'Clear',
     applyFilters: 'Apply filters',
+    noResults: 'No matches',
   },
   score: {
     excellent: 'Excellent',

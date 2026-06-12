@@ -11,13 +11,25 @@ export default {
         calm: {
           primary: '#F5A623',
           secondary: '#FFBB54',
+          deep: '#C77E0A',
           dark: '#1a1a2e',
           light: '#f8f9fa',
-        }
+        },
+        // Nueva paleta oscura (rediseño): fondo profundo + superficies
+        ink: {
+          DEFAULT: '#0B0D11',
+          raised: '#12151B',
+          overlay: '#181C24',
+        },
+        line: {
+          DEFAULT: 'rgba(255,255,255,0.07)',
+          strong: 'rgba(255,255,255,0.12)',
+        },
       },
       fontFamily: {
-        'display': ['Playfair Display', 'serif'],
-        'body': ['Source Sans Pro', 'sans-serif'],
+        'display': ['Space Grotesk', 'Be Vietnam Pro', 'sans-serif'],
+        'body': ['Be Vietnam Pro', 'Arial', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'ui-monospace', 'monospace'],
         'vietnam': ['Be Vietnam Pro', 'Arial', 'sans-serif'],
         'sans': ['Be Vietnam Pro', 'Arial', 'sans-serif'],
       },

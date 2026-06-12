@@ -118,7 +118,7 @@ export default function Search() {
   return (
     <div className="space-y-6">
       {/* Search Box */}
-      <div className={`rounded-xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl border p-6 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="flex gap-3">
             <div className="relative flex-1">
@@ -130,7 +130,7 @@ export default function Search() {
                 placeholder={t('searchPage.placeholder')}
                 className={`w-full pl-12 pr-4 py-3 rounded-lg border text-lg ${
                   isDark 
-                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-[#F5A623]' 
+                    ? 'bg-ink-overlay border-line-strong text-white placeholder-slate-400 focus:border-[#F5A623]' 
                     : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#F5A623]'
                 } focus:outline-none focus:ring-2 focus:ring-[#F5A623]/20 transition-all`}
               />
@@ -182,7 +182,7 @@ export default function Search() {
           
           {/* Filters Panel */}
           {showFilters && (
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
               {/* Vendedor */}
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
@@ -194,7 +194,7 @@ export default function Search() {
                   onChange={(e) => setFilters({ ...filters, userId: e.target.value || null })}
                   className={`w-full px-3 py-2 rounded-lg border ${
                     isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
+                      ? 'bg-ink-overlay border-line-strong text-white' 
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
@@ -218,7 +218,7 @@ export default function Search() {
                   onChange={(e) => setFilters({ ...filters, branchId: e.target.value || null })}
                   className={`w-full px-3 py-2 rounded-lg border ${
                     isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
+                      ? 'bg-ink-overlay border-line-strong text-white' 
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
@@ -245,7 +245,7 @@ export default function Search() {
                   })}
                   className={`w-full px-3 py-2 rounded-lg border ${
                     isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
+                      ? 'bg-ink-overlay border-line-strong text-white' 
                       : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
@@ -273,7 +273,7 @@ export default function Search() {
           </span>
           {totalMatches > 0 && (
             <>
-              <span>•</span>
+              <span>â€¢</span>
               <span>
                 <span className="text-[#F5A623]">{totalMatches}</span> {totalMatches !== 1 ? t('searchPage.matches') : t('searchPage.match')}
               </span>
@@ -291,7 +291,7 @@ export default function Search() {
               onClick={() => navigate(`/transcriptions/${result.recordingId}`)}
               className={`rounded-xl border p-5 cursor-pointer transition-all hover:shadow-lg ${
                 isDark 
-                  ? 'bg-slate-800 border-slate-700 hover:border-[#F5A623]/50' 
+                  ? 'bg-ink-raised border-line hover:border-[#F5A623]/50' 
                   : 'bg-white border-gray-200 hover:border-[#F5A623]/50'
               }`}
             >
@@ -344,7 +344,7 @@ export default function Search() {
                 </span>
                 {result.sellerScore && (
                   <span className="flex items-center gap-1">
-                    ⭐ {result.sellerScore}/10
+                    â­ {result.sellerScore}/10
                   </span>
                 )}
               </div>

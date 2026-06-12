@@ -19,7 +19,7 @@ const InfoIcon = ({ tooltip, isDark }) => {
         i
       </button>
       {showTooltip && (
-        <div className={`absolute z-50 w-72 p-3 text-white text-sm rounded-lg shadow-xl -left-32 top-8 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-900 border-gray-700'}`}>
+        <div className={`absolute z-50 w-72 p-3 text-white text-sm rounded-lg shadow-xl -left-32 top-8 border ${isDark ? 'bg-ink border-line' : 'bg-gray-900 border-gray-700'}`}>
           <div className={`absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent ${isDark ? 'border-b-slate-900' : 'border-b-gray-900'}`}></div>
           {tooltip}
         </div>
@@ -207,10 +207,10 @@ const Settings = () => {
         </div>
       )}
 
-      {/* Explicación de criterios */}
+      {/* ExplicaciÃ³n de criterios */}
       <div className="bg-gradient-to-r from-[#F5A623]/10 to-[#FFBB54]/10 rounded-xl p-6 border border-[#F5A623]/20">
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          📊 {t('settings.scoreCriteria')}
+          ðŸ“Š {t('settings.scoreCriteria')}
           <InfoIcon isDark={isDark} tooltip={t('settings.scoreCriteriaTooltip')} />
         </h2>
         
@@ -246,10 +246,10 @@ const Settings = () => {
       </div>
 
       {/* Editor de Prompt */}
-      <div className={`rounded-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl overflow-hidden border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <div className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] p-4">
           <h2 className="text-lg font-semibold text-white flex items-center">
-            🤖 {t('settings.systemPrompt')}
+            ðŸ¤– {t('settings.systemPrompt')}
             <InfoIcon isDark={isDark} tooltip={t('settings.systemPromptTooltip')} />
           </h2>
         </div>
@@ -340,9 +340,9 @@ const Settings = () => {
       </div>
 
       {/* Re-analizar todas las transcripciones */}
-      <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          🔄 {t('settings.reanalyzeTitle')}
+          ðŸ”„ {t('settings.reanalyzeTitle')}
           <InfoIcon isDark={isDark} tooltip={t('settings.reanalyzeTooltip')} />
         </h2>
         
@@ -382,10 +382,10 @@ const Settings = () => {
         </button>
       </div>
 
-      {/* Reparar errores de parseo GPT (últimos 2 meses) */}
-      <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      {/* Reparar errores de parseo GPT (Ãºltimos 2 meses) */}
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          🔧 {t('settings.parseErrorTitle')}
+          ðŸ”§ {t('settings.parseErrorTitle')}
           <InfoIcon isDark={isDark} tooltip={t('settings.parseErrorTooltip')} />
         </h2>
 
@@ -394,14 +394,14 @@ const Settings = () => {
         </p>
 
         {parseErrorPreview != null && (
-          <div className={`mb-4 p-4 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+          <div className={`mb-4 p-4 rounded-lg ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
             <p className={isDark ? 'text-white' : 'text-gray-800'}>
               {t('settings.parseErrorFound')}: <strong>{parseErrorPreview.count}</strong>
             </p>
             {parseErrorPreview.ids?.length > 0 && (
               <p className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 IDs: {parseErrorPreview.ids.slice(0, 10).join(', ')}
-                {parseErrorPreview.ids.length > 10 ? '…' : ''}
+                {parseErrorPreview.ids.length > 10 ? 'â€¦' : ''}
               </p>
             )}
           </div>
@@ -435,28 +435,28 @@ const Settings = () => {
       </div>
 
       {/* Campos analizados */}
-      <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
-          📋 {t('settings.analysisFields')}
+          ðŸ“‹ {t('settings.analysisFields')}
           <InfoIcon isDark={isDark} tooltip={t('settings.analysisFieldsTooltip')} />
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { icon: '✅', name: 'saleCompleted', desc: t('settings.field.saleCompleted') },
-            { icon: '🏷️', name: 'saleStatus', desc: t('settings.field.saleStatus') },
-            { icon: '📊', name: 'analysisConfidence', desc: t('settings.field.analysisConfidence') },
-            { icon: '📜', name: 'saleEvidence', desc: t('settings.field.saleEvidence') },
-            { icon: '❌', name: 'noSaleReason', desc: t('settings.field.noSaleReason') },
-            { icon: '🛏️', name: 'productsDiscussed', desc: t('settings.field.productsDiscussed') },
-            { icon: '🤔', name: 'customerObjections', desc: t('settings.field.customerObjections') },
-            { icon: '💡', name: 'improvementSuggestions', desc: t('settings.field.improvementSuggestions') },
-            { icon: '📝', name: 'executiveSummary', desc: t('settings.field.executiveSummary') },
-            { icon: '⭐', name: 'sellerScore', desc: t('settings.field.sellerScore') },
-            { icon: '💪', name: 'sellerStrengths', desc: t('settings.field.sellerStrengths') },
-            { icon: '⚠️', name: 'sellerWeaknesses', desc: t('settings.field.sellerWeaknesses') },
+            { icon: 'âœ…', name: 'saleCompleted', desc: t('settings.field.saleCompleted') },
+            { icon: 'ðŸ·ï¸', name: 'saleStatus', desc: t('settings.field.saleStatus') },
+            { icon: 'ðŸ“Š', name: 'analysisConfidence', desc: t('settings.field.analysisConfidence') },
+            { icon: 'ðŸ“œ', name: 'saleEvidence', desc: t('settings.field.saleEvidence') },
+            { icon: 'âŒ', name: 'noSaleReason', desc: t('settings.field.noSaleReason') },
+            { icon: 'ðŸ›ï¸', name: 'productsDiscussed', desc: t('settings.field.productsDiscussed') },
+            { icon: 'ðŸ¤”', name: 'customerObjections', desc: t('settings.field.customerObjections') },
+            { icon: 'ðŸ’¡', name: 'improvementSuggestions', desc: t('settings.field.improvementSuggestions') },
+            { icon: 'ðŸ“', name: 'executiveSummary', desc: t('settings.field.executiveSummary') },
+            { icon: 'â­', name: 'sellerScore', desc: t('settings.field.sellerScore') },
+            { icon: 'ðŸ’ª', name: 'sellerStrengths', desc: t('settings.field.sellerStrengths') },
+            { icon: 'âš ï¸', name: 'sellerWeaknesses', desc: t('settings.field.sellerWeaknesses') },
           ].map((field) => (
-            <div key={field.name} className={`flex items-start gap-3 p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+            <div key={field.name} className={`flex items-start gap-3 p-3 rounded-lg ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
               <span className="text-lg">{field.icon}</span>
               <div>
                 <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{field.name}</p>

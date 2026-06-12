@@ -150,82 +150,84 @@ export default function Layout({ children }) {
   };
 
 
+  const navItemClasses = (isActive) => `relative flex items-center gap-2.5 px-3 py-2 rounded-md text-[13.5px] font-medium transition-colors ${
+    isActive
+      ? isDark
+        ? 'text-white bg-[#F5A623]/10'
+        : 'text-gray-900 bg-[#F5A623]/10'
+      : isDark
+        ? 'text-slate-400 hover:text-white hover:bg-white/5'
+        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+  }`;
+
+  const ActiveBar = () => (
+    <span className="absolute -left-3 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#F5A623]" />
+  );
+
   return (
-    <div className={`min-h-screen flex ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex brand-glow ${isDark ? 'bg-ink' : 'bg-gray-50'}`}>
       {/* Sidebar */}
-      <aside className={`w-64 flex flex-col border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <aside className={`w-56 flex flex-col border-r relative z-10 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         {/* Logo */}
-        <div className={`p-6 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-lg bg-[#F5A623]">
-              <span className="text-white font-bold text-lg">calm</span>
+        <div className={`px-4 pt-5 pb-4 mx-3 border-b ${isDark ? 'border-line' : 'border-gray-200'}`}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg grid place-items-center font-display font-bold text-[15px] text-[#16120A]"
+                 style={{ background: 'linear-gradient(135deg, #F5A623, #C77E0A)' }}>
+              C
             </div>
-            <span className={`text-xl font-light ${isDark ? 'text-white' : 'text-gray-800'}`}>Admin</span>
+            <div>
+              <span className={`font-display font-semibold text-base tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>CALM</span>
+              <p className={`text-[10px] tracking-[0.14em] font-medium ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.adminPanel').toUpperCase()}</p>
+            </div>
           </div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('nav.adminPanel')}</p>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <p className={`text-xs font-semibold uppercase tracking-wider mb-4 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+        <nav className="flex-1 px-3 py-4">
+          <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] mb-2 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
             {t('nav.menu')}
           </p>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {baseNavigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive 
-                      ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
-                      : isDark 
-                        ? 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
+                <Link key={item.name} to={item.href} className={navItemClasses(isActive)}>
+                  {isActive && <ActiveBar />}
+                  <item.icon className={`w-4 h-4 ${isActive ? 'text-[#F5A623]' : ''}`} strokeWidth={1.8} />
+                  <span>{item.name}</span>
                 </Link>
               );
             })}
             
             {isAdmin && (
               <>
-                <div className={`border-t my-4 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}></div>
-                <p className={`text-xs font-semibold uppercase tracking-wider mb-2 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] mb-2 px-3 pt-5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                   {t('nav.admin')}
                 </p>
                 {adminNavigation.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                        isActive 
-                          ? 'bg-[#F5A623] text-white shadow-lg shadow-[#F5A623]/30' 
-                          : isDark 
-                            ? 'text-slate-400 hover:bg-slate-700 hover:text-white'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                      }`}
-                    >
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.name}</span>
+                    <Link key={item.name} to={item.href} className={navItemClasses(isActive)}>
+                      {isActive && <ActiveBar />}
+                      <item.icon className={`w-4 h-4 ${isActive ? 'text-[#F5A623]' : ''}`} strokeWidth={1.8} />
+                      <span>{item.name}</span>
                     </Link>
                   );
                 })}
                 
                 {/* Sync Button */}
-                <div className="mt-4">
+                <div className="mt-5 px-1">
                   <button
                     onClick={handleSync}
                     disabled={syncing || loading}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-gradient-to-r from-[#F5A623] to-[#FFBB54] hover:from-[#D4911F] hover:to-[#F5A623] transition-all duration-200 shadow-lg shadow-[#F5A623]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isDark
+                        ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/25 bg-transparent'
+                        : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400 bg-transparent'
+                    }`}
                   >
-                    <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-                    <span className="font-medium text-sm">
+                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin text-[#F5A623]' : ''}`} strokeWidth={1.8} />
+                    <span>
                       {syncing 
                         ? (syncProgress.total > 0 
                             ? `${syncProgress.current}/${syncProgress.total}` 
@@ -235,9 +237,9 @@ export default function Layout({ children }) {
                   </button>
                   {syncing && syncProgress.total > 0 && (
                     <div className="mt-3">
-                      <div className={`w-full rounded-full h-2 overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                      <div className={`w-full rounded-full h-1 overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
                         <div 
-                          className="bg-gradient-to-r from-[#F5A623] to-[#FFBB54] h-2 rounded-full transition-all duration-300 ease-out"
+                          className="bg-[#F5A623] h-1 rounded-full transition-all duration-300 ease-out"
                           style={{ width: `${syncProgress.percent}%` }}
                         />
                       </div>
@@ -255,84 +257,73 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-auto ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+      <main className={`flex-1 overflow-auto relative z-10 ${isDark ? 'bg-ink' : 'bg-gray-50'}`}>
         {/* Header */}
         {(() => {
           const currentPage = pageConfig[location.pathname] || { name: 'Panel', subtitle: '', icon: LayoutDashboard };
-          const PageIcon = currentPage.icon;
           return (
-            <header className={`px-8 py-5 sticky top-0 z-10 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-                    <PageIcon className="w-6 h-6 text-[#F5A623]" />
-                  </div>
-                  <div>
-                    <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentPage.name}</h1>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{currentPage.subtitle}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  {/* Date */}
-                  <span className={`hidden sm:block text-sm px-4 py-2 rounded-full ${isDark ? 'text-slate-300 bg-slate-700' : 'text-gray-600 bg-gray-100'}`}>
-                    {new Date().toLocaleDateString('es-AR', { 
-                      weekday: 'short', 
-                      day: 'numeric',
-                      month: 'short'
-                    })}
+            <header className={`px-7 h-14 sticky top-0 z-10 border-b backdrop-blur-sm flex items-center justify-between ${isDark ? 'bg-ink/85 border-line' : 'bg-white/90 border-gray-200'}`}>
+              <div className="flex items-baseline gap-3 min-w-0">
+                <h1 className={`font-display font-semibold text-[17px] truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentPage.name}</h1>
+                <p className={`text-xs truncate hidden sm:block ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{currentPage.subtitle}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                {backgroundSync && (
+                  <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    {t('nav.checkingPending')}
                   </span>
-                  
-                  {/* Metrics */}
-                  <div className="hidden md:flex items-center gap-8">
-                    {backgroundSync && (
-                      <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                        <RefreshCw className="w-3 h-3 animate-spin" />
-                        {t('nav.checkingPending')}
-                      </span>
-                    )}
-                    <div className="text-center">
-                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.attendances')}</p>
-                      <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.conversion')}</p>
-                      <p className="text-2xl font-bold text-[#F5A623]">{dashboardMetrics?.conversionRate || '--'}%</p>
-                    </div>
-                  </div>
-                  
-                  {/* Theme Toggle */}
-                  <button
-                    onClick={toggleTheme}
-                    className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    title={isDark ? t('nav.lightTheme') : t('nav.darkTheme')}
-                  >
-                    {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                )}
+
+                {/* Metrics */}
+                <div className={`hidden md:flex items-center gap-4 text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  <span>
+                    {t('nav.attendances')}{' '}
+                    <span className={`font-mono font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{dashboardMetrics?.totalTranscriptions || '--'}</span>
+                  </span>
+                  <span className={`w-px h-4 ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
+                  <span>
+                    {t('nav.conversion')}{' '}
+                    <span className="font-mono font-medium text-[#F5A623]">{dashboardMetrics?.conversionRate || '--'}%</span>
+                  </span>
+                  <span className={`w-px h-4 ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
+                  <span className="hidden lg:block">
+                    {new Date().toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
+                  title={isDark ? t('nav.lightTheme') : t('nav.darkTheme')}
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+
+                {/* Language */}
+                <div className={`flex items-center rounded-md overflow-hidden border ${isDark ? 'border-line-strong' : 'border-gray-300'}`}>
+                  <button onClick={() => switchLang('es')}
+                    className={`px-2 py-1 text-[11px] font-semibold transition-colors ${lang === 'es' ? 'bg-[#F5A623] text-[#16120A]' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                    ES
                   </button>
+                  <button onClick={() => switchLang('en')}
+                    className={`px-2 py-1 text-[11px] font-semibold transition-colors ${lang === 'en' ? 'bg-[#F5A623] text-[#16120A]' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                    EN
+                  </button>
+                </div>
 
-                  {/* Language */}
-                  <div className={`flex items-center rounded-lg overflow-hidden border ${isDark ? 'border-slate-600' : 'border-gray-300'}`}>
-                    <button onClick={() => switchLang('es')}
-                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
-                      ES
-                    </button>
-                    <button onClick={() => switchLang('en')}
-                      className={`px-2 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-[#F5A623] text-white' : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
-                      EN
-                    </button>
-                  </div>
-
-                  {/* User & Logout */}
-                  <div className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-                    <User className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-                    <span className={`text-sm font-medium hidden sm:block ${isDark ? 'text-white' : 'text-gray-700'}`}>{user.username || t('nav.user')}</span>
-                    <button
-                      onClick={handleLogout}
-                      className={`p-1.5 rounded transition-colors ${isDark ? 'text-slate-400 hover:text-red-400 hover:bg-slate-600' : 'text-gray-400 hover:text-red-500 hover:bg-gray-200'}`}
-                      title={t('nav.signOut')}
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
+                {/* User & Logout */}
+                <div className={`flex items-center gap-2`}>
+                  <User className={`w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                  <span className={`text-[13px] font-medium hidden sm:block ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{user.username || t('nav.user')}</span>
+                  <button
+                    onClick={handleLogout}
+                    className={`p-1.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-white/5' : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'}`}
+                    title={t('nav.signOut')}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </header>
@@ -340,7 +331,7 @@ export default function Layout({ children }) {
         })()}
 
         {/* Page content */}
-        <div className="p-8 animate-fade-in">
+        <div className="px-7 py-6 animate-fade-in">
           {children}
         </div>
       </main>

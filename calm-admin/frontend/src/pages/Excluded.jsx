@@ -63,7 +63,7 @@ export default function Excluded() {
   return (
     <div className="space-y-6">
       {recalculating && (
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
             <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
@@ -74,7 +74,7 @@ export default function Excluded() {
       )}
 
       {/* Info banner */}
-      <div className={`rounded-xl p-4 border flex items-start gap-3 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-amber-50 border-amber-200'}`}>
+      <div className={`rounded-xl p-4 border flex items-start gap-3 ${isDark ? 'bg-ink-raised border-line' : 'bg-amber-50 border-amber-200'}`}>
         <EyeOff className="w-5 h-5 text-[#F5A623] mt-0.5 shrink-0" />
         <div>
           <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -92,7 +92,7 @@ export default function Excluded() {
         </div>
       )}
 
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <RefreshCw className="w-6 h-6 text-[#F5A623] animate-spin" />
@@ -117,9 +117,9 @@ export default function Excluded() {
                   <th className={`${thClass} text-right`}>{t('excluded.actions')}</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-100'}`}>
+              <tbody className={`divide-y ${isDark ? 'divide-line' : 'divide-gray-100'}`}>
                 {items.map((item) => (
-                  <tr key={item.recordingId} className={isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}>
+                  <tr key={item.recordingId} className={isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}>
                     <td className={`${tdClass} font-mono text-xs`}>{item.recordingId}</td>
                     <td className={tdClass}>{item.userName || '-'}</td>
                     <td className={tdClass}>{item.branchName || '-'}</td>

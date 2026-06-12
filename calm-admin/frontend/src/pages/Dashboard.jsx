@@ -70,7 +70,7 @@ function isUninterpretableOrError(t) {
   if (t.saleStatus === 'UNINTERPRETABLE') return true;
   const reason = (t.noSaleReason || '').toLowerCase();
   if (reason.startsWith('error parseando')) return true;
-  return reason.includes('transcripcion no interpretable') || reason.includes('transcripción no interpretable');
+  return reason.includes('transcripcion no interpretable') || reason.includes('transcripciÃ³n no interpretable');
 }
 
 function inPeriod(t, periodDays) {
@@ -204,7 +204,7 @@ export default function Dashboard() {
 
   if (!dashboardMetrics) {
     return (
-      <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-lg p-12 text-center border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
           <FileText className="w-8 h-8 text-[#F5A623]" />
         </div>
@@ -214,7 +214,7 @@ export default function Dashboard() {
     );
   }
 
-  // Métricas comerciales: excluye no interpretables y errores de parseo
+  // MÃ©tricas comerciales: excluye no interpretables y errores de parseo
   const totalTranscriptions = actionableInPeriod.length;
   const totalSales = actionableInPeriod.filter(tr => tr.saleCompleted === true).length;
   const totalNoSales = actionableInPeriod.filter(tr => tr.saleCompleted === false).length;
@@ -241,10 +241,10 @@ export default function Dashboard() {
         .slice(0, 5)
     : [];
 
-  // Procesar datos para Heatmap semanal (días vs horas)
+  // Procesar datos para Heatmap semanal (dÃ­as vs horas)
   const heatmapData = (() => {
     const matrix = {};
-    // Inicializar matriz 7 días x 24 horas
+    // Inicializar matriz 7 dÃ­as x 24 horas
     for (let day = 0; day < 7; day++) {
       matrix[day] = {};
       for (let hour = 0; hour < 24; hour++) {
@@ -264,7 +264,7 @@ export default function Dashboard() {
     return matrix;
   })();
 
-  // Obtener el máximo para escala de colores del heatmap
+  // Obtener el mÃ¡ximo para escala de colores del heatmap
   const maxHeatmapValue = Math.max(
     1,
     ...Object.values(heatmapData).flatMap(hours => Object.values(hours))
@@ -316,9 +316,9 @@ export default function Dashboard() {
   })();
 
   const tooltipStyle = {
-    background: isDark ? '#1e293b' : '#ffffff',
-    border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
-    borderRadius: '12px',
+    background: isDark ? '#181C24' : '#ffffff',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : '#e5e7eb'}`,
+    borderRadius: '8px',
     color: isDark ? '#fff' : '#374151'
   };
 
@@ -333,7 +333,7 @@ export default function Dashboard() {
           <select
             value={periodDays}
             onChange={(e) => setPeriodDays(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+            className={`px-3 py-1.5 rounded-md border text-sm ${isDark ? 'bg-ink-overlay border-line-strong text-white' : 'bg-white border-gray-300 text-gray-900'}`}
           >
             {PERIOD_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{t(`dashboard.${opt.labelKey}`)}</option>
@@ -353,8 +353,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Main Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Main Metrics: franja Ãºnica con divisores */}
+      <div className={`grid grid-cols-2 lg:grid-cols-4 rounded-lg border overflow-hidden divide-x divide-y lg:divide-y-0 ${
+        isDark ? 'bg-ink-raised border-line divide-line' : 'bg-white border-gray-200 divide-gray-200'
+      }`}>
         <MetricCard
           title={t('dashboard.totalAttendances')}
           value={totalTranscriptions}
@@ -366,7 +368,7 @@ export default function Dashboard() {
         <MetricCard
           title={t('dashboard.sales')}
           value={totalSales}
-          subtitle={`${conversionRate}% conversión`}
+          subtitle={`${conversionRate}% conversiÃ³n`}
           icon={ShoppingCart}
           variant="success"
           to={drillDownLinks.sales}
@@ -392,10 +394,10 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Sellers Chart */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.topSellers')}</h3>
+              <h3 className={`font-display text-base font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.topSellers')}</h3>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.salesComparison')}</p>
             </div>
             <Link to="/sellers" className="text-sm text-[#F5A623] font-semibold flex items-center gap-1 hover:text-[#FFBB54]">
@@ -420,9 +422,9 @@ export default function Dashboard() {
         </div>
 
         {/* No Sale Reasons Chart */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="mb-6">
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noSaleReasons')}</h3>
+            <h3 className={`font-display text-base font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.noSaleReasons')}</h3>
             <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.objectionAnalysis')}</p>
           </div>
           {noSaleReasonsData.length > 0 ? (
@@ -473,15 +475,15 @@ export default function Dashboard() {
       {/* Rankings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Sellers Ranking */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
+            <div className="p-2 bg-[#F5A623]/10 rounded-md">
               <Users className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
+              <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('dashboard.byConversionRate')} · {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
+                {t('dashboard.byConversionRate')} Â· {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
               </p>
             </div>
           </div>
@@ -490,7 +492,7 @@ export default function Dashboard() {
               <Link
                 key={seller.userId}
                 to={buildTranscriptionsLink(periodDays, { userId: seller.userId })}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
+                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-white/[0.02] hover:bg-white/[0.05] border border-line' : 'bg-gray-50 hover:bg-gray-100 border border-transparent'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                   index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
@@ -514,13 +516,13 @@ export default function Dashboard() {
         </div>
 
         {/* Branch Performance */}
-        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
+            <div className="p-2 bg-[#F5A623]/10 rounded-md">
               <Building2 className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
+              <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.byConversionRate')}</p>
             </div>
           </div>
@@ -529,7 +531,7 @@ export default function Dashboard() {
               <Link
                 key={branch.branchId}
                 to={buildTranscriptionsLink(periodDays, { branchId: branch.branchId })}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
+                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-white/[0.02] hover:bg-white/[0.05] border border-line' : 'bg-gray-50 hover:bg-gray-100 border border-transparent'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                   index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
@@ -557,21 +559,21 @@ export default function Dashboard() {
       {analyzedInPeriod.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#F5A623]/20 rounded-xl">
+            <div className="p-2 bg-[#F5A623]/10 rounded-md">
               <Clock className="w-5 h-5 text-[#F5A623]" />
             </div>
             <div>
-              <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
+              <h2 className={`font-display text-base font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.attendancePatterns')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Heatmap Semanal */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-[#F5A623]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.weeklyHeatmap')}</h3>
+                <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.weeklyHeatmap')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 {t('dashboard.heatmapDesc')}
@@ -589,7 +591,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                   
-                  {/* Filas por día */}
+                  {/* Filas por dÃ­a */}
                   {DAYS.map((day, dayIdx) => (
                     <div key={day} className="flex items-center mb-1">
                       <div className={`w-10 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -604,7 +606,7 @@ export default function Dashboard() {
                             className="flex-1 h-6 mx-0.5 rounded cursor-pointer transition-transform hover:scale-110"
                             style={{
                               backgroundColor: value === 0 
-                                ? (isDark ? '#1e293b' : '#f1f5f9')
+                                ? (isDark ? '#181C24' : '#f1f5f9')
                                 : `rgba(245, 166, 35, ${0.2 + intensity * 0.8})`,
                             }}
                             title={`${DAYS_FULL[dayIdx]} ${hour}:00 - ${value} ${t('dashboard.attendances')}`}
@@ -633,10 +635,10 @@ export default function Dashboard() {
             </div>
 
             {/* Scatter Plot Temporal */}
-            <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="w-5 h-5 text-[#F5A623]" />
-                <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.attendancesByTime')}</h3>
+                <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.attendancesByTime')}</h3>
               </div>
               <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 {t('dashboard.scatterDesc')}
@@ -679,7 +681,7 @@ export default function Dashboard() {
                           if (active && payload?.[0]) {
                             const data = payload[0].payload;
                             return (
-                              <div className={`p-3 rounded-lg shadow-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                              <div className={`p-3 rounded-lg shadow-lg border ${isDark ? 'bg-ink-overlay border-line-strong' : 'bg-white border-gray-200'}`}>
                                 <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                   {data.branch}
                                 </p>
@@ -723,7 +725,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                   
                   {/* Leyenda de sucursales */}
-                  <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700">
+                  <div className={`flex flex-wrap gap-4 mt-4 pt-4 border-t ${isDark ? 'border-line' : 'border-gray-200'}`}>
                     {scatterData.branches.map((branch) => (
                       <div key={branch.branch} className="flex items-center gap-2">
                         <div 

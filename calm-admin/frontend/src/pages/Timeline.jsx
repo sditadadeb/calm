@@ -127,7 +127,7 @@ export default function Timeline() {
 
   const handleDelete = async (id, e) => {
     if (e) e.stopPropagation();
-    if (!confirm('¿Eliminar este evento?')) return;
+    if (!confirm('Â¿Eliminar este evento?')) return;
     try {
       await deleteTimelineEvent(id);
       if (selectedEvent?.id === id) { setSelectedEvent(null); setComparison(null); }
@@ -194,8 +194,8 @@ export default function Timeline() {
     }));
   }, [events]);
 
-  const cardClass = `rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`;
-  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#F5A623]`;
+  const cardClass = `rounded-2xl border p-6 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`;
+  const inputClass = `w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-ink-overlay border-line-strong text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-[#F5A623]`;
 
   return (
     <div className="space-y-6">
@@ -204,7 +204,7 @@ export default function Timeline() {
         <div className="flex items-center gap-2">
           <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.groupBy')}</label>
           <select value={groupBy} onChange={e => setGroupBy(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-ink-overlay border-line-strong text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
             <option value="day">{t('timeline.day')}</option>
             <option value="week">{t('timeline.week')}</option>
             <option value="month">{t('timeline.month')}</option>
@@ -213,7 +213,7 @@ export default function Timeline() {
         <div className="flex items-center gap-2">
           <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.seller')}</label>
           <select value={sellerId} onChange={e => setSellerId(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-ink-overlay border-line-strong text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
             <option value="">{t('timeline.all')}</option>
             {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -272,7 +272,7 @@ export default function Timeline() {
                   stroke={getCategoryInfo(ev.category).color}
                   strokeDasharray="6 4" strokeWidth={2}
                   label={{
-                    value: `▼ ${ev.title}`,
+                    value: `â–¼ ${ev.title}`,
                     position: 'insideTopRight',
                     fill: getCategoryInfo(ev.category).color,
                     fontSize: 11,
@@ -304,31 +304,31 @@ export default function Timeline() {
             </div>
           ) : comparison ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+              <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                 <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.attendances')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {comparison.before.total} → {comparison.after.total}
+                  {comparison.before.total} â†’ {comparison.after.total}
                 </p>
                 <DeltaBadge before={comparison.before.total} after={comparison.after.total} />
               </div>
-              <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+              <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                 <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.saleRateLabel')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {comparison.before.saleRate}% → {comparison.after.saleRate}%
+                  {comparison.before.saleRate}% â†’ {comparison.after.saleRate}%
                 </p>
                 <DeltaBadge before={comparison.before.saleRate} after={comparison.after.saleRate} suffix="%" />
               </div>
-              <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+              <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                 <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.scoreAvg')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {comparison.before.avgScore} → {comparison.after.avgScore}
+                  {comparison.before.avgScore} â†’ {comparison.after.avgScore}
                 </p>
                 <DeltaBadge before={comparison.before.avgScore} after={comparison.after.avgScore} suffix=" pts" />
               </div>
-              <div className={`rounded-xl p-4 ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+              <div className={`rounded-xl p-4 ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                 <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('timeline.salesLabel')}</p>
                 <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {comparison.before.sales} → {comparison.after.sales}
+                  {comparison.before.sales} â†’ {comparison.after.sales}
                 </p>
                 <DeltaBadge before={comparison.before.sales} after={comparison.after.sales} />
               </div>

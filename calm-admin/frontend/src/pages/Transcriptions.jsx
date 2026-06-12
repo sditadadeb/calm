@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, EyeOff, Sparkles, Clock, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, Eye, EyeOff, Sparkles, Clock, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import useStore from '../store/useStore';
 import { analyzeTranscription as apiAnalyzeTranscription, reimportAndAnalyzeTranscription as apiReimportAnalyze } from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -27,7 +27,7 @@ export default function Transcriptions() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
 
-  // Función para ordenar
+  // FunciÃ³n para ordenar
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
@@ -58,11 +58,11 @@ export default function Transcriptions() {
         const recDate = new Date(t.recordingDate).toISOString().slice(0, 10);
         if (recDate > filters.dateTo) return false;
       }
-      // Filtro por puntuación mínima
+      // Filtro por puntuaciÃ³n mÃ­nima
       if (filters.minScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore < Number(filters.minScore))) return false;
-      // Filtro por puntuación máxima
+      // Filtro por puntuaciÃ³n mÃ¡xima
       if (filters.maxScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore > Number(filters.maxScore))) return false;
-      // Filtro por estado de análisis
+      // Filtro por estado de anÃ¡lisis
       if (filters.analyzed === true || filters.analyzed === 'true') {
         if (!t.analyzed) return false;
       }
@@ -72,7 +72,7 @@ export default function Transcriptions() {
       // Filtro por resultado binario venta/no venta
       if (filters.saleCompleted === 'true' && t.saleCompleted !== true) return false;
       if (filters.saleCompleted === 'false' && t.saleCompleted !== false) return false;
-      // Filtro por razón de no venta
+      // Filtro por razÃ³n de no venta
       if (filters.noSaleReason && t.noSaleReason !== filters.noSaleReason) return false;
       return true;
     });
@@ -97,7 +97,7 @@ export default function Transcriptions() {
         bVal = bVal ? new Date(bVal).getTime() : 0;
       }
       
-      // Comparar números
+      // Comparar nÃºmeros
       if (key === 'sellerScore' || key === 'analysisConfidence') {
         aVal = aVal || 0;
         bVal = bVal || 0;
@@ -137,15 +137,15 @@ export default function Transcriptions() {
     const isActive = sortConfig.key === sortKey;
     return (
       <th 
-        className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none hover:bg-opacity-80 transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'} ${className}`}
+        className={`px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] cursor-pointer select-none transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'} ${className}`}
         onClick={() => handleSort(sortKey)}
       >
         <div className="flex items-center gap-1">
           {label}
           {isActive ? (
             sortConfig.direction === 'asc' ? 
-              <ChevronUp className="w-4 h-4 text-[#F5A623]" /> : 
-              <ChevronDown className="w-4 h-4 text-[#F5A623]" />
+              <ChevronUp className="w-3.5 h-3.5 text-[#F5A623]" /> : 
+              <ChevronDown className="w-3.5 h-3.5 text-[#F5A623]" />
           ) : (
             <ChevronsUpDown className="w-3 h-3 opacity-40" />
           )}
@@ -153,6 +153,15 @@ export default function Transcriptions() {
       </th>
     );
   };
+
+  // Estado con punto de color (rediseÃ±o): reemplaza las pills rellenas
+  const StatusDot = ({ dotClass, textClass, icon: StatusIcon, title, children, pulse = false }) => (
+    <span className={`inline-flex items-center gap-1.5 text-[12.5px] font-medium ${textClass}`} title={title}>
+      <span className={`status-dot ${dotClass} ${pulse ? 'pulse' : ''}`} />
+      {StatusIcon && <StatusIcon className="w-3 h-3 opacity-70" />}
+      {children}
+    </span>
+  );
 
   useEffect(() => {
     const urlFilters = {};
@@ -303,9 +312,9 @@ export default function Transcriptions() {
 
   return (
     <div className="space-y-6">
-      {/* Barra de recalculando métricas */}
+      {/* Barra de recalculando mÃ©tricas */}
       {recalculating && (
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg p-4 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5 text-[#F5A623] animate-spin" />
             <div className="flex-1">
@@ -317,9 +326,9 @@ export default function Transcriptions() {
               </p>
             </div>
           </div>
-          <div className="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div className={`mt-3 h-1 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
             <div 
-              className="h-full bg-gradient-to-r from-[#F5A623] to-[#FFBB54] rounded-full animate-pulse"
+              className="h-full bg-[#F5A623] rounded-full animate-pulse"
               style={{ width: '100%' }}
             />
           </div>
@@ -337,7 +346,7 @@ export default function Transcriptions() {
 
       {/* Barra de acciones masivas */}
       {isAdmin && (selected.size > 0 || bulkAnalyzing) && (
-        <div className={`rounded-xl px-5 py-3 border flex flex-wrap items-center gap-4 ${isDark ? 'bg-slate-800 border-[#F5A623]/40' : 'bg-amber-50 border-[#F5A623]/40'}`}>
+        <div className={`rounded-lg px-5 py-3 border flex flex-wrap items-center gap-4 ${isDark ? 'bg-ink-raised border-[#F5A623]/40' : 'bg-amber-50 border-[#F5A623]/40'}`}>
           {bulkAnalyzing ? (
             <>
               <RefreshCw className="w-4 h-4 text-[#F5A623] animate-spin" />
@@ -358,13 +367,13 @@ export default function Transcriptions() {
               </span>
               <button
                 onClick={handleBulkReanalyze}
-                className="text-xs py-2 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+                className="text-xs py-2 px-4 inline-flex items-center gap-1.5 bg-[#F5A623] text-[#16120A] rounded-md hover:bg-[#FFBB54] transition-colors font-semibold"
               >
                 <Sparkles className="w-3.5 h-3.5" /> {t('transcriptions.reanalyzeSelected')}
               </button>
               <button
                 onClick={() => setSelected(new Set())}
-                className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
+                className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-md transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
               >
                 <X className="w-3.5 h-3.5" /> {t('transcriptions.clearSelection')}
               </button>
@@ -374,7 +383,7 @@ export default function Transcriptions() {
       )}
 
       {/* Table */}
-      <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-lg border overflow-hidden ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-10 h-10 border-4 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto" />
@@ -382,7 +391,7 @@ export default function Transcriptions() {
           </div>
         ) : transcriptions.length === 0 ? (
           <div className="p-12 text-center">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
               <FileText className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
             <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('transcriptions.noTranscriptions')}</h3>
@@ -392,10 +401,10 @@ export default function Transcriptions() {
           <>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
+              <thead className={`border-b ${isDark ? 'border-line-strong' : 'border-gray-200 bg-gray-50'}`}>
                 <tr>
                   {isAdmin && (
-                    <th className="pl-6 pr-2 py-4 w-10">
+                    <th className="pl-5 pr-2 py-2.5 w-10">
                       <input
                         type="checkbox"
                         checked={allPageSelected}
@@ -413,18 +422,18 @@ export default function Transcriptions() {
                   <SortableHeader label={t('transcriptions.result')} sortKey="saleCompleted" />
                   <SortableHeader label={t('transcriptions.score')} sortKey="sellerScore" />
                   <SortableHeader label={t('transcriptions.status')} sortKey="analyzed" />
-                  <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('common.actions')}</th>
+                  <th className={`px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('common.actions')}</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
+              <tbody className={`divide-y ${isDark ? 'divide-line' : 'divide-gray-200'}`}>
                 {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
-                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-75' : 'opacity-80') : ''} ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
+                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-70' : 'opacity-80') : ''} ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     {isAdmin && (
-                      <td className="pl-6 pr-2 py-4 w-10">
+                      <td className="pl-5 pr-2 py-3 w-10">
                         <input
                           type="checkbox"
                           checked={selected.has(transcription.recordingId)}
@@ -435,82 +444,82 @@ export default function Transcriptions() {
                         />
                       </td>
                     )}
-                    <td className="px-6 py-4 max-w-[120px]">
+                    <td className="px-5 py-3 max-w-[120px]">
                       <span className="font-mono text-xs font-medium text-[#F5A623] block truncate" title={transcription.recordingId}>
                         #{transcription.recordingId.length > 12 ? transcription.recordingId.slice(-12) : transcription.recordingId}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       <div>
                         <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{transcription.userName || t('common.unknown')}</p>
                         <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {transcription.userId}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{transcription.branchName || '-'}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                         <Clock className="w-4 h-4" />
                         <span className="text-sm">{formatDate(transcription.recordingDate)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       <div className="flex flex-col gap-1">
                         {isPendingTranscription(transcription) ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400" title={t('transcriptions.reanalyzePending')}>
-                            <Clock className="w-3 h-3" /> {t('transcriptions.transcriptionPending')}
-                          </span>
+                          <StatusDot dotClass="bg-amber-400" textClass={isDark ? 'text-amber-400' : 'text-amber-600'} title={t('transcriptions.reanalyzePending')} pulse>
+                            {t('transcriptions.transcriptionPending')}
+                          </StatusDot>
                         ) : (
                         <>
-                        {/* Sale Status Badge */}
+                        {/* Sale Status */}
                         {transcription.saleStatus === 'SALE_CONFIRMED' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400" title={t('transcriptions.saleConfirmed')}>
-                            <CheckCircle className="w-3 h-3" /> {t('transcriptions.sale')}
-                          </span>
+                          <StatusDot dotClass="bg-emerald-400" textClass={isDark ? 'text-emerald-300' : 'text-emerald-600'} title={t('transcriptions.saleConfirmed')}>
+                            {t('transcriptions.sale')}
+                          </StatusDot>
                         )}
                         {transcription.saleStatus === 'SALE_LIKELY' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" title={t('transcriptions.saleProbable')}>
-                            <TrendingUp className="w-3 h-3" /> {t('transcriptions.probable')}
-                          </span>
+                          <StatusDot dotClass="bg-teal-400" textClass={isDark ? 'text-teal-300' : 'text-teal-600'} title={t('transcriptions.saleProbable')}>
+                            {t('transcriptions.probable')}
+                          </StatusDot>
                         )}
                         {transcription.saleStatus === 'ADVANCE_NO_CLOSE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400" title={t('transcriptions.advanceNoClose')}>
-                            <AlertTriangle className="w-3 h-3" /> {t('transcriptions.advance')}
-                          </span>
+                          <StatusDot dotClass="bg-yellow-400" textClass={isDark ? 'text-yellow-300' : 'text-yellow-600'} title={t('transcriptions.advanceNoClose')}>
+                            {t('transcriptions.advance')}
+                          </StatusDot>
                         )}
                         {transcription.saleStatus === 'NO_SALE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400" title={t('transcriptions.noSaleResult')}>
-                            <XCircle className="w-3 h-3" /> {t('transcriptions.noSale')}
-                          </span>
+                          <StatusDot dotClass="bg-red-400" textClass={isDark ? 'text-red-400' : 'text-red-500'} title={t('transcriptions.noSaleResult')}>
+                            {t('transcriptions.noSale')}
+                          </StatusDot>
                         )}
                         {transcription.saleStatus === 'UNINTERPRETABLE' && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/20 text-slate-400" title={t('transcriptions.uninterpretable')}>
-                            <HelpCircle className="w-3 h-3" /> {t('transcriptions.notInterp')}
-                          </span>
+                          <StatusDot dotClass="bg-slate-500" textClass={isDark ? 'text-slate-400' : 'text-gray-400'} title={t('transcriptions.uninterpretable')}>
+                            {t('transcriptions.notInterp')}
+                          </StatusDot>
                         )}
                         {/* Fallback para transcripciones sin saleStatus */}
                         {!transcription.saleStatus && transcription.saleCompleted === true && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-                            <CheckCircle className="w-3 h-3" /> {t('transcriptions.sale')}
-                          </span>
+                          <StatusDot dotClass="bg-emerald-400" textClass={isDark ? 'text-emerald-300' : 'text-emerald-600'}>
+                            {t('transcriptions.sale')}
+                          </StatusDot>
                         )}
                         {!transcription.saleStatus && transcription.saleCompleted === false && (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
-                            <XCircle className="w-3 h-3" /> {t('transcriptions.noSale')}
-                          </span>
+                          <StatusDot dotClass="bg-red-400" textClass={isDark ? 'text-red-400' : 'text-red-500'}>
+                            {t('transcriptions.noSale')}
+                          </StatusDot>
                         )}
                         {!transcription.saleStatus && transcription.saleCompleted === null && (
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-500'}`}>
+                          <StatusDot dotClass="bg-slate-500" textClass={isDark ? 'text-slate-400' : 'text-gray-400'}>
                             {t('transcriptions.pending')}
-                          </span>
+                          </StatusDot>
                         )}
                         </>
                         )}
                         {/* Confidence indicator */}
                         {!isPendingTranscription(transcription) && transcription.analysisConfidence !== null && transcription.analysisConfidence !== undefined && (
                           <div className="flex items-center gap-1" title={`Confianza: ${transcription.analysisConfidence}%`}>
-                            <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                            <div className={`h-[3px] w-12 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
                               <div 
                                 className={`h-full rounded-full ${
                                   transcription.analysisConfidence >= 70 ? 'bg-green-500' : 
@@ -526,36 +535,36 @@ export default function Transcriptions() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       <ScoreBadge score={transcription.sellerScore} size="small" />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       {isPendingTranscription(transcription) ? (
-                        <span className="inline-flex items-center gap-1 text-amber-400 text-xs font-medium">
-                          <Clock className="w-3 h-3" /> {t('transcriptions.transcriptionPending')}
-                        </span>
+                        <StatusDot dotClass="bg-amber-400" textClass="text-amber-400" pulse>
+                          {t('transcriptions.transcriptionPending')}
+                        </StatusDot>
                       ) : transcription.analyzed ? (
-                        <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
-                          <CheckCircle className="w-3 h-3" /> {t('transcriptions.analyzed')}
-                        </span>
+                        <StatusDot dotClass="bg-emerald-400" textClass={isDark ? 'text-emerald-300' : 'text-emerald-600'}>
+                          {t('transcriptions.analyzed')}
+                        </StatusDot>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-yellow-400 text-xs font-medium">
-                          <Sparkles className="w-3 h-3" /> {t('transcriptions.pending')}
-                        </span>
+                        <StatusDot dotClass="bg-yellow-400" textClass={isDark ? 'text-yellow-300' : 'text-yellow-600'} pulse>
+                          {t('transcriptions.pending')}
+                        </StatusDot>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-5 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${transcription.recordingId}`}
-                          className={`text-xs py-2 w-[72px] justify-center inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
+                          className={`text-xs py-1.5 w-[72px] justify-center inline-flex items-center gap-1 rounded-md border transition-colors ${isDark ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/30' : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'}`}
                         >
                           <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
                         {!transcription.analyzed && !isAdmin && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
-                            className="text-xs py-2 w-[118px] justify-center inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                            className="text-xs py-1.5 w-[118px] justify-center inline-flex items-center gap-1 bg-[#F5A623] text-[#16120A] font-semibold rounded-md hover:bg-[#FFBB54] transition-colors disabled:opacity-50"
                             disabled={loading || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
                             title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : undefined}
                           >
@@ -570,10 +579,10 @@ export default function Transcriptions() {
                         {isAdmin && (
                           <button
                             onClick={(e) => handleReanalyze(transcription.recordingId, e)}
-                            className={`text-xs py-2 w-[118px] justify-center inline-flex items-center gap-1 rounded-lg transition-colors disabled:opacity-50 ${
+                            className={`text-xs py-1.5 w-[118px] justify-center inline-flex items-center gap-1 rounded-md border transition-colors disabled:opacity-50 ${
                               isDark
-                                ? 'bg-slate-700 text-[#F5A623] hover:bg-[#F5A623] hover:text-white'
-                                : 'bg-amber-50 text-amber-700 hover:bg-[#F5A623] hover:text-white'
+                                ? 'border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 hover:border-[#F5A623]/60'
+                                : 'border-[#F5A623]/40 text-amber-700 hover:bg-amber-50'
                             }`}
                             disabled={bulkAnalyzing || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
                             title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : t('transcriptions.reanalyze')}
@@ -589,12 +598,12 @@ export default function Transcriptions() {
                         {isAdmin && (
                           <button
                             onClick={(e) => handleExclude(transcription.recordingId, e)}
-                            className={`text-xs py-2 w-9 justify-center inline-flex items-center rounded-lg transition-colors ${
+                            className={`text-xs py-1.5 w-9 justify-center inline-flex items-center rounded-md border transition-colors ${
                               deleting === transcription.recordingId 
-                                ? 'bg-red-500/50 text-white cursor-not-allowed' 
+                                ? 'border-red-500/50 text-red-300 cursor-not-allowed' 
                                 : isDark 
-                                  ? 'bg-slate-700 text-red-400 hover:bg-red-500 hover:text-white' 
-                                  : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
+                                  ? 'border-line-strong text-red-400 hover:border-red-500/60 hover:bg-red-500/10' 
+                                  : 'border-gray-300 text-red-500 hover:border-red-400 hover:bg-red-50'
                             }`}
                             disabled={deleting === transcription.recordingId || bulkAnalyzing}
                             title={t('transcriptions.excludeTranscription')}
@@ -611,7 +620,7 @@ export default function Transcriptions() {
           </div>
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className={`flex items-center justify-between px-6 py-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+            <div className={`flex items-center justify-between px-5 py-3 border-t ${isDark ? 'border-line' : 'border-gray-200'}`}>
               <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, sortedTranscriptions.length)} de {sortedTranscriptions.length}
               </span>
@@ -619,7 +628,7 @@ export default function Transcriptions() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
                   disabled={currentPage === 0}
-                  className={`p-2 rounded-lg transition-colors ${currentPage === 0 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                  className={`p-2 rounded-md transition-colors ${currentPage === 0 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -629,7 +638,7 @@ export default function Transcriptions() {
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={currentPage >= totalPages - 1}
-                  className={`p-2 rounded-lg transition-colors ${currentPage >= totalPages - 1 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
+                  className={`p-2 rounded-md transition-colors ${currentPage >= totalPages - 1 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-white/5 text-slate-300' : 'hover:bg-gray-100 text-gray-600'}`}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

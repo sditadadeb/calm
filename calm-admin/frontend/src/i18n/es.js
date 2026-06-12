@@ -529,6 +529,7 @@ export default {
     points: 'puntos',
     clear: 'Limpiar',
     applyFilters: 'Aplicar filtros',
+    noResults: 'Sin coincidencias',
   },
   score: {
     excellent: 'Excelente',

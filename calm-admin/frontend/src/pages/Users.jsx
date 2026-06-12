@@ -151,7 +151,7 @@ export default function Users() {
 
       {/* Create User Form */}
       {showForm && (
-        <div className={`rounded-xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl border p-6 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('users.createNewUser')}</h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -236,9 +236,9 @@ export default function Users() {
       )}
 
       {/* Users Table */}
-      <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+      <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <table className="w-full">
-          <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
+          <thead className={isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}>
             <tr>
               <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                 {t('users.user')}
@@ -257,9 +257,9 @@ export default function Users() {
               </th>
             </tr>
           </thead>
-          <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
+          <tbody className={`divide-y ${isDark ? 'divide-line' : 'divide-gray-200'}`}>
             {users.map((user) => (
-              <tr key={user.id} className={`transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}>
+              <tr key={user.id} className={`transition-colors ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -289,7 +289,7 @@ export default function Users() {
                   <select
                     value={user.sellerId || ''}
                     onChange={(e) => handleUpdateSeller(user.id, e.target.value)}
-                    className={`text-sm px-2 py-1 rounded-lg border ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
+                    className={`text-sm px-2 py-1 rounded-lg border ${isDark ? 'bg-ink-overlay border-line-strong text-white' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
                   >
                     <option value="">{t('common.all')}</option>
                     {sellers.map((s) => (
@@ -330,9 +330,9 @@ export default function Users() {
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
         <p className="text-sm text-blue-400">
           <strong>{t('users.roles')}:</strong><br />
-          • <strong>Admin:</strong> {t('users.adminDesc')}<br />
-          • <strong>{t('users.userRole')}:</strong> {t('users.userDesc')}<br />
-          • <strong>Viewer:</strong> {t('users.viewerDesc')}<br /><br />
+          â€¢ <strong>Admin:</strong> {t('users.adminDesc')}<br />
+          â€¢ <strong>{t('users.userRole')}:</strong> {t('users.userDesc')}<br />
+          â€¢ <strong>Viewer:</strong> {t('users.viewerDesc')}<br /><br />
           <strong>{t('users.associatedSeller')}:</strong> {t('users.sellerAssocInfo')}
         </p>
       </div>

@@ -31,7 +31,7 @@ import {
 import { getTranscriptions, reimportAndAnalyzeTranscription } from '../api';
 import api from '../api';
 
-// Reproductor de audio personalizado con duración fija
+// Reproductor de audio personalizado con duraciÃ³n fija
 function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -117,7 +117,7 @@ function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
       </span>
 
       <div 
-        className={`flex-1 h-2 rounded-full cursor-pointer relative ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}
+        className={`flex-1 h-1.5 rounded-full cursor-pointer relative ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}
         onClick={handleSeek}
       >
         <div 
@@ -148,42 +148,42 @@ const SALE_STATUS_CONFIG = {
     labelKey: 'detail.saleConfirmed',
     descKey: 'detail.saleConfirmedDesc',
     icon: CheckCircle,
-    bgClass: 'bg-green-500/20',
-    textClass: 'text-green-400',
+    bgClass: 'bg-emerald-500/10',
+    textClass: 'text-emerald-400',
   },
   SALE_LIKELY: {
     labelKey: 'detail.saleProbable',
     descKey: 'detail.saleProbableDesc',
     icon: TrendingUp,
-    bgClass: 'bg-emerald-500/20',
-    textClass: 'text-emerald-400',
+    bgClass: 'bg-teal-500/10',
+    textClass: 'text-teal-300',
   },
   ADVANCE_NO_CLOSE: {
     labelKey: 'detail.commercialAdvance',
     descKey: 'detail.commercialAdvanceDesc',
     icon: AlertTriangle,
-    bgClass: 'bg-yellow-500/20',
-    textClass: 'text-yellow-400',
+    bgClass: 'bg-yellow-500/10',
+    textClass: 'text-yellow-300',
   },
   NO_SALE: {
     labelKey: 'detail.noSale',
     descKey: 'detail.noSaleDesc',
     icon: XCircle,
-    bgClass: 'bg-red-500/20',
+    bgClass: 'bg-red-500/10',
     textClass: 'text-red-400',
   },
   UNINTERPRETABLE: {
     labelKey: 'detail.uninterpretable',
     descKey: 'detail.uninterpretableDesc',
     icon: HelpCircle,
-    bgClass: 'bg-slate-500/20',
+    bgClass: 'bg-slate-500/10',
     textClass: 'text-slate-400',
   },
   TRANSCRIPTION_PENDING: {
     labelKey: 'detail.transcriptionPending',
     descKey: 'detail.transcriptionPendingDesc',
     icon: Clock,
-    bgClass: 'bg-amber-500/20',
+    bgClass: 'bg-amber-500/10',
     textClass: 'text-amber-400',
   }
 };
@@ -201,7 +201,7 @@ export default function TranscriptionDetail() {
   const [audioAvailable, setAudioAvailable] = useState(false);
   const [audioLoading, setAudioLoading] = useState(true);
   
-  // Navegación entre transcripciones
+  // NavegaciÃ³n entre transcripciones
   const [allIds, setAllIds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -258,7 +258,7 @@ export default function TranscriptionDetail() {
               const blob = xhr.response;
               const blobUrl = URL.createObjectURL(blob);
               
-              // Truco para obtener duración de webm: crear audio temporal y forzar seek
+              // Truco para obtener duraciÃ³n de webm: crear audio temporal y forzar seek
               const tempAudio = new Audio();
               tempAudio.preload = 'metadata';
               
@@ -269,7 +269,7 @@ export default function TranscriptionDetail() {
                   setAudioAvailable(true);
                   setAudioLoading(false);
                 } else {
-                  // Si no hay duración, forzar seek al final
+                  // Si no hay duraciÃ³n, forzar seek al final
                   tempAudio.currentTime = Number.MAX_SAFE_INTEGER;
                 }
               };
@@ -285,7 +285,7 @@ export default function TranscriptionDetail() {
               };
               
               tempAudio.onerror = () => {
-                // Aún sin duración, mostrar el reproductor
+                // AÃºn sin duraciÃ³n, mostrar el reproductor
                 setAudioUrl(blobUrl);
                 setAudioAvailable(true);
                 setAudioLoading(false);
@@ -327,7 +327,7 @@ export default function TranscriptionDetail() {
     };
   }, [id]);
 
-  // Cargar lista de IDs para navegación
+  // Cargar lista de IDs para navegaciÃ³n
   useEffect(() => {
     const fetchAllIds = async () => {
       try {
@@ -380,7 +380,7 @@ export default function TranscriptionDetail() {
     }
   };
 
-  // Navegación
+  // NavegaciÃ³n
   const goToPrevious = () => {
     if (currentIndex > 0) {
       navigate(`/transcriptions/${allIds[currentIndex - 1]}`);
@@ -412,7 +412,7 @@ export default function TranscriptionDetail() {
     }
   };
 
-  // Obtener configuración del status (con labels traducidos)
+  // Obtener configuraciÃ³n del status (con labels traducidos)
   const getStatusConfig = (status) => {
     const cfg = SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG.NO_SALE;
     return { ...cfg, label: t(cfg.labelKey), description: t(cfg.descKey) };
@@ -433,7 +433,7 @@ export default function TranscriptionDetail() {
 
   const hasParseError = (trans) => {
     const fields = [trans?.noSaleReason, trans?.executiveSummary, trans?.saleEvidence].filter(Boolean);
-    return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('Análisis no disponible'));
+    return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('AnÃ¡lisis no disponible'));
   };
 
   const handleReanalyze = async () => {
@@ -498,13 +498,13 @@ export default function TranscriptionDetail() {
           {t('detail.backToList')}
         </button>
         
-        {/* Flechas de navegación */}
+        {/* Flechas de navegaciÃ³n */}
         <div className="flex items-center gap-2">
           {(hasParseError(trans) || textSuspiciouslyShort || trans.analyzed) && (
             <button
               onClick={handleReanalyze}
               disabled={reanalyzing || pendingTranscription}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5A623] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#F5A623] text-[#16120A] text-[13px] font-semibold hover:bg-[#FFBB54] transition-colors disabled:opacity-50"
               title={pendingTranscription ? t('transcriptions.reanalyzePending') : t('detail.reanalyze')}
             >
               {reanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -514,22 +514,22 @@ export default function TranscriptionDetail() {
           <button
             onClick={goToPrevious}
             disabled={!hasPrevious}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1.5 rounded-md border transition-colors ${
               hasPrevious 
                 ? isDark 
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/30' 
+                  : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'
                 : isDark
-                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                  ? 'border-line text-slate-700 cursor-not-allowed'
+                  : 'border-gray-200 text-gray-300 cursor-not-allowed'
             }`}
             title={t('common.previous')}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
           
           {allIds.length > 0 && (
-            <span className={`text-sm px-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            <span className={`text-xs font-mono px-1 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
               {currentIndex + 1} / {allIds.length}
             </span>
           )}
@@ -537,29 +537,31 @@ export default function TranscriptionDetail() {
           <button
             onClick={goToNext}
             disabled={!hasNext}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1.5 rounded-md border transition-colors ${
               hasNext 
                 ? isDark 
-                  ? 'bg-slate-700 hover:bg-slate-600 text-white' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/30' 
+                  : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'
                 : isDark
-                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                  ? 'border-line text-slate-700 cursor-not-allowed'
+                  : 'border-gray-200 text-gray-300 cursor-not-allowed'
             }`}
             title={t('common.next')}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Header Card */}
-      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-xl font-bold text-[#F5A623]">{trans.recordingId}</span>
-              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusConfig.bgClass} ${statusConfig.textClass}`}>
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <span className={`font-mono text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`} title={trans.recordingId}>
+                #{trans.recordingId.length > 24 ? trans.recordingId.slice(-24) : trans.recordingId}
+              </span>
+              <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-[13px] font-semibold font-display ${statusConfig.bgClass} ${statusConfig.textClass} ${isDark ? 'border-white/10' : 'border-black/5'}`}>
                 <StatusIcon className="w-4 h-4" /> {statusConfig.label}
               </span>
             </div>
@@ -599,7 +601,7 @@ export default function TranscriptionDetail() {
                 <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                   {t('detail.analysisConfidence')}:
                 </span>
-                <div className={`h-2 w-20 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                <div className={`h-[3px] w-20 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
                   <div 
                     className={`h-full rounded-full ${
                       trans.analysisConfidence >= 70 ? 'bg-green-500' : 
@@ -621,14 +623,14 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Audio Player */}
-      <div className={`rounded-2xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+      <div className={`rounded-lg border p-4 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
         {audioLoading ? (
           <div className="space-y-2">
             <div className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               <Loader2 className="w-5 h-5 animate-spin" />
               <span className="text-sm">{t('detail.downloadingAudio')} {audioProgress}%</span>
             </div>
-            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+            <div className={`w-full h-1 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
               <div 
                 className="h-full bg-[#F5A623] transition-all duration-300"
                 style={{ width: `${audioProgress}%` }}
@@ -651,7 +653,7 @@ export default function TranscriptionDetail() {
 
       {/* Analysis Grid */}
       {!pendingTranscription && hasParseError(trans) && (
-        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'}`}>
+        <div className={`rounded-lg border border-l-2 p-5 ${isDark ? 'bg-ink-raised border-line border-l-amber-400' : 'bg-amber-50 border-amber-200 border-l-amber-500'}`}>
           <div className="flex items-center gap-3">
             <AlertTriangle className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
             <div>
@@ -665,35 +667,31 @@ export default function TranscriptionDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Executive Summary */}
         {trans.executiveSummary && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[#F5A623] rounded-lg">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.executiveSummary')}</h3>
+          <div className={`rounded-lg border p-5 lg:col-span-2 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.executiveSummary')}</h3>
             </div>
-            <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{trans.executiveSummary}</p>
+            <p className={`leading-relaxed text-[15px] ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{trans.executiveSummary}</p>
           </div>
         )}
 
         {/* Sale Evidence */}
         {trans.saleEvidence && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${
+          <div className={`rounded-lg border border-l-2 p-5 lg:col-span-2 ${
             trans.saleCompleted 
-              ? (isDark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-100')
-              : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-100')
+              ? (isDark ? 'bg-ink-raised border-line border-l-emerald-400' : 'bg-white border-gray-200 border-l-emerald-500')
+              : (isDark ? 'bg-ink-raised border-line border-l-slate-500' : 'bg-white border-gray-200 border-l-gray-400')
           }`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${trans.saleCompleted ? 'bg-green-500' : (isDark ? 'bg-slate-600' : 'bg-gray-400')}`}>
-                <Quote className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Quote className={`w-4 h-4 ${trans.saleCompleted ? 'text-emerald-400' : (isDark ? 'text-slate-400' : 'text-gray-400')}`} strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
                 {trans.saleCompleted ? t('detail.evidenceOfSale') : t('detail.evidenceOfResult')}
               </h3>
             </div>
-            <p className={`italic text-lg ${
+            <p className={`italic text-[15px] leading-relaxed ${
               trans.saleCompleted 
-                ? (isDark ? 'text-green-300' : 'text-green-700')
+                ? (isDark ? 'text-emerald-200/90' : 'text-emerald-700')
                 : (isDark ? 'text-slate-300' : 'text-gray-600')
             }`}>
               "{trans.saleEvidence}"
@@ -703,29 +701,25 @@ export default function TranscriptionDetail() {
 
         {/* No Sale Reason */}
         {!trans.saleCompleted && trans.noSaleReason && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-500 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('detail.noSaleReason')}</h3>
+          <div className={`rounded-lg border border-l-2 p-5 lg:col-span-2 ${isDark ? 'bg-ink-raised border-line border-l-red-400' : 'bg-white border-gray-200 border-l-red-500'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-red-400" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>{t('detail.noSaleReason')}</h3>
             </div>
-            <p className={`font-medium text-lg ${isDark ? 'text-red-400' : 'text-red-600'}`}>{trans.noSaleReason}</p>
+            <p className={`font-medium text-[15px] ${isDark ? 'text-red-300/90' : 'text-red-600'}`}>{trans.noSaleReason}</p>
           </div>
         )}
 
         {/* Products Discussed */}
         {trans.productsDiscussed && trans.productsDiscussed.length > 0 && trans.productsDiscussed[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.productsDiscussed')}</h3>
+          <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-blue-400" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.productsDiscussed')}</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {trans.productsDiscussed.map((prod, i) => (
-                <span key={i} className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+                <span key={i} className={`px-2.5 py-1 rounded-md text-[13px] font-medium border ${isDark ? 'border-blue-400/25 bg-blue-500/10 text-blue-300' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
                   {prod}
                 </span>
               ))}
@@ -735,17 +729,15 @@ export default function TranscriptionDetail() {
 
         {/* Customer Objections */}
         {trans.customerObjections && trans.customerObjections.length > 0 && trans.customerObjections[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-orange-500 rounded-lg">
-                <MessageSquare className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.customerObjections')}</h3>
+          <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="w-4 h-4 text-orange-400" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.customerObjections')}</h3>
             </div>
             <ul className="space-y-2">
               {trans.customerObjections.map((obj, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  <span className="text-orange-500 mt-1">•</span>
+                <li key={i} className={`flex items-start gap-2 text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <span className="text-orange-400 mt-0.5">â€¢</span>
                   {obj}
                 </li>
               ))}
@@ -755,17 +747,15 @@ export default function TranscriptionDetail() {
 
         {/* Seller Strengths */}
         {trans.sellerStrengths && trans.sellerStrengths.length > 0 && trans.sellerStrengths[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <ThumbsUp className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.sellerStrengths')}</h3>
+          <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <ThumbsUp className="w-4 h-4 text-emerald-400" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.sellerStrengths')}</h3>
             </div>
             <ul className="space-y-2">
               {trans.sellerStrengths.map((f, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <li key={i} className={`flex items-start gap-2 text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
                   {f}
                 </li>
               ))}
@@ -775,17 +765,15 @@ export default function TranscriptionDetail() {
 
         {/* Seller Weaknesses */}
         {trans.sellerWeaknesses && trans.sellerWeaknesses.length > 0 && trans.sellerWeaknesses[0] !== '' && (
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-500 rounded-lg">
-                <ThumbsDown className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.areasOfImprovement')}</h3>
+          <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <ThumbsDown className="w-4 h-4 text-red-400" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.areasOfImprovement')}</h3>
             </div>
             <ul className="space-y-2">
               {trans.sellerWeaknesses.map((d, i) => (
-                <li key={i} className={`flex items-start gap-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <li key={i} className={`flex items-start gap-2 text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                  <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
                   {d}
                 </li>
               ))}
@@ -795,17 +783,15 @@ export default function TranscriptionDetail() {
 
         {/* Improvement Suggestions */}
         {trans.improvementSuggestions && trans.improvementSuggestions.length > 0 && trans.improvementSuggestions[0] !== '' && (
-          <div className={`rounded-2xl border p-6 lg:col-span-2 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500 rounded-lg">
-                <Lightbulb className="w-5 h-5 text-white" />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>{t('detail.improvementSuggestions')}</h3>
+          <div className={`rounded-lg border border-l-2 p-5 lg:col-span-2 ${isDark ? 'bg-ink-raised border-line border-l-[#F5A623]' : 'bg-white border-gray-200 border-l-[#F5A623]'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.improvementSuggestions')}</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {trans.improvementSuggestions.map((s, i) => (
-                <div key={i} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-amber-800/50' : 'bg-white border-amber-200'}`}>
-                  <p className={isDark ? 'text-slate-300' : 'text-gray-700'}>{s}</p>
+                <div key={i} className={`p-3.5 rounded-md border ${isDark ? 'bg-white/[0.02] border-line' : 'bg-gray-50 border-gray-200'}`}>
+                  <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{s}</p>
                 </div>
               ))}
             </div>
@@ -816,7 +802,7 @@ export default function TranscriptionDetail() {
 
       {/* Full Transcription */}
       {textSuspiciouslyShort && !pendingTranscription && (
-        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
+        <div className={`rounded-lg border border-l-2 p-5 ${isDark ? 'bg-ink-raised border-line border-l-red-400' : 'bg-red-50 border-red-200 border-l-red-500'}`}>
           <div className="flex items-center gap-3">
             <AlertTriangle className={`w-5 h-5 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
             <div>
@@ -827,15 +813,13 @@ export default function TranscriptionDetail() {
         </div>
       )}
       {trans.transcriptionText && (
-        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-              <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
-            </div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.fullTranscription')}</h3>
+        <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} strokeWidth={1.8} />
+            <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('detail.fullTranscription')}</h3>
           </div>
-          <div className={`rounded-xl p-6 max-h-96 overflow-auto ${pendingTranscription ? (isDark ? 'bg-amber-900/20 border border-amber-800/40' : 'bg-amber-50 border border-amber-200') : (isDark ? 'bg-slate-900' : 'bg-gray-50')}`}>
-            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${pendingTranscription ? (isDark ? 'text-amber-200/90' : 'text-amber-800') : (isDark ? 'text-slate-300' : 'text-gray-600')}`}>
+          <div className={`rounded-md border p-5 max-h-96 overflow-auto ${pendingTranscription ? (isDark ? 'bg-amber-500/5 border-amber-500/25' : 'bg-amber-50 border-amber-200') : (isDark ? 'bg-ink border-line' : 'bg-gray-50 border-gray-200')}`}>
+            <pre className={`whitespace-pre-wrap font-sans text-sm leading-[1.7] ${pendingTranscription ? (isDark ? 'text-amber-200/90' : 'text-amber-800') : (isDark ? 'text-slate-300' : 'text-gray-600')}`}>
               {trans.transcriptionText}
             </pre>
           </div>
@@ -843,12 +827,10 @@ export default function TranscriptionDetail() {
       )}
 
       {/* Comments Thread */}
-      <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-            <MessageSquare className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`} />
-          </div>
-          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+      <div className={`rounded-lg border p-5 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} strokeWidth={1.8} />
+          <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {t('detail.comments')} {comments.length > 0 && `(${comments.length})`}
           </h3>
         </div>
@@ -861,7 +843,7 @@ export default function TranscriptionDetail() {
             <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('detail.noComments')}</p>
           ) : (
             comments.map((c) => (
-              <div key={c.id} className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+              <div key={c.id} className={`p-4 rounded-md border ${isDark ? 'bg-white/[0.02] border-line' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-[#F5A623]/20 text-[#F5A623]' : 'bg-[#F5A623]/20 text-[#F5A623]'}`}>
@@ -878,7 +860,7 @@ export default function TranscriptionDetail() {
                       className={`text-xs px-2 py-1 rounded transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
                       title={t('detail.deleteComment')}
                     >
-                      ✕
+                      âœ•
                     </button>
                   )}
                 </div>
@@ -896,16 +878,16 @@ export default function TranscriptionDetail() {
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
             placeholder={t('detail.commentPlaceholder')}
-            className={`flex-1 px-4 py-2 rounded-lg border text-sm ${
+            className={`flex-1 px-3 py-2 rounded-md border text-sm ${
               isDark 
-                ? 'bg-slate-900 border-slate-600 text-white placeholder-slate-500 focus:border-[#F5A623]' 
+                ? 'bg-ink-overlay border-line-strong text-white placeholder-slate-500 focus:border-[#F5A623]/60' 
                 : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#F5A623]'
-            } focus:outline-none focus:ring-1 focus:ring-[#F5A623]/50`}
+            } focus:outline-none focus:ring-1 focus:ring-[#F5A623]/30`}
           />
           <button
             onClick={handleAddComment}
             disabled={!newComment.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 text-sm font-medium"
+            className="px-4 py-2 bg-[#F5A623] text-[#16120A] rounded-md hover:bg-[#FFBB54] transition-colors disabled:opacity-50 text-sm font-semibold"
           >
             {t('common.send')}
           </button>

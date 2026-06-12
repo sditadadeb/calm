@@ -36,7 +36,7 @@ export default function Sellers() {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-[#F5A623] ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('sellers.activeSellers')}</p>
@@ -47,7 +47,7 @@ export default function Sellers() {
             </div>
           </div>
         </div>
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-green-500 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('sellers.bestConversion')}</p>
@@ -60,7 +60,7 @@ export default function Sellers() {
             </div>
           </div>
         </div>
-        <div className={`rounded-2xl p-6 border border-l-4 border-l-amber-500 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-6 border border-l-4 border-l-amber-500 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('sellers.avgScore')}</p>
@@ -79,7 +79,7 @@ export default function Sellers() {
 
       {/* Sellers Grid */}
       {sellers.length === 0 ? (
-        <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-2xl p-12 text-center border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
             <Users className={`w-8 h-8 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
           </div>
@@ -91,7 +91,7 @@ export default function Sellers() {
           {sellers.map((seller, index) => (
             <div 
               key={seller.userId}
-              className={`rounded-2xl p-6 border transition-all relative overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700 hover:border-[#F5A623]/50' : 'bg-white border-gray-200 hover:border-[#F5A623]/50 hover:shadow-lg'}`}
+              className={`rounded-2xl p-6 border transition-all relative overflow-hidden ${isDark ? 'bg-ink-raised border-line hover:border-[#F5A623]/50' : 'bg-white border-gray-200 hover:border-[#F5A623]/50 hover:shadow-lg'}`}
             >
               {/* Rank Badge */}
               {index < 3 && (
@@ -123,11 +123,11 @@ export default function Sellers() {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className={`rounded-xl p-4 text-center ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+                <div className={`rounded-xl p-4 text-center ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                   <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{seller.totalInteractions}</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('sellers.attendances')}</p>
                 </div>
-                <div className={`rounded-xl p-4 text-center ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+                <div className={`rounded-xl p-4 text-center ${isDark ? 'bg-white/[0.03]' : 'bg-gray-50'}`}>
                   <p className={`text-2xl font-bold ${
                     seller.conversionRate >= 50 ? 'text-green-400' :
                     seller.conversionRate >= 30 ? 'text-yellow-400' : 'text-red-400'
@@ -167,7 +167,7 @@ export default function Sellers() {
               </div>
 
               {/* Footer */}
-              <div className={`flex items-center justify-between pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between pt-4 border-t ${isDark ? 'border-line' : 'border-gray-200'}`}>
                 <ScoreBadge score={Math.round(seller.averageScore)} size="small" />
                 <Link
                   to={`/transcriptions?userId=${seller.userId}`}

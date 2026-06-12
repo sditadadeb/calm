@@ -3,6 +3,7 @@ import { Filter, X, Search } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import SearchableSelect from './SearchableSelect';
 
 export default function Filters({ onApply }) {
   const { isDark } = useTheme();
@@ -35,71 +36,59 @@ export default function Filters({ onApply }) {
     if (onApply) onApply();
   };
 
-  const inputClasses = `w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
+  const inputClasses = `w-full px-3 py-1.5 text-sm rounded-md focus:outline-none focus:border-[#F5A623]/60 focus:ring-1 focus:ring-[#F5A623]/30 transition-colors ${
     isDark 
-      ? 'bg-slate-700 border border-slate-600 text-white' 
+      ? 'bg-ink-overlay border border-line-strong text-white placeholder:text-slate-500' 
       : 'bg-white border border-gray-300 text-gray-800'
   }`;
 
   return (
-    <div className={`rounded-2xl border p-6 mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
-            <Filter className="w-5 h-5 text-[#F5A623]" />
-          </div>
-          <div>
-            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.title')}</h3>
-            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('filters.refineSearch')}</p>
-          </div>
+    <div className={`rounded-lg border p-4 mb-6 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
+          <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.title')}</h3>
+          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>· {t('filters.refineSearch')}</span>
         </div>
         <button
           onClick={handleClear}
-          className={`text-sm flex items-center gap-1 transition-colors ${isDark ? 'text-slate-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'}`}
+          className={`text-xs flex items-center gap-1 transition-colors ${isDark ? 'text-slate-400 hover:text-red-400' : 'text-gray-400 hover:text-red-500'}`}
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
           {t('filters.clearFilters')}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         {/* Vendedor */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.seller')}</label>
-          <select
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.seller')}</label>
+          <SearchableSelect
+            options={sellers}
             value={filters.userId || ''}
-            onChange={(e) => handleFilterChange('userId', e.target.value)}
-            className={inputClasses}
-          >
-            <option value="">{t('filters.allSellers')}</option>
-            {sellers.map((seller) => (
-              <option key={seller.id} value={seller.id}>
-                {seller.name}
-              </option>
-            ))}
-          </select>
+            onChange={(id) => handleFilterChange('userId', id)}
+            allLabel={t('filters.allSellers')}
+            isDark={isDark}
+            inputClassName={inputClasses}
+          />
         </div>
 
         {/* Sucursal */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.branch')}</label>
-          <select
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.branch')}</label>
+          <SearchableSelect
+            options={branches}
             value={filters.branchId || ''}
-            onChange={(e) => handleFilterChange('branchId', e.target.value)}
-            className={inputClasses}
-          >
-            <option value="">{t('filters.allBranches')}</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
+            onChange={(id) => handleFilterChange('branchId', id)}
+            allLabel={t('filters.allBranches')}
+            isDark={isDark}
+            inputClassName={inputClasses}
+          />
         </div>
 
         {/* Resultado */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.result')}</label>
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.result')}</label>
           <select
             value={filters.saleStatus || ''}
             onChange={(e) => handleFilterChange('saleStatus', e.target.value || null)}
@@ -116,7 +105,7 @@ export default function Filters({ onApply }) {
 
         {/* Fecha desde */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.from')}</label>
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.from')}</label>
           <input
             type="date"
             value={filters.dateFrom || ''}
@@ -127,7 +116,7 @@ export default function Filters({ onApply }) {
 
         {/* Fecha hasta */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.to')}</label>
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.to')}</label>
           <input
             type="date"
             value={filters.dateTo || ''}
@@ -138,7 +127,7 @@ export default function Filters({ onApply }) {
 
         {/* Puntuación mínima */}
         <div>
-          <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{t('filters.minScore')}</label>
+          <label className={`block text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('filters.minScore')}</label>
           <select
             value={filters.minScore || ''}
             onChange={(e) => handleFilterChange('minScore', e.target.value)}
@@ -152,18 +141,18 @@ export default function Filters({ onApply }) {
         </div>
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-4 flex justify-end gap-2">
         <button 
           onClick={handleClear} 
-          className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-3 py-1.5 text-[13px] font-medium rounded-md border transition-colors ${isDark ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/25' : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'}`}
         >
           {t('filters.clear')}
         </button>
         <button 
           onClick={handleApply} 
-          className="px-4 py-2 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="px-3 py-1.5 text-[13px] font-semibold bg-[#F5A623] text-[#16120A] rounded-md hover:bg-[#FFBB54] transition-colors flex items-center gap-1.5"
         >
-          <Search className="w-4 h-4" />
+          <Search className="w-3.5 h-3.5" />
           {t('filters.applyFilters')}
         </button>
       </div>
