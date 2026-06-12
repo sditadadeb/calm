@@ -326,19 +326,25 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Period selector + pending notice */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <div className="flex items-center gap-2.5">
+          <label className={`text-[10.5px] font-semibold uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
             {t('dashboard.period')}
           </label>
-          <select
-            value={periodDays}
-            onChange={(e) => setPeriodDays(e.target.value)}
-            className={`px-3 py-1.5 rounded-md border text-sm ${isDark ? 'bg-ink-overlay border-line-strong text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-          >
+          <div className={`flex items-center rounded-md border overflow-hidden ${isDark ? 'border-line-strong' : 'border-gray-300'}`}>
             {PERIOD_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{t(`dashboard.${opt.labelKey}`)}</option>
+              <button
+                key={opt.value}
+                onClick={() => setPeriodDays(opt.value)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  periodDays === opt.value
+                    ? 'bg-[#F5A623] text-[#16120A] font-semibold'
+                    : isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                {t(`dashboard.${opt.labelKey}`)}
+              </button>
             ))}
-          </select>
+          </div>
           <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
             {t('dashboard.analyzedOnly')}
           </span>
@@ -476,34 +482,30 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Sellers Ranking */}
         <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-[#F5A623]/10 rounded-md">
-              <Users className="w-5 h-5 text-[#F5A623]" />
-            </div>
-            <div>
-              <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <div className="flex items-center gap-2 mb-5">
+            <Users className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
+            <div className="flex items-baseline gap-2">
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 {t('dashboard.byConversionRate')} · {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
               </p>
             </div>
           </div>
-          <div className="space-y-3">
+          <div>
             {sellerMetrics?.slice(0, 5).map((seller, index) => (
               <Link
                 key={seller.userId}
                 to={buildTranscriptionsLink(periodDays, { userId: seller.userId })}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-white/[0.02] hover:bg-white/[0.05] border border-line' : 'bg-gray-50 hover:bg-gray-100 border border-transparent'}`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${isDark ? 'hover:bg-white/[0.04] border-b border-line last:border-b-0' : 'hover:bg-gray-50 border-b border-gray-100 last:border-b-0'}`}
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
-                  index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
-                  isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
+                <div className={`w-7 h-7 rounded-md grid place-items-center font-mono text-xs font-medium ${
+                  index === 0 ? 'bg-[#F5A623]/15 text-[#F5A623]' :
+                  isDark ? 'bg-white/5 text-slate-400' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{seller.userName}</p>
+                  <p className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{seller.userName}</p>
                   <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{seller.branchName}</p>
                 </div>
                 <div className="text-right">
@@ -517,32 +519,28 @@ export default function Dashboard() {
 
         {/* Branch Performance */}
         <div className={`rounded-lg p-5 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-[#F5A623]/10 rounded-md">
-              <Building2 className="w-5 h-5 text-[#F5A623]" />
-            </div>
-            <div>
-              <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.byConversionRate')}</p>
+          <div className="flex items-center gap-2 mb-5">
+            <Building2 className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
+            <div className="flex items-baseline gap-2">
+              <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.branchPerformance')}</h3>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('dashboard.byConversionRate')}</p>
             </div>
           </div>
-          <div className="space-y-3">
+          <div>
             {branchMetrics?.slice(0, 5).map((branch, index) => (
               <Link
                 key={branch.branchId}
                 to={buildTranscriptionsLink(periodDays, { branchId: branch.branchId })}
-                className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-white/[0.02] hover:bg-white/[0.05] border border-line' : 'bg-gray-50 hover:bg-gray-100 border border-transparent'}`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${isDark ? 'hover:bg-white/[0.04] border-b border-line last:border-b-0' : 'hover:bg-gray-50 border-b border-gray-100 last:border-b-0'}`}
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                  index === 0 ? 'bg-gradient-to-br from-[#F5A623] to-[#FFBB54] text-white' :
-                  index === 1 ? 'bg-slate-400 text-slate-800' :
-                  index === 2 ? 'bg-amber-700 text-amber-100' :
-                  isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600'
+                <div className={`w-7 h-7 rounded-md grid place-items-center font-mono text-xs font-medium ${
+                  index === 0 ? 'bg-[#F5A623]/15 text-[#F5A623]' :
+                  isDark ? 'bg-white/5 text-slate-400' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold capitalize truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</p>
+                  <p className={`font-semibold text-sm capitalize truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{branch.branchName}</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{branch.totalInteractions} {t('dashboard.attendances')}</p>
                 </div>
                 <div className="text-right">
@@ -558,14 +556,9 @@ export default function Dashboard() {
       {/* Traffic Distribution Section */}
       {analyzedInPeriod.length > 0 && (
         <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#F5A623]/10 rounded-md">
-              <Clock className="w-5 h-5 text-[#F5A623]" />
-            </div>
-            <div>
-              <h2 className={`font-display text-base font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.attendancePatterns')}</p>
-            </div>
+          <div className="flex items-baseline gap-2.5">
+            <h2 className={`font-display text-base font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.trafficDistribution')}</h2>
+            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('dashboard.attendancePatterns')}</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

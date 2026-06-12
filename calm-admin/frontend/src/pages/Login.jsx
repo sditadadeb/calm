@@ -33,46 +33,43 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
-      </div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: '#0B0D11' }}>
+      {/* Glow sutil de marca */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: '-300px', left: '50%', transform: 'translateX(-50%)',
+          width: '900px', height: '600px',
+          background: 'radial-gradient(ellipse at center, rgba(245,166,35,.08), transparent 65%)',
+        }}
+      />
 
-      <div className="relative z-10 w-full max-w-md px-6">
+      <div className="relative z-10 w-full max-w-sm px-6">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#FF8C00] mb-4 shadow-lg shadow-orange-500/30">
-            <span className="text-4xl font-bold text-white">C</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="text-[#FF8C00]">calm</span> Admin
-          </h1>
-          <p className="text-gray-400">{t('login.subtitle')}</p>
+          <img src="/favicon.svg" alt="CALM" className="w-12 h-12 mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-semibold text-white tracking-wide">CALM</h1>
+          <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-slate-500 mt-1">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
-          <h2 className="text-xl font-semibold text-white mb-6 text-center">{t('login.signIn')}</h2>
-          
+        <div className="rounded-lg p-7 border" style={{ background: '#12151B', borderColor: 'rgba(255,255,255,0.07)' }}>
           {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+            <div className="mb-5 px-3 py-2.5 border border-red-500/30 bg-red-500/10 rounded-md text-red-300 text-[13px] text-center">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500 mb-1.5">
                 {t('login.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
+                className="w-full px-3 py-2.5 rounded-md text-sm text-white placeholder-slate-600 border bg-ink-overlay border-line-strong focus:outline-none focus:border-[#F5A623]/60 focus:ring-1 focus:ring-[#F5A623]/30 transition-colors"
                 placeholder={t('login.usernamePlaceholder')}
                 required
                 autoFocus
@@ -80,14 +77,14 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500 mb-1.5">
                 {t('login.password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:border-transparent transition-all"
+                className="w-full px-3 py-2.5 rounded-md text-sm text-white placeholder-slate-600 border bg-ink-overlay border-line-strong focus:outline-none focus:border-[#F5A623]/60 focus:ring-1 focus:ring-[#F5A623]/30 transition-colors"
                 placeholder={t('login.passwordPlaceholder')}
                 required
               />
@@ -96,11 +93,11 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-[#f5a203] to-[#F7931E] text-white font-semibold rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#f5a203] focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/30"
+              className="w-full py-2.5 px-4 mt-1 bg-[#F5A623] text-[#16120A] text-sm font-semibold rounded-md hover:bg-[#FFBB54] focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -114,7 +111,7 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-slate-600 text-xs mt-6">
           {t('login.footer')}
         </p>
       </div>
