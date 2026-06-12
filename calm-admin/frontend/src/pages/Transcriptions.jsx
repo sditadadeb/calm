@@ -15,6 +15,7 @@ export default function Transcriptions() {
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [deleting, setDeleting] = useState(null);
+  const [analyzing, setAnalyzing] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 25;
@@ -185,9 +186,29 @@ export default function Transcriptions() {
     e.preventDefault();
     e.stopPropagation();
     try {
+      setAnalyzing(recordingId);
       await analyzeTranscription(recordingId);
     } catch (error) {
-      alert('Error al analizar: ' + error.message);
+      alert('Error al analizar: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAnalyzing(null);
+    }
+  };
+
+  const isPendingTranscription = (transcription) =>
+    transcription.transcriptionText?.startsWith('[Audio disponible');
+
+  const handleReanalyze = async (recordingId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(t('transcriptions.reanalyzeConfirm'))) return;
+    try {
+      setAnalyzing(recordingId);
+      await analyzeTranscription(recordingId);
+    } catch (error) {
+      alert('Error al re-analizar: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAnalyzing(null);
     }
   };
 
@@ -399,13 +420,38 @@ export default function Transcriptions() {
                         >
                           <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
-                        {!transcription.analyzed && (
+                        {!transcription.analyzed && !isAdmin && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
-                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity"
-                            disabled={loading}
+                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                            disabled={loading || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
+                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : undefined}
                           >
-                            <Sparkles className="w-3 h-3" /> {t('transcriptions.analyze')}
+                            {analyzing === transcription.recordingId ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            {t('transcriptions.analyze')}
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => handleReanalyze(transcription.recordingId, e)}
+                            className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors disabled:opacity-50 ${
+                              isDark
+                                ? 'bg-slate-700 text-[#F5A623] hover:bg-[#F5A623] hover:text-white'
+                                : 'bg-amber-50 text-amber-700 hover:bg-[#F5A623] hover:text-white'
+                            }`}
+                            disabled={analyzing === transcription.recordingId || isPendingTranscription(transcription)}
+                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : t('transcriptions.reanalyze')}
+                          >
+                            {analyzing === transcription.recordingId ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            {transcription.analyzed ? t('transcriptions.reanalyze') : t('transcriptions.analyze')}
                           </button>
                         )}
                         {isAdmin && (

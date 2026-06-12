@@ -83,8 +83,10 @@ const useStore = create((set, get) => ({
     try {
       const response = await api.analyzeTranscription(recordingId);
       set({ selectedTranscription: response.data, loading: false });
-      // Refresh the list
-      get().fetchTranscriptions();
+      await Promise.all([
+        get().fetchTranscriptions(),
+        get().fetchDashboardMetrics(),
+      ]);
       return response.data;
     } catch (error) {
       set({ error: error.message, loading: false });
