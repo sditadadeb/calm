@@ -47,8 +47,8 @@ export default function Filters({ onApply }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-[#F5A623]" strokeWidth={1.8} />
-          <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.title')}</h3>
-          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>· {t('filters.refineSearch')}</span>
+          <h3 className={`font-display font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('filters.filters')}</h3>
+          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>· {t('filters.refine')}</span>
         </div>
         <button
           onClick={handleClear}
@@ -96,7 +96,7 @@ export default function Filters({ onApply }) {
           >
             <option value="">{t('filters.allResults')}</option>
             <option value="SALE_CONFIRMED">{t('filters.saleConfirmed')}</option>
-            <option value="SALE_LIKELY">{t('filters.saleLikely')}</option>
+            <option value="SALE_LIKELY">{t('filters.saleProbable')}</option>
             <option value="ADVANCE_NO_CLOSE">{t('filters.advanceNoClose')}</option>
             <option value="NO_SALE">{t('filters.noSale')}</option>
             <option value="UNINTERPRETABLE">{t('filters.uninterpretable')}</option>
