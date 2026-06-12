@@ -295,24 +295,38 @@ public class TranscriptionService {
         return true;
     }
 
-    @Transactional
     public TranscriptionDTO analyzeTranscription(String recordingId) {
-        Transcription transcription = repository.findById(recordingId)
-                .orElseThrow(() -> new RuntimeException("Transcription not found: " + recordingId));
-        
-        if (transcription.getTranscriptionText() == null || transcription.getTranscriptionText().isEmpty()) {
-            throw new RuntimeException("No transcription text available for analysis");
+        Transcription loaded = repository.findById(recordingId)
+                .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
+
+        if (loaded.getTranscriptionText() == null || loaded.getTranscriptionText().isEmpty()) {
+            throw new RuntimeException("No hay texto de transcripción para analizar");
         }
-        if (isPlaceholderText(transcription.getTranscriptionText())) {
+        if (isPlaceholderText(loaded.getTranscriptionText())) {
             throw new RuntimeException("Transcripción aún pendiente de procesamiento en S3");
         }
-        
+
+        // GPT puede tardar 60-90s: no mantener la transacción/connection de BD abierta
         AnalysisResult analysis = analyzerService.analyzeTranscription(
-                transcription.getTranscriptionText(),
-                transcription.getUserName(),
-                transcription.getBranchName()
+                loaded.getTranscriptionText(),
+                loaded.getUserName(),
+                loaded.getBranchName()
         );
-        
+
+        return persistAnalysis(recordingId, analysis);
+    }
+
+    @Transactional
+    protected TranscriptionDTO persistAnalysis(String recordingId, AnalysisResult analysis) {
+        Transcription transcription = repository.findById(recordingId)
+                .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
+        applyAnalysisResult(transcription, analysis, recordingId);
+        repository.save(transcription);
+        log.info("Analysis completed for transcription {}", recordingId);
+        return toDTO(transcription);
+    }
+
+    private void applyAnalysisResult(Transcription transcription, AnalysisResult analysis, String recordingId) {
         transcription.setSaleCompleted(analysis.isSaleCompleted());
         transcription.setSaleStatus(analysis.getSaleStatus());
         transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());
@@ -320,23 +334,20 @@ public class TranscriptionService {
         transcription.setSaleEvidence(analysis.getSaleEvidence());
         transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
         transcription.setNoSaleReason(analysis.getNoSaleReason());
-        transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
-        transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
-        transcription.setImprovementSuggestions(String.join(", ", analysis.getImprovementSuggestions()));
+        transcription.setProductsDiscussed(joinList(analysis.getProductsDiscussed()));
+        transcription.setCustomerObjections(joinList(analysis.getCustomerObjections()));
+        transcription.setImprovementSuggestions(joinList(analysis.getImprovementSuggestions()));
         transcription.setExecutiveSummary(analysis.getExecutiveSummary());
         transcription.setSellerScore(analysis.getSellerScore());
-        transcription.setSellerStrengths(String.join(", ", analysis.getSellerStrengths()));
-        transcription.setSellerWeaknesses(String.join(", ", analysis.getSellerWeaknesses()));
+        transcription.setSellerStrengths(joinList(analysis.getSellerStrengths()));
+        transcription.setSellerWeaknesses(joinList(analysis.getSellerWeaknesses()));
         transcription.setAnalyzed(true);
         transcription.setAnalyzedAt(LocalDateTime.now());
-        
-        // If GPT provided diarized transcript, update the stored text (unless much shorter than original)
         applyDiarizedTranscriptIfValid(transcription, analysis.getDiarizedTranscript(), recordingId);
-        
-        repository.save(transcription);
-        log.info("Analysis completed for transcription {}", recordingId);
-        
-        return toDTO(transcription);
+    }
+
+    private static String joinList(List<String> items) {
+        return items == null || items.isEmpty() ? "" : String.join(", ", items);
     }
 
     private void applyDiarizedTranscriptIfValid(Transcription transcription, String diarized, String recordingId) {
@@ -901,28 +912,8 @@ public class TranscriptionService {
                 transcription.getUserName(),
                 transcription.getBranchName()
         );
-        
-        transcription.setSaleCompleted(analysis.isSaleCompleted());
-        transcription.setSaleStatus(analysis.getSaleStatus());
-        transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());
-        transcription.setConfidenceTrace(analysis.getConfidenceTrace());
-        transcription.setSaleEvidence(analysis.getSaleEvidence());
-        transcription.setSaleEvidenceMeta(analysis.getSaleEvidenceMeta());
-        transcription.setNoSaleReason(analysis.getNoSaleReason());
-        transcription.setProductsDiscussed(String.join(", ", analysis.getProductsDiscussed()));
-        transcription.setCustomerObjections(String.join(", ", analysis.getCustomerObjections()));
-        transcription.setImprovementSuggestions(String.join(", ", analysis.getImprovementSuggestions()));
-        transcription.setExecutiveSummary(analysis.getExecutiveSummary());
-        transcription.setSellerScore(analysis.getSellerScore());
-        transcription.setSellerStrengths(String.join(", ", analysis.getSellerStrengths()));
-        transcription.setSellerWeaknesses(String.join(", ", analysis.getSellerWeaknesses()));
-        transcription.setAnalyzed(true);
-        transcription.setAnalyzedAt(LocalDateTime.now());
-        
-        if (analysis.getDiarizedTranscript() != null && !analysis.getDiarizedTranscript().isBlank()) {
-            applyDiarizedTranscriptIfValid(transcription, analysis.getDiarizedTranscript(), recordingId);
-        }
-        
+
+        applyAnalysisResult(transcription, analysis, recordingId);
         repository.save(transcription);
     }
 
