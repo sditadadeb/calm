@@ -426,6 +426,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
      * Extrae el bloque JSON de la respuesta de GPT (puede venir con markdown, texto extra, etc.)
      */
     private String extractJsonBlock(String response) {
+        if (response == null || response.isBlank()) {
+            throw new IllegalArgumentException("Respuesta vacía de GPT");
+        }
         String json = response;
         
         // Extraer de bloques de código markdown
@@ -528,6 +531,10 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replaceAll("(?i):\\s*eighty(?=\\s*[,}\\]])", ": 80");
         json = json.replaceAll("(?i):\\s*ninety(?=\\s*[,}\\]])", ": 90");
         json = json.replaceAll("(?i):\\s*hundred(?=\\s*[,}\\]])", ": 100");
+        // Decimales sin cero inicial: : .5 → : 0.5
+        json = json.replaceAll("(:\\s*)\\.(\\d)", "$10.$2");
+        // Punto suelto como valor (GPT a veces deja ": .,")
+        json = json.replaceAll("(:\\s*)\\.(?=\\s*[,}\\]])", ": 0");
         
         // === FASE 3: Trailing commas ===
         json = json.replaceAll(",\\s*}", "}");
@@ -910,7 +917,8 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         } catch (Exception e) {
             log.error("Error parsing analysis response: {}. Raw response (first 500 chars): {}", 
                     e.getMessage(), response != null && response.length() > 500 ? response.substring(0, 500) : response);
-            return createErrorAnalysis("Error parseando respuesta de GPT: " + e.getMessage());
+            String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            return createErrorAnalysis("Error parseando respuesta de GPT: " + detail);
         }
     }
 

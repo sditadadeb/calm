@@ -420,7 +420,7 @@ export default function TranscriptionDetail() {
       const response = await analyzeTranscription(id);
       setTranscription(response.data);
     } catch (err) {
-      alert('Error al re-analizar: ' + (err.response?.data?.message || err.message));
+      alert('Error al re-analizar: ' + (err.response?.data?.error || err.response?.data?.message || err.message));
     } finally {
       setReanalyzing(false);
     }

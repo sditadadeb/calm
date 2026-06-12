@@ -11,7 +11,9 @@ import com.calm.admin.repository.TranscriptionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -33,15 +35,18 @@ public class TranscriptionService {
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
     private final S3Service s3Service;
     private final ChatGPTAnalyzerService analyzerService;
+    private final TransactionTemplate transactionTemplate;
 
     public TranscriptionService(TranscriptionRepository repository, 
                                 AdvancedAnalysisRepository advancedAnalysisRepository,
                                 S3Service s3Service, 
-                                ChatGPTAnalyzerService analyzerService) {
+                                ChatGPTAnalyzerService analyzerService,
+                                org.springframework.transaction.PlatformTransactionManager transactionManager) {
         this.repository = repository;
         this.advancedAnalysisRepository = advancedAnalysisRepository;
         this.s3Service = s3Service;
         this.analyzerService = analyzerService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Transactional
@@ -295,6 +300,7 @@ public class TranscriptionService {
         return true;
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TranscriptionDTO analyzeTranscription(String recordingId) {
         Transcription loaded = repository.findById(recordingId)
                 .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
@@ -306,24 +312,23 @@ public class TranscriptionService {
             throw new RuntimeException("Transcripción aún pendiente de procesamiento en S3");
         }
 
-        // GPT puede tardar 60-90s: no mantener la transacción/connection de BD abierta
-        AnalysisResult analysis = analyzerService.analyzeTranscription(
-                loaded.getTranscriptionText(),
-                loaded.getUserName(),
-                loaded.getBranchName()
-        );
+        // Copiar datos y liberar la sesión de Hibernate ANTES de la llamada a GPT (60-90s).
+        // Con open-in-view=true, mantener la entidad cargada durante GPT corrompe la sesión
+        // y el save posterior falla con 500 sin mensaje.
+        String text = loaded.getTranscriptionText();
+        String userName = loaded.getUserName();
+        String branchName = loaded.getBranchName();
 
-        return persistAnalysis(recordingId, analysis);
-    }
+        AnalysisResult analysis = analyzerService.analyzeTranscription(text, userName, branchName);
 
-    @Transactional
-    protected TranscriptionDTO persistAnalysis(String recordingId, AnalysisResult analysis) {
-        Transcription transcription = repository.findById(recordingId)
-                .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
-        applyAnalysisResult(transcription, analysis, recordingId);
-        repository.save(transcription);
-        log.info("Analysis completed for transcription {}", recordingId);
-        return toDTO(transcription);
+        return transactionTemplate.execute(status -> {
+            Transcription transcription = repository.findById(recordingId)
+                    .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
+            applyAnalysisResult(transcription, analysis, recordingId);
+            repository.save(transcription);
+            log.info("Analysis completed for transcription {}", recordingId);
+            return toDTO(transcription);
+        });
     }
 
     private void applyAnalysisResult(Transcription transcription, AnalysisResult analysis, String recordingId) {

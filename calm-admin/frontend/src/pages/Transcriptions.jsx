@@ -210,7 +210,7 @@ export default function Transcriptions() {
       setAnalyzing(recordingId);
       await analyzeTranscription(recordingId);
     } catch (error) {
-      alert('Error al re-analizar: ' + (error.response?.data?.message || error.message));
+      alert('Error al re-analizar: ' + (error.response?.data?.error || error.response?.data?.message || error.message));
     } finally {
       setAnalyzing(null);
     }
