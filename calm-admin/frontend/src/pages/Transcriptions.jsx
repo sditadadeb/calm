@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FileText, CheckCircle, XCircle, Eye, EyeOff, Sparkles, Clock, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import useStore from '../store/useStore';
-import { analyzeTranscription as apiAnalyzeTranscription } from '../api';
+import { analyzeTranscription as apiAnalyzeTranscription, reimportAndAnalyzeTranscription as apiReimportAnalyze } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import Filters from '../components/Filters';
@@ -205,10 +205,10 @@ export default function Transcriptions() {
   const handleReanalyze = async (recordingId, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm(t('transcriptions.reanalyzeConfirm'))) return;
+    if (!window.confirm(t('transcriptions.reimportReanalyzeConfirm'))) return;
     try {
       setAnalyzing(recordingId);
-      await analyzeTranscription(recordingId);
+      await apiReimportAnalyze(recordingId);
     } catch (error) {
       alert('Error al re-analizar: ' + (error.response?.data?.error || error.response?.data?.message || error.message));
     } finally {
@@ -246,7 +246,7 @@ export default function Transcriptions() {
   const handleBulkReanalyze = async () => {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (!window.confirm(t('transcriptions.bulkConfirm', { count: ids.length }))) return;
+    if (!window.confirm(t('transcriptions.bulkReimportConfirm', { count: ids.length }))) return;
 
     setBulkAnalyzing(true);
     setBulkProgress({ current: 0, total: ids.length });
@@ -255,7 +255,7 @@ export default function Transcriptions() {
     for (let i = 0; i < ids.length; i++) {
       try {
         setAnalyzing(ids[i]);
-        await apiAnalyzeTranscription(ids[i]);
+        await apiReimportAnalyze(ids[i]);
       } catch {
         errors++;
       } finally {

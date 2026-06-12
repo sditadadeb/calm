@@ -28,7 +28,7 @@ import {
   Sparkles,
   Clock
 } from 'lucide-react';
-import { getTranscriptions, analyzeTranscription } from '../api';
+import { getTranscriptions, reimportAndAnalyzeTranscription } from '../api';
 import api from '../api';
 
 // Reproductor de audio personalizado con duración fija
@@ -238,6 +238,7 @@ export default function TranscriptionDetail() {
         const response = await getAudioUrl(id);
         
         if (response.data.available) {
+          if (response.data.size) setAudioSizeBytes(response.data.size);
           // Descargar audio completo como blob para permitir seeking
           const streamUrl = getAudioStreamUrl(id);
           
@@ -420,17 +421,28 @@ export default function TranscriptionDetail() {
   const isPendingTranscription = (trans) =>
     trans?.transcriptionText?.startsWith('[Audio disponible');
 
+  const isTextSuspiciouslyShort = (trans, audioBytes) => {
+    const len = trans?.transcriptionText?.trim().length ?? 0;
+    if (!audioBytes || len === 0) return false;
+    if (audioBytes > 10_000_000 && len < 500) return true;
+    if (audioBytes > 5_000_000 && len < 200) return true;
+    if (audioBytes > 2_000_000 && len < 80) return true;
+    if (audioBytes > 1_000_000 && len < 100) return true;
+    return false;
+  };
+
   const hasParseError = (trans) => {
     const fields = [trans?.noSaleReason, trans?.executiveSummary, trans?.saleEvidence].filter(Boolean);
     return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('Análisis no disponible'));
   };
 
   const handleReanalyze = async () => {
-    if (!window.confirm(t('detail.reanalyzeParseError') + '?')) return;
+    if (!window.confirm(t('detail.reimportReanalyzeConfirm'))) return;
     try {
       setReanalyzing(true);
-      const response = await analyzeTranscription(id);
+      const response = await reimportAndAnalyzeTranscription(id);
       setTranscription(response.data);
+      setComments([]);
     } catch (err) {
       alert('Error al re-analizar: ' + (err.response?.data?.error || err.response?.data?.message || err.message));
     } finally {
@@ -468,6 +480,7 @@ export default function TranscriptionDetail() {
 
   const trans = transcription;
   const pendingTranscription = isPendingTranscription(trans);
+  const textSuspiciouslyShort = isTextSuspiciouslyShort(trans, audioSizeBytes);
   const statusConfig = pendingTranscription
     ? getStatusConfig('TRANSCRIPTION_PENDING')
     : getStatusConfig(trans.saleStatus);
@@ -487,12 +500,12 @@ export default function TranscriptionDetail() {
         
         {/* Flechas de navegación */}
         <div className="flex items-center gap-2">
-          {hasParseError(trans) && (
+          {(hasParseError(trans) || textSuspiciouslyShort || trans.analyzed) && (
             <button
               onClick={handleReanalyze}
-              disabled={reanalyzing}
+              disabled={reanalyzing || pendingTranscription}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5A623] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
-              title={t('detail.reanalyzeParseError')}
+              title={pendingTranscription ? t('transcriptions.reanalyzePending') : t('detail.reanalyze')}
             >
               {reanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {reanalyzing ? t('detail.reanalyzing') : t('detail.reanalyze')}
@@ -802,6 +815,17 @@ export default function TranscriptionDetail() {
       )}
 
       {/* Full Transcription */}
+      {textSuspiciouslyShort && !pendingTranscription && (
+        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className={`w-5 h-5 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+            <div>
+              <h3 className={`font-semibold ${isDark ? 'text-red-300' : 'text-red-800'}`}>{t('detail.truncatedTextTitle')}</h3>
+              <p className={`text-sm mt-1 ${isDark ? 'text-red-200/80' : 'text-red-700'}`}>{t('detail.truncatedTextDesc')}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {trans.transcriptionText && (
         <div className={`rounded-2xl border p-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-3 mb-4">

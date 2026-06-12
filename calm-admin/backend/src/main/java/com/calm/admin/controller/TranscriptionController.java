@@ -109,6 +109,19 @@ public class TranscriptionController {
         return analyzeTranscription(subfolder + "/" + recordingId);
     }
 
+    /** Re-análisis desde cero: borra BD, reimporta S3 y analiza. */
+    @PostMapping("/transcriptions/{recordingId}/reimport-analyze")
+    public ResponseEntity<TranscriptionDTO> reimportAndAnalyze(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        return ResponseEntity.ok(transcriptionService.reimportAndAnalyzeTranscription(recordingId));
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/reimport-analyze")
+    public ResponseEntity<TranscriptionDTO> reimportAndAnalyzeWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return reimportAndAnalyze(subfolder + "/" + recordingId);
+    }
+
     /** Diagnóstico: longitud del texto en cada fuente S3 vs audio. */
     @GetMapping("/transcriptions/{recordingId}/s3-probe")
     public ResponseEntity<Map<String, Object>> probeTranscriptionS3(@PathVariable String recordingId) {

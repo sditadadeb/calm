@@ -7,6 +7,7 @@ import com.calm.admin.dto.TranscriptionDTO;
 import com.calm.admin.model.AnalysisResult;
 import com.calm.admin.model.Transcription;
 import com.calm.admin.repository.AdvancedAnalysisRepository;
+import com.calm.admin.repository.TranscriptionCommentRepository;
 import com.calm.admin.repository.TranscriptionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,17 +34,20 @@ public class TranscriptionService {
 
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
+    private final TranscriptionCommentRepository commentRepository;
     private final S3Service s3Service;
     private final ChatGPTAnalyzerService analyzerService;
     private final TransactionTemplate transactionTemplate;
 
     public TranscriptionService(TranscriptionRepository repository, 
                                 AdvancedAnalysisRepository advancedAnalysisRepository,
+                                TranscriptionCommentRepository commentRepository,
                                 S3Service s3Service, 
                                 ChatGPTAnalyzerService analyzerService,
                                 org.springframework.transaction.PlatformTransactionManager transactionManager) {
         this.repository = repository;
         this.advancedAnalysisRepository = advancedAnalysisRepository;
+        this.commentRepository = commentRepository;
         this.s3Service = s3Service;
         this.analyzerService = analyzerService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -322,6 +326,47 @@ public class TranscriptionService {
         log.info("Refreshed transcription text from S3 for {} ({} -> {} chars)",
                 recordingId, current != null ? current.length() : 0, text.length());
         return true;
+    }
+
+    /**
+     * Borra registro, comentarios y análisis avanzado (incluye excluidos) para reimportar desde cero.
+     */
+    @Transactional
+    public void purgeTranscriptionForReimport(String recordingId) {
+        if (!repository.existsAnyByRecordingId(recordingId)) {
+            return;
+        }
+        commentRepository.deleteByRecordingId(recordingId);
+        advancedAnalysisRepository.findByRecordingId(recordingId)
+                .ifPresent(advancedAnalysisRepository::delete);
+        repository.deleteByRecordingIdNative(recordingId);
+        log.info("Purged transcription for full reimport: {}", recordingId);
+    }
+
+    /**
+     * Re-análisis completo: elimina de BD, reimporta metadata+texto desde S3 e analiza con GPT.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public TranscriptionDTO reimportAndAnalyzeTranscription(String recordingId) {
+        log.info("Full reimport+analyze from S3 for {}", recordingId);
+
+        transactionTemplate.executeWithoutResult(status -> purgeTranscriptionForReimport(recordingId));
+
+        Transcription imported = transactionTemplate.execute(status -> importTranscription(recordingId));
+        if (imported == null) {
+            throw new RuntimeException(
+                    "No se pudo importar desde S3 (sin audio ni transcripción): " + recordingId);
+        }
+
+        int textLen = imported.getTranscriptionText() != null ? imported.getTranscriptionText().length() : 0;
+        log.info("Reimported {} — text length {} chars, audioSize {} bytes",
+                recordingId, textLen, s3Service.getAudioSize(recordingId));
+
+        if (isPlaceholderText(imported.getTranscriptionText())) {
+            return toDTO(imported);
+        }
+
+        return analyzeTranscription(recordingId);
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)

@@ -94,6 +94,22 @@ const useStore = create((set, get) => ({
     }
   },
 
+  reimportAndAnalyzeTranscription: async (recordingId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.reimportAndAnalyzeTranscription(recordingId);
+      set({ selectedTranscription: response.data, loading: false });
+      await Promise.all([
+        get().fetchTranscriptions(),
+        get().fetchDashboardMetrics(),
+      ]);
+      return response.data;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
   fetchSellers: async () => {
     try {
       const response = await api.getSellers();

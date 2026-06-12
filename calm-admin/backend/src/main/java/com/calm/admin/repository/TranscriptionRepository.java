@@ -106,9 +106,13 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     @Query(value = "UPDATE transcriptions SET excluded = TRUE, updated_at = CURRENT_TIMESTAMP WHERE recording_id = :recordingId", nativeQuery = true)
     int markExcluded(@Param("recordingId") String recordingId);
 
-    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
     @Query(value = "UPDATE transcriptions SET excluded = FALSE, updated_at = CURRENT_TIMESTAMP WHERE recording_id = :recordingId", nativeQuery = true)
     int markRestored(@Param("recordingId") String recordingId);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM transcriptions WHERE recording_id = :recordingId", nativeQuery = true)
+    void deleteByRecordingIdNative(@Param("recordingId") String recordingId);
 
     List<Transcription> findByTranscriptionTextStartingWith(String prefix);
 

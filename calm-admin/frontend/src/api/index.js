@@ -75,6 +75,10 @@ export const getAudioStreamUrl = (recordingId) => {
 
 export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/analyze`);
 
+/** Borra de BD, reimporta desde S3 y analiza (re-análisis completo). */
+export const reimportAndAnalyzeTranscription = (recordingId) =>
+  api.post(`/transcriptions/${encodeURI(recordingId)}/reimport-analyze`);
+
 export const checkNewTranscriptions = () => api.post('/transcriptions/check-new');
 
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${encodeURI(recordingId)}`);

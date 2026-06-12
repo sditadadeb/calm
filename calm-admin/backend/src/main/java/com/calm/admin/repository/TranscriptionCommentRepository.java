@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface TranscriptionCommentRepository extends JpaRepository<TranscriptionComment, Long> {
     List<TranscriptionComment> findByRecordingIdOrderByCreatedAtAsc(String recordingId);
+
+    void deleteByRecordingId(String recordingId);
 }
