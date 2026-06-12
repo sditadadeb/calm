@@ -84,6 +84,11 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     boolean existsByRecordingIdLike(String pattern);
 
     List<Transcription> findByTranscriptionTextStartingWith(String prefix);
+
+    @Query("SELECT t FROM Transcription t WHERE t.recordingDate >= :since AND (" +
+           "LOWER(t.noSaleReason) LIKE '%error parseando%' OR " +
+           "LOWER(t.executiveSummary) LIKE '%error parseando%')")
+    List<Transcription> findParseErrorsSince(@Param("since") LocalDateTime since);
     
     List<Transcription> findByBranchIdIn(java.util.Collection<Long> branchIds);
     

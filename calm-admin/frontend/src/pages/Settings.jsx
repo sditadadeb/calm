@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getPromptConfig, updatePromptConfig, resetPromptConfig, getReanalyzeAllStreamUrl } from '../api';
+import { getPromptConfig, updatePromptConfig, resetPromptConfig, getReanalyzeAllStreamUrl, previewParseErrors, reanalyzeParseErrors } from '../api';
 import { RefreshCw } from 'lucide-react';
 
 const InfoIcon = ({ tooltip, isDark }) => {
@@ -43,6 +43,8 @@ const Settings = () => {
   
   const [reanalyzing, setReanalyzing] = useState(false);
   const [reanalyzeProgress, setReanalyzeProgress] = useState({ current: 0, total: 0, message: '' });
+  const [parseErrorPreview, setParseErrorPreview] = useState(null);
+  const [parseErrorSweeping, setParseErrorSweeping] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -145,6 +147,42 @@ const Settings = () => {
       setReanalyzing(false);
       setReanalyzeProgress({ current: 0, total: 0, message: '' });
     };
+  };
+
+  const handlePreviewParseErrors = async () => {
+    try {
+      setParseErrorPreview(null);
+      const response = await previewParseErrors(2);
+      setParseErrorPreview(response.data);
+    } catch (error) {
+      console.error('Error previewing parse errors:', error);
+      setMessage({ type: 'error', text: t('settings.parseErrorPreviewError') });
+    }
+  };
+
+  const handleReanalyzeParseErrors = async () => {
+    const count = parseErrorPreview?.count ?? '?';
+    if (!window.confirm(t('settings.parseErrorSweepConfirm').replace('{count}', count))) {
+      return;
+    }
+
+    try {
+      setParseErrorSweeping(true);
+      setMessage({ type: 'success', text: t('settings.parseErrorSweepRunning') });
+      const response = await reanalyzeParseErrors(2);
+      const data = response.data;
+      setParseErrorPreview({ count: Math.max(0, (data.found || 0) - (data.fixed || 0)), ...data });
+      setMessage({
+        type: 'success',
+        text: `${t('settings.parseErrorSweepDone')}: ${data.found} ${t('settings.found')}, ${data.fixed} ${t('settings.fixed')}, ${data.errors} ${t('settings.errors')}`,
+      });
+      setTimeout(() => setMessage(null), 8000);
+    } catch (error) {
+      console.error('Error sweeping parse errors:', error);
+      setMessage({ type: 'error', text: t('settings.parseErrorSweepError') });
+    } finally {
+      setParseErrorSweeping(false);
+    }
   };
 
   const inputClasses = `w-full p-3 rounded-lg focus:ring-2 focus:ring-[#F5A623] focus:border-transparent ${
@@ -341,6 +379,58 @@ const Settings = () => {
           <RefreshCw className={`w-5 h-5 ${reanalyzing ? 'animate-spin' : ''}`} />
           {reanalyzing ? t('settings.reanalyzing') : t('settings.reanalyzeAll')}
         </button>
+      </div>
+
+      {/* Reparar errores de parseo GPT (últimos 2 meses) */}
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          🔧 {t('settings.parseErrorTitle')}
+          <InfoIcon isDark={isDark} tooltip={t('settings.parseErrorTooltip')} />
+        </h2>
+
+        <p className={`mb-4 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+          {t('settings.parseErrorDesc')}
+        </p>
+
+        {parseErrorPreview != null && (
+          <div className={`mb-4 p-4 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-gray-50'}`}>
+            <p className={isDark ? 'text-white' : 'text-gray-800'}>
+              {t('settings.parseErrorFound')}: <strong>{parseErrorPreview.count}</strong>
+            </p>
+            {parseErrorPreview.ids?.length > 0 && (
+              <p className={`text-sm mt-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                IDs: {parseErrorPreview.ids.slice(0, 10).join(', ')}
+                {parseErrorPreview.ids.length > 10 ? '…' : ''}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handlePreviewParseErrors}
+            disabled={parseErrorSweeping || reanalyzing}
+            className={`px-5 py-2.5 rounded-lg font-medium border transition-all ${
+              isDark
+                ? 'border-slate-600 text-slate-300 hover:bg-slate-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+            } disabled:opacity-50`}
+          >
+            {t('settings.parseErrorPreview')}
+          </button>
+          <button
+            onClick={handleReanalyzeParseErrors}
+            disabled={parseErrorSweeping || reanalyzing}
+            className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              parseErrorSweeping || reanalyzing
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                : 'bg-gradient-to-r from-red-500 to-orange-500 text-white hover:opacity-90'
+            }`}
+          >
+            <RefreshCw className={`w-5 h-5 ${parseErrorSweeping ? 'animate-spin' : ''}`} />
+            {parseErrorSweeping ? t('settings.parseErrorSweeping') : t('settings.parseErrorSweep')}
+          </button>
+        </div>
       </div>
 
       {/* Campos analizados */}

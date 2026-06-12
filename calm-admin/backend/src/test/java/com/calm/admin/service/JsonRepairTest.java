@@ -75,6 +75,7 @@ public class JsonRepairTest {
                 case ST_EXPECT_KEY:
                     if (c == '"') { i = readString(json, i, len, result); state = ST_EXPECT_COLON; }
                     else if (c == '}') { result.append(c); i++; if (!stack.isEmpty()) stack.pop(); state = ST_AFTER_VALUE; }
+                    else if (c == ',') { i++; }
                     else if (Character.isLetter(c) || c == '_') {
                         int start = i;
                         while (i < len && (Character.isLetterOrDigit(json.charAt(i)) || json.charAt(i) == '_')) i++;
@@ -123,11 +124,49 @@ public class JsonRepairTest {
     private int readString(String json, int i, int len, StringBuilder result) {
         result.append(json.charAt(i)); i++;
         while (i < len) {
-            char sc = json.charAt(i); result.append(sc); i++;
-            if (sc == '\\' && i < len) { result.append(json.charAt(i)); i++; }
-            else if (sc == '"') break;
+            char sc = json.charAt(i);
+            if (sc == '\\' && i + 1 < len) {
+                result.append(sc);
+                result.append(json.charAt(i + 1));
+                i += 2;
+                continue;
+            }
+            if (sc == '"') {
+                result.append(sc);
+                i++;
+                break;
+            }
+            if (sc == '\n') result.append("\\n");
+            else if (sc == '\r') result.append("\\r");
+            else if (sc == '\t') result.append("\\t");
+            else if (sc < 32) result.append(String.format("\\u%04x", (int) sc));
+            else result.append(sc);
+            i++;
         }
         return i;
+    }
+
+    private String escapeControlCharsInJsonStrings(String json) {
+        StringBuilder sb = new StringBuilder(json.length() + 32);
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (!inString) {
+                if (c == '"') inString = true;
+                sb.append(c);
+                continue;
+            }
+            if (escaped) { sb.append(c); escaped = false; continue; }
+            if (c == '\\') { sb.append(c); escaped = true; continue; }
+            if (c == '"') { sb.append(c); inString = false; continue; }
+            if (c == '\n') sb.append("\\n");
+            else if (c == '\r') sb.append("\\r");
+            else if (c == '\t') sb.append("\\t");
+            else if (c < 32) sb.append(String.format("\\u%04x", (int) c));
+            else sb.append(c);
+        }
+        return sb.toString();
     }
 
     private String repairJson(String json) {
@@ -137,6 +176,10 @@ public class JsonRepairTest {
         json = json.replace('\u00A0', ' ');
         if (json.startsWith("\uFEFF")) json = json.substring(1);
         json = json.replace("\r\n", "\n").replace("\r", "\n");
+        json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
+        json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
+        json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
+        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
         json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
         json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
         json = json.replaceAll(":\\s*True\\b", ": true");
@@ -144,6 +187,7 @@ public class JsonRepairTest {
         json = json.replaceAll(":\\s*None\\b", ": null");
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
+        json = escapeControlCharsInJsonStrings(json);
         json = insertMissingCommas(json);
         long openBraces = json.chars().filter(c -> c == '{').count();
         long closeBraces = json.chars().filter(c -> c == '}').count();
@@ -402,6 +446,46 @@ public class JsonRepairTest {
         assertTrue(root.get("saleCompleted").asBoolean());
         assertTrue(root.get("confidenceTrace").get("signals").get("dialogueDetectable").asBoolean());
         assertEquals(0.50, root.get("confidenceTrace").get("weights").get("textIntegrity").asDouble(), 0.01);
+    }
+
+    @Test void testOrphanCommaBeforeKeys() throws Exception {
+        JsonNode root = fullParse("""
+        {
+          "saleCompleted": false,
+          "saleStatus": "UNINTERPRETABLE",
+          "analysisConfidence": 18,
+          "confidenceTrace": {
+            "methodVersion": "confidence_v4_2026-02",
+            "subscores": { ","textIntegrity": 20, ","conversationalCoherence": 10, ","analyticsUsability": 0 },
+            "signals": { "wordCount": 1, "turnCount": 1, "dialogueDetectable": true }
+          },
+          "executiveSummary": "Texto muy corto"
+        }
+        """);
+        assertEquals(18, root.get("analysisConfidence").asInt());
+        assertEquals(20, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
+    }
+
+    @Test void testNewlineInsideString() throws Exception {
+        JsonNode root = fullParse("""
+        { "executiveSummary": "Linea uno
+        Linea dos", "saleCompleted": false }
+        """);
+        assertTrue(root.get("executiveSummary").asText().contains("Linea dos"));
+    }
+
+    @Test void testUnclosedStringBeforeNextKey() throws Exception {
+        JsonNode root = fullParse("""
+        {
+          "confidenceTrace": {
+            "methodVersion": "confidence_v4_2026-02, "subscores": { ","textIntegrity": 20 },
+            "signals": { "wordCount": 1 }
+          },
+          "saleCompleted": false
+        }
+        """);
+        assertEquals("confidence_v4_2026-02", root.get("confidenceTrace").get("methodVersion").asText());
+        assertEquals(20, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
     }
 
     /**

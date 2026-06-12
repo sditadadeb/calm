@@ -148,6 +148,26 @@ public class TranscriptionController {
     public ResponseEntity<Map<String, Object>> reanalyzeNoSales() {
         return ResponseEntity.ok(transcriptionService.reanalyzeNoSales());
     }
+
+    /**
+     * Re-analiza transcripciones con error de parseo GPT (últimos N meses).
+     */
+    @PostMapping("/reanalyze-parse-errors")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> reanalyzeParseErrors(
+            @RequestParam(defaultValue = "2") int months) {
+        return ResponseEntity.ok(transcriptionService.reanalyzeParseErrors(months));
+    }
+    
+    /**
+     * Preview: cuántas transcripciones tienen error de parseo en los últimos N meses.
+     */
+    @GetMapping("/reanalyze-parse-errors/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> previewParseErrors(
+            @RequestParam(defaultValue = "2") int months) {
+        return ResponseEntity.ok(transcriptionService.previewParseErrors(months));
+    }
     
     /**
      * Re-analiza TODAS las transcripciones con el prompt actual.

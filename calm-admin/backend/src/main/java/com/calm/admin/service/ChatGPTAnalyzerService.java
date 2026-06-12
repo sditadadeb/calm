@@ -482,6 +482,12 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
         // === FASE 2: Correcciones de valores ===
+        // GPT orphan commas before keys: { ","key" or , ","key"
+        json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
+        json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
+        json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
+        // String sin cerrar antes de la siguiente key: "value, "nextKey": → "value", "nextKey":
+        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
         // Extra quote after boolean/number/null: true" -> true
         json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
         json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
@@ -515,6 +521,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         // === FASE 3: Trailing commas ===
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
+        
+        // === FASE 3b: Escapar newlines/caracteres de control dentro de strings ===
+        json = escapeControlCharsInJsonStrings(json);
         
         // === FASE 4: Insertar comas faltantes (character-by-character) ===
         json = insertMissingCommas(json);
@@ -604,6 +613,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                         result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
+                    } else if (c == ',') {
+                        // Coma huérfana antes de key (GPT: { ","key")
+                        i++;
                     } else if (Character.isLetter(c) || c == '_') {
                         // Key sin comillas (GPT a veces las omite)
                         int start = i;
@@ -719,6 +731,41 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return result.toString();
     }
     
+    private String escapeControlCharsInJsonStrings(String json) {
+        StringBuilder sb = new StringBuilder(json.length() + 32);
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (!inString) {
+                if (c == '"') inString = true;
+                sb.append(c);
+                continue;
+            }
+            if (escaped) {
+                sb.append(c);
+                escaped = false;
+                continue;
+            }
+            if (c == '\\') {
+                sb.append(c);
+                escaped = true;
+                continue;
+            }
+            if (c == '"') {
+                sb.append(c);
+                inString = false;
+                continue;
+            }
+            if (c == '\n') sb.append("\\n");
+            else if (c == '\r') sb.append("\\r");
+            else if (c == '\t') sb.append("\\t");
+            else if (c < 32) sb.append(String.format("\\u%04x", (int) c));
+            else sb.append(c);
+        }
+        return sb.toString();
+    }
+
     /**
      * Lee un string JSON completo (respetando escapes) y lo agrega al StringBuilder.
      * Retorna la nueva posición del cursor.
@@ -728,14 +775,23 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         i++;
         while (i < len) {
             char sc = json.charAt(i);
-            result.append(sc);
-            i++;
-            if (sc == '\\' && i < len) {
-                result.append(json.charAt(i));
+            if (sc == '\\' && i + 1 < len) {
+                result.append(sc);
+                result.append(json.charAt(i + 1));
+                i += 2;
+                continue;
+            }
+            if (sc == '"') {
+                result.append(sc);
                 i++;
-            } else if (sc == '"') {
                 break;
             }
+            if (sc == '\n') result.append("\\n");
+            else if (sc == '\r') result.append("\\r");
+            else if (sc == '\t') result.append("\\t");
+            else if (sc < 32) result.append(String.format("\\u%04x", (int) sc));
+            else result.append(sc);
+            i++;
         }
         return i;
     }

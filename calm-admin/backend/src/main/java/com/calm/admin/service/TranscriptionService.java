@@ -640,6 +640,76 @@ public class TranscriptionService {
     }
     
     /**
+     * Re-analiza transcripciones con error de parseo GPT en los últimos N meses.
+     */
+    @Transactional
+    public Map<String, Object> reanalyzeParseErrors(int months) {
+        LocalDateTime since = LocalDateTime.now().minusMonths(Math.max(1, months));
+        List<Transcription> broken = repository.findParseErrorsSince(since);
+        log.info("Re-analizando {} transcripciones con error de parseo desde {}", broken.size(), since);
+
+        int refreshed = 0;
+        int reanalyzed = 0;
+        int fixed = 0;
+        int errors = 0;
+
+        for (Transcription transcription : broken) {
+            String id = transcription.getRecordingId();
+            try {
+                if (isPlaceholderText(transcription.getTranscriptionText())
+                        || s3Service.isSuspiciouslyShortForAudio(id, transcription.getTranscriptionText())) {
+                    if (refreshSingleIfStale(id)) refreshed++;
+                }
+
+                Transcription current = repository.findById(id).orElse(transcription);
+                if (isPlaceholderText(current.getTranscriptionText())) {
+                    log.warn("Skipping {} - transcription text still pending in S3", id);
+                    errors++;
+                    continue;
+                }
+
+                analyzeTranscription(id);
+                reanalyzed++;
+
+                Transcription updated = repository.findById(id).orElse(null);
+                if (updated != null && !hasParseError(updated)) {
+                    fixed++;
+                }
+            } catch (Exception e) {
+                errors++;
+                log.error("Error re-analizando parse error {}: {}", id, e.getMessage());
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("since", since);
+        result.put("found", broken.size());
+        result.put("textRefreshedFromS3", refreshed);
+        result.put("reanalyzed", reanalyzed);
+        result.put("fixed", fixed);
+        result.put("errors", errors);
+        result.put("timestamp", LocalDateTime.now());
+        return result;
+    }
+
+    public Map<String, Object> previewParseErrors(int months) {
+        LocalDateTime since = LocalDateTime.now().minusMonths(Math.max(1, months));
+        List<Transcription> broken = repository.findParseErrorsSince(since);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("since", since);
+        result.put("count", broken.size());
+        result.put("ids", broken.stream().map(Transcription::getRecordingId).limit(50).toList());
+        return result;
+    }
+
+    static boolean hasParseError(Transcription t) {
+        if (t == null) return false;
+        String combined = ((t.getNoSaleReason() != null ? t.getNoSaleReason() : "") + " "
+                + (t.getExecutiveSummary() != null ? t.getExecutiveSummary() : "")).toLowerCase();
+        return combined.contains("error parseando");
+    }
+
+    /**
      * Re-analiza solo las transcripciones marcadas como "no venta".
      * Útil para corregir posibles errores de detección después de mejorar el prompt.
      */

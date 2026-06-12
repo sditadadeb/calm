@@ -110,6 +110,12 @@ export const getReanalyzeAllStreamUrl = () => {
   return `${API_URL}/reanalyze-all/stream?token=${token}`;
 };
 
+export const previewParseErrors = (months = 2) =>
+  api.get(`/reanalyze-parse-errors/preview?months=${months}`);
+
+export const reanalyzeParseErrors = (months = 2) =>
+  api.post(`/reanalyze-parse-errors?months=${months}`);
+
 // Recommendations (Advanced Analysis)
 export const getRecommendationsMetrics = () => api.get('/recommendations/metrics');
 export const getRecommendationsByVendor = () => api.get('/recommendations/by-vendor');
