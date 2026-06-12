@@ -481,56 +481,62 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         // Normalizar line endings
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
-        // Escapar control chars temprano (evita que \n rompa regexes siguientes)
-        json = escapeControlCharsInJsonStrings(json);
-        
         // === FASE 2: Correcciones de valores ===
-        // GPT orphan commas before keys: { ","key" or , ","key"
+        // GPT orphan commas before keys: { ","key" / , ","key" / { ,"key"
+        json = json.replaceAll("\\{\\s*\",\\s*\"", "{ \"");
+        json = json.replaceAll("\\[\\s*\",\\s*\"", "[ \"");
         json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
         json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
         json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
         // GPT artifact: "key":": value → "key": value
         json = json.replaceAll("\":\\s*\":\\s*", "\": ");
-        // String sin cerrar antes de la siguiente key: "value, "nextKey": → "value", "nextKey":
-        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
-        // Extra quote after boolean/number/null: true" -> true
-        json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
-        json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
-        // Python-style booleans/null
-        json = json.replaceAll(":\\s*True\\b", ": true");
-        json = json.replaceAll(":\\s*False\\b", ": false");
-        json = json.replaceAll(":\\s*None\\b", ": null");
+        // String sin cerrar antes de la siguiente key: : "value, "nextKey": → : "value", "nextKey":
+        // CRÍTICO: anclado a [:,\[] antes de la comilla para garantizar que es una comilla
+        // de APERTURA. Sin ancla, matcheaba comillas de cierre e insertaba comillas falsas
+        // tras } o ] en JSON válido de una línea.
+        json = json.replaceAll("([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
+        // Extra quote después de un valor BARE bool/number (": 420\"" → ": 420").
+        // CRÍTICO: anclado a ':' — la versión sin ancla comía la comilla de cierre de
+        // strings que terminan en dígitos (ej: "confidence_v4_2026-02",) y corrompía
+        // TODOS los análisis con confidenceTrace.
+        json = json.replaceAll("(:\\s*)(true|false|null)\"(?=\\s*[,}\\]])", "$1$2");
+        json = json.replaceAll("(:\\s*)(-?\\d+(?:\\.\\d+)?)\"(?=\\s*[,}\\]])", "$1$2");
+        // Python-style booleans/null (solo como valor bare completo)
+        json = json.replaceAll(":\\s*True(?=\\s*[,}\\]])", ": true");
+        json = json.replaceAll(":\\s*False(?=\\s*[,}\\]])", ": false");
+        json = json.replaceAll(":\\s*None(?=\\s*[,}\\]])", ": null");
         
-        // English number words as values (GPT sometimes writes "fifty" instead of 50)
-        json = json.replaceAll("(?i):\\s*zero\\b", ": 0");
-        json = json.replaceAll("(?i):\\s*one\\b", ": 1");
-        json = json.replaceAll("(?i):\\s*two\\b", ": 2");
-        json = json.replaceAll("(?i):\\s*three\\b", ": 3");
-        json = json.replaceAll("(?i):\\s*four\\b", ": 4");
-        json = json.replaceAll("(?i):\\s*five\\b", ": 5");
-        json = json.replaceAll("(?i):\\s*six\\b", ": 6");
-        json = json.replaceAll("(?i):\\s*seven\\b", ": 7");
-        json = json.replaceAll("(?i):\\s*eight\\b", ": 8");
-        json = json.replaceAll("(?i):\\s*nine\\b", ": 9");
-        json = json.replaceAll("(?i):\\s*ten\\b", ": 10");
-        json = json.replaceAll("(?i):\\s*twenty\\b", ": 20");
-        json = json.replaceAll("(?i):\\s*thirty\\b", ": 30");
-        json = json.replaceAll("(?i):\\s*forty\\b", ": 40");
-        json = json.replaceAll("(?i):\\s*fifty\\b", ": 50");
-        json = json.replaceAll("(?i):\\s*sixty\\b", ": 60");
-        json = json.replaceAll("(?i):\\s*seventy\\b", ": 70");
-        json = json.replaceAll("(?i):\\s*eighty\\b", ": 80");
-        json = json.replaceAll("(?i):\\s*ninety\\b", ": 90");
-        json = json.replaceAll("(?i):\\s*hundred\\b", ": 100");
+        // English number words as bare values (GPT sometimes writes "fifty" instead of 50).
+        // Anclado a ",}]" para no tocar palabras dentro de strings.
+        json = json.replaceAll("(?i):\\s*zero(?=\\s*[,}\\]])", ": 0");
+        json = json.replaceAll("(?i):\\s*one(?=\\s*[,}\\]])", ": 1");
+        json = json.replaceAll("(?i):\\s*two(?=\\s*[,}\\]])", ": 2");
+        json = json.replaceAll("(?i):\\s*three(?=\\s*[,}\\]])", ": 3");
+        json = json.replaceAll("(?i):\\s*four(?=\\s*[,}\\]])", ": 4");
+        json = json.replaceAll("(?i):\\s*five(?=\\s*[,}\\]])", ": 5");
+        json = json.replaceAll("(?i):\\s*six(?=\\s*[,}\\]])", ": 6");
+        json = json.replaceAll("(?i):\\s*seven(?=\\s*[,}\\]])", ": 7");
+        json = json.replaceAll("(?i):\\s*eight(?=\\s*[,}\\]])", ": 8");
+        json = json.replaceAll("(?i):\\s*nine(?=\\s*[,}\\]])", ": 9");
+        json = json.replaceAll("(?i):\\s*ten(?=\\s*[,}\\]])", ": 10");
+        json = json.replaceAll("(?i):\\s*twenty(?=\\s*[,}\\]])", ": 20");
+        json = json.replaceAll("(?i):\\s*thirty(?=\\s*[,}\\]])", ": 30");
+        json = json.replaceAll("(?i):\\s*forty(?=\\s*[,}\\]])", ": 40");
+        json = json.replaceAll("(?i):\\s*fifty(?=\\s*[,}\\]])", ": 50");
+        json = json.replaceAll("(?i):\\s*sixty(?=\\s*[,}\\]])", ": 60");
+        json = json.replaceAll("(?i):\\s*seventy(?=\\s*[,}\\]])", ": 70");
+        json = json.replaceAll("(?i):\\s*eighty(?=\\s*[,}\\]])", ": 80");
+        json = json.replaceAll("(?i):\\s*ninety(?=\\s*[,}\\]])", ": 90");
+        json = json.replaceAll("(?i):\\s*hundred(?=\\s*[,}\\]])", ": 100");
         
         // === FASE 3: Trailing commas ===
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
         
-        // === FASE 3b: Escapar newlines/caracteres de control dentro de strings ===
-        json = escapeControlCharsInJsonStrings(json);
-        
         // === FASE 4: Insertar comas faltantes (character-by-character) ===
+        // Nota: readString dentro de la máquina de estados ya escapa newlines y
+        // control chars dentro de strings. NO usar escapeControlCharsInJsonStrings
+        // global aquí: con comillas desbalanceadas invierte qué es string y corrompe.
         json = insertMissingCommas(json);
         
         // === FASE 5: Cerrar JSON truncado ===
@@ -751,41 +757,6 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         return result.toString();
     }
     
-    private String escapeControlCharsInJsonStrings(String json) {
-        StringBuilder sb = new StringBuilder(json.length() + 32);
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (!inString) {
-                if (c == '"') inString = true;
-                sb.append(c);
-                continue;
-            }
-            if (escaped) {
-                sb.append(c);
-                escaped = false;
-                continue;
-            }
-            if (c == '\\') {
-                sb.append(c);
-                escaped = true;
-                continue;
-            }
-            if (c == '"') {
-                sb.append(c);
-                inString = false;
-                continue;
-            }
-            if (c == '\n') sb.append("\\n");
-            else if (c == '\r') sb.append("\\r");
-            else if (c == '\t') sb.append("\\t");
-            else if (c < 32) sb.append(String.format("\\u%04x", (int) c));
-            else sb.append(c);
-        }
-        return sb.toString();
-    }
-
     /**
      * Lee un string JSON completo (respetando escapes) y lo agrega al StringBuilder.
      * Retorna la nueva posición del cursor.

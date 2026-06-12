@@ -147,29 +147,6 @@ public class JsonRepairTest {
         return i;
     }
 
-    private String escapeControlCharsInJsonStrings(String json) {
-        StringBuilder sb = new StringBuilder(json.length() + 32);
-        boolean inString = false;
-        boolean escaped = false;
-        for (int i = 0; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (!inString) {
-                if (c == '"') inString = true;
-                sb.append(c);
-                continue;
-            }
-            if (escaped) { sb.append(c); escaped = false; continue; }
-            if (c == '\\') { sb.append(c); escaped = true; continue; }
-            if (c == '"') { sb.append(c); inString = false; continue; }
-            if (c == '\n') sb.append("\\n");
-            else if (c == '\r') sb.append("\\r");
-            else if (c == '\t') sb.append("\\t");
-            else if (c < 32) sb.append(String.format("\\u%04x", (int) c));
-            else sb.append(c);
-        }
-        return sb.toString();
-    }
-
     private String repairJson(String json) {
         json = json.replace('\u201C', '"').replace('\u201D', '"');
         json = json.replace('\u2018', '\'').replace('\u2019', '\'');
@@ -177,20 +154,20 @@ public class JsonRepairTest {
         json = json.replace('\u00A0', ' ');
         if (json.startsWith("\uFEFF")) json = json.substring(1);
         json = json.replace("\r\n", "\n").replace("\r", "\n");
-        json = escapeControlCharsInJsonStrings(json);
+        json = json.replaceAll("\\{\\s*\",\\s*\"", "{ \"");
+        json = json.replaceAll("\\[\\s*\",\\s*\"", "[ \"");
         json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
         json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
         json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
         json = json.replaceAll("\":\\s*\":\\s*", "\": ");
-        json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
-        json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
-        json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
-        json = json.replaceAll(":\\s*True\\b", ": true");
-        json = json.replaceAll(":\\s*False\\b", ": false");
-        json = json.replaceAll(":\\s*None\\b", ": null");
+        json = json.replaceAll("([:,\\[]\\s*\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
+        json = json.replaceAll("(:\\s*)(true|false|null)\"(?=\\s*[,}\\]])", "$1$2");
+        json = json.replaceAll("(:\\s*)(-?\\d+(?:\\.\\d+)?)\"(?=\\s*[,}\\]])", "$1$2");
+        json = json.replaceAll(":\\s*True(?=\\s*[,}\\]])", ": true");
+        json = json.replaceAll(":\\s*False(?=\\s*[,}\\]])", ": false");
+        json = json.replaceAll(":\\s*None(?=\\s*[,}\\]])", ": null");
         json = json.replaceAll(",\\s*}", "}");
         json = json.replaceAll(",\\s*]", "]");
-        json = escapeControlCharsInJsonStrings(json);
         json = insertMissingCommas(json);
         long openBraces = json.chars().filter(c -> c == '{').count();
         long closeBraces = json.chars().filter(c -> c == '}').count();
@@ -497,6 +474,23 @@ public class JsonRepairTest {
         """);
         assertEquals("confidence_v4_2026-02", root.get("confidenceTrace").get("methodVersion").asText());
         assertEquals(20, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
+    }
+
+    /**
+     * REGRESIÓN CRÍTICA: JSON válido de UNA SOLA LÍNEA no debe ser corrompido.
+     * La versión anterior de repairJson comía la comilla de cierre de strings
+     * que terminan en dígitos (ej "confidence_v4_2026-02") y rompía TODO.
+     */
+    @Test void testValidSingleLineNotCorrupted() throws Exception {
+        JsonNode root = fullParse("""
+        { "saleCompleted": true, "saleStatus": "SALE_CONFIRMED", "analysisConfidence": 90, "confidenceTrace": { "methodVersion": "confidence_v4_2026-02", "subscores": { "textIntegrity": 88, "conversationalCoherence": 91, "analyticsUsability": 95 }, "weights": { "textIntegrity": 0.5, "conversationalCoherence": 0.35, "analyticsUsability": 0.15 }, "signals": { "wordCount": 1200, "turnCount": 45, "dialogueDetectable": true, "explicitCloseSignal": true }, "flags": [], "rationale": "Modelo v4 versión 2026-02" }, "saleEvidence": "cliente dijo: \\"me llevo el de 140x190\\" y pagó $250000", "noSaleReason": null, "productsDiscussed": ["Colchón 140x190", "Sommier modelo 2026"], "customerObjections": ["precio: muy alto al inicio"], "executiveSummary": "Venta cerrada.", "sellerScore": 9 }
+        """);
+        assertEquals("confidence_v4_2026-02", root.get("confidenceTrace").get("methodVersion").asText());
+        assertEquals(88, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
+        assertEquals(0.5, root.get("confidenceTrace").get("weights").get("textIntegrity").asDouble(), 0.001);
+        assertEquals("cliente dijo: \"me llevo el de 140x190\" y pagó $250000", root.get("saleEvidence").asText());
+        assertEquals(2, root.get("productsDiscussed").size());
+        assertEquals(9, root.get("sellerScore").asInt());
     }
 
     /** JSON exacto observado en producción (28971948) */
