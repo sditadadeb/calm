@@ -171,10 +171,7 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className={`px-4 pt-5 pb-4 mx-3 border-b ${isDark ? 'border-line' : 'border-gray-200'}`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg grid place-items-center font-display font-bold text-[15px] text-[#16120A]"
-                 style={{ background: 'linear-gradient(135deg, #F5A623, #C77E0A)' }}>
-              C
-            </div>
+            <img src="/favicon.svg" alt="CALM" className="w-8 h-8" />
             <div>
               <span className={`font-display font-semibold text-base tracking-wide ${isDark ? 'text-white' : 'text-gray-800'}`}>CALM</span>
               <p className={`text-[10px] tracking-[0.14em] font-medium ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('nav.adminPanel').toUpperCase()}</p>
