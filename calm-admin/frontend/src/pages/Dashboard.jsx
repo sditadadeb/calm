@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   ShoppingCart, 
@@ -157,6 +157,7 @@ export default function Dashboard() {
   const { dashboardMetrics, transcriptions, loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
   const { isDark } = useTheme();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [periodDays, setPeriodDays] = useState('30');
   const DAYS = t('dashboard.daysShort') || [];
   const DAYS_FULL = t('dashboard.daysLong') || [];
@@ -230,9 +231,20 @@ export default function Dashboard() {
 
   const sellerChartData = sellerMetrics?.slice(0, 5).map(s => ({
     name: s.userName?.split(' ')[0] || 'N/A',
+    userId: s.userId,
     ventas: s.sales,
     sinVenta: s.noSales,
   })) || [];
+
+  const goToSellerTranscriptions = (data) => {
+    const userId = data?.payload?.userId ?? data?.userId;
+    if (userId != null) navigate(buildTranscriptionsLink(periodDays, { userId }));
+  };
+
+  const goToNoSaleReason = (data) => {
+    const reason = data?.payload?.name ?? data?.name;
+    if (reason) navigate(buildTranscriptionsLink(periodDays, { saleCompleted: 'false', noSaleReason: reason }));
+  };
 
   const noSaleReasonsData = noSaleReasons 
     ? Object.entries(noSaleReasons)
@@ -416,8 +428,8 @@ export default function Dashboard() {
                 <XAxis type="number" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
                 <YAxis type="category" dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} width={80} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="ventas" name={t('dashboard.sales')} fill="#34d399" radius={[0, 3, 3, 0]} barSize={14} />
-                <Bar dataKey="sinVenta" name={t('dashboard.noSaleShort')} fill="#f87171" radius={[0, 3, 3, 0]} barSize={14} />
+                <Bar dataKey="ventas" name={t('dashboard.sales')} fill="#34d399" radius={[0, 3, 3, 0]} barSize={14} cursor="pointer" onClick={goToSellerTranscriptions} />
+                <Bar dataKey="sinVenta" name={t('dashboard.noSaleShort')} fill="#f87171" radius={[0, 3, 3, 0]} barSize={14} cursor="pointer" onClick={goToSellerTranscriptions} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -445,6 +457,8 @@ export default function Dashboard() {
                     outerRadius={100}
                     paddingAngle={2}
                     dataKey="value"
+                    cursor="pointer"
+                    onClick={goToNoSaleReason}
                   >
                     {noSaleReasonsData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
