@@ -94,6 +94,12 @@ public class TimelineController {
                     TreeMap::new,
                     Collectors.toList()
             ));
+        } else if ("day".equals(groupBy)) {
+            grouped = analyzed.stream().collect(Collectors.groupingBy(
+                    t -> t.getRecordingDate().toLocalDate().toString(),
+                    TreeMap::new,
+                    Collectors.toList()
+            ));
         } else {
             grouped = analyzed.stream().collect(Collectors.groupingBy(
                     t -> {

@@ -344,6 +344,10 @@ public class TranscriptionService {
                 .collect(Collectors.toList());
         
         Map<String, Long> noSaleReasons = repository.countByNoSaleReason().stream()
+                .filter(row -> {
+                    String reason = (String) row[0];
+                    return reason != null && !reason.toLowerCase().startsWith("error parseando");
+                })
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> ((Number) row[1]).longValue(),
@@ -352,7 +356,7 @@ public class TranscriptionService {
                 ));
         
         DashboardMetricsDTO metrics = new DashboardMetricsDTO();
-        metrics.setTotalTranscriptions(total);
+        metrics.setTotalTranscriptions(analyzed);
         metrics.setAnalyzedTranscriptions(analyzed);
         metrics.setPendingAnalysis(pendingAnalysis);
         metrics.setTotalSales(sales);

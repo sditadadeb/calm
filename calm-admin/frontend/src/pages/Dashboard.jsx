@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FileText, 
@@ -36,10 +36,121 @@ const COLORS = ['#F5A623', '#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 // Colores para sucursales en scatter plot
 const BRANCH_COLORS = ['#F5A623', '#22c55e', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
+const PERIOD_OPTIONS = [
+  { value: '7', labelKey: 'period7d' },
+  { value: '30', labelKey: 'period30d' },
+  { value: '90', labelKey: 'period90d' },
+  { value: 'all', labelKey: 'periodAll' },
+];
+
+function periodDateRange(periodDays) {
+  if (periodDays === 'all') return {};
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - Number(periodDays));
+  return {
+    dateFrom: from.toISOString().slice(0, 10),
+    dateTo: to.toISOString().slice(0, 10),
+  };
+}
+
+function buildTranscriptionsLink(periodDays, extra = {}) {
+  const params = new URLSearchParams();
+  Object.entries({ analyzed: 'true', ...periodDateRange(periodDays), ...extra }).forEach(([k, v]) => {
+    if (v != null && v !== '') params.set(k, v);
+  });
+  return `/transcriptions?${params.toString()}`;
+}
+
+function isAnalyzed(t) {
+  return t.analyzed === true;
+}
+
+function inPeriod(t, periodDays) {
+  if (!t.recordingDate) return false;
+  if (periodDays === 'all') return true;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - Number(periodDays));
+  cutoff.setHours(0, 0, 0, 0);
+  return new Date(t.recordingDate) >= cutoff;
+}
+
+function buildSellerMetrics(list) {
+  const map = new Map();
+  for (const t of list) {
+    const key = t.userId ?? t.userName;
+    if (!map.has(key)) {
+      map.set(key, {
+        userId: t.userId,
+        userName: t.userName,
+        branchName: t.branchName,
+        totalInteractions: 0,
+        sales: 0,
+        noSales: 0,
+        scores: [],
+      });
+    }
+    const s = map.get(key);
+    s.totalInteractions++;
+    if (t.saleCompleted === true) s.sales++;
+    if (t.saleCompleted === false) s.noSales++;
+    if (t.sellerScore != null) s.scores.push(t.sellerScore);
+  }
+  return [...map.values()]
+    .map(s => ({
+      ...s,
+      conversionRate: s.totalInteractions > 0 ? Math.round((s.sales / s.totalInteractions) * 100) : 0,
+      averageScore: s.scores.length ? s.scores.reduce((a, b) => a + b, 0) / s.scores.length : 0,
+    }))
+    .filter(s => s.totalInteractions > 0)
+    .sort((a, b) => b.conversionRate - a.conversionRate);
+}
+
+function buildBranchMetrics(list) {
+  const map = new Map();
+  for (const t of list) {
+    const key = t.branchId ?? t.branchName;
+    if (!map.has(key)) {
+      map.set(key, {
+        branchId: t.branchId,
+        branchName: t.branchName,
+        totalInteractions: 0,
+        sales: 0,
+        noSales: 0,
+        scores: [],
+      });
+    }
+    const b = map.get(key);
+    b.totalInteractions++;
+    if (t.saleCompleted === true) b.sales++;
+    if (t.saleCompleted === false) b.noSales++;
+    if (t.sellerScore != null) b.scores.push(t.sellerScore);
+  }
+  return [...map.values()]
+    .map(b => ({
+      ...b,
+      conversionRate: b.totalInteractions > 0 ? Math.round((b.sales / b.totalInteractions) * 100) : 0,
+      averageScore: b.scores.length ? b.scores.reduce((a, c) => a + c, 0) / b.scores.length : 0,
+    }))
+    .filter(b => b.totalInteractions > 0)
+    .sort((a, b) => b.conversionRate - a.conversionRate);
+}
+
+function buildNoSaleReasons(list) {
+  const counts = {};
+  for (const t of list) {
+    if (t.saleCompleted !== false || !t.noSaleReason) continue;
+    if (t.noSaleReason.toLowerCase().startsWith('error parseando')) continue;
+    counts[t.noSaleReason] = (counts[t.noSaleReason] || 0) + 1;
+  }
+  return counts;
+}
+
 export default function Dashboard() {
   const { dashboardMetrics, transcriptions, loading, fetchDashboardMetrics, fetchTranscriptions } = useStore();
   const { isDark } = useTheme();
   const { t } = useLanguage();
+  const [periodDays, setPeriodDays] = useState('30');
   const DAYS = t('dashboard.daysShort') || [];
   const DAYS_FULL = t('dashboard.daysLong') || [];
 
@@ -51,11 +162,22 @@ export default function Dashboard() {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const userSellerId = currentUser.sellerId;
 
-  const myTranscriptions = useMemo(() => {
-    if (!transcriptions) return [];
-    if (!userSellerId) return transcriptions;
-    return transcriptions.filter(t => String(t.userId) === String(userSellerId));
-  }, [transcriptions, userSellerId]);
+  const analyzedInPeriod = useMemo(() => {
+    let list = transcriptions || [];
+    if (userSellerId) {
+      list = list.filter(tr => String(tr.userId) === String(userSellerId));
+    }
+    return list.filter(tr => isAnalyzed(tr) && inPeriod(tr, periodDays));
+  }, [transcriptions, userSellerId, periodDays]);
+
+  const pendingCount = dashboardMetrics?.pendingAnalysis ?? 0;
+
+  const drillDownLinks = useMemo(() => ({
+    all: buildTranscriptionsLink(periodDays),
+    sales: buildTranscriptionsLink(periodDays, { saleCompleted: 'true' }),
+    noSales: buildTranscriptionsLink(periodDays, { saleCompleted: 'false' }),
+    pending: '/transcriptions?analyzed=false',
+  }), [periodDays]);
 
   if (loading && !dashboardMetrics) {
     return (
@@ -80,18 +202,19 @@ export default function Dashboard() {
     );
   }
 
-  // If user has sellerId, compute metrics from filtered transcriptions
-  const rawMetrics = dashboardMetrics;
-  const totalTranscriptions = userSellerId ? myTranscriptions.length : rawMetrics.totalTranscriptions;
-  const totalSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === true).length : rawMetrics.totalSales;
-  const totalNoSales = userSellerId ? myTranscriptions.filter(t => t.saleCompleted === false).length : rawMetrics.totalNoSales;
+  // Métricas solo de transcripciones analizadas en el período seleccionado
+  const totalTranscriptions = analyzedInPeriod.length;
+  const totalSales = analyzedInPeriod.filter(tr => tr.saleCompleted === true).length;
+  const totalNoSales = analyzedInPeriod.filter(tr => tr.saleCompleted === false).length;
   const conversionRate = totalTranscriptions > 0 ? Math.round((totalSales / totalTranscriptions) * 100) : 0;
-  const averageSellerScore = userSellerId 
-    ? (myTranscriptions.filter(t => t.sellerScore).reduce((sum, t) => sum + t.sellerScore, 0) / (myTranscriptions.filter(t => t.sellerScore).length || 1))
-    : rawMetrics.averageSellerScore;
-  const sellerMetrics = rawMetrics.sellerMetrics;
-  const branchMetrics = rawMetrics.branchMetrics;
-  const noSaleReasons = rawMetrics.noSaleReasons;
+  const scored = analyzedInPeriod.filter(tr => tr.sellerScore != null && tr.sellerScore > 0);
+  const averageSellerScore = scored.length
+    ? scored.reduce((sum, tr) => sum + tr.sellerScore, 0) / scored.length
+    : 0;
+
+  const sellerMetrics = buildSellerMetrics(analyzedInPeriod);
+  const branchMetrics = buildBranchMetrics(analyzedInPeriod);
+  const noSaleReasons = buildNoSaleReasons(analyzedInPeriod);
 
   const sellerChartData = sellerMetrics?.slice(0, 5).map(s => ({
     name: s.userName?.split(' ')[0] || 'N/A',
@@ -117,12 +240,12 @@ export default function Dashboard() {
         matrix[day][hour] = 0;
       }
     }
-    if (myTranscriptions && myTranscriptions.length > 0) {
-      myTranscriptions.forEach(t => {
-        if (t.recordingDate) {
-          const date = new Date(t.recordingDate);
-          const day = date.getDay(); // 0-6
-          const hour = date.getHours(); // 0-23
+    if (analyzedInPeriod.length > 0) {
+      analyzedInPeriod.forEach(tr => {
+        if (tr.recordingDate) {
+          const date = new Date(tr.recordingDate);
+          const day = date.getDay();
+          const hour = date.getHours();
           matrix[day][hour]++;
         }
       });
@@ -139,16 +262,16 @@ export default function Dashboard() {
   // Procesar datos para Scatter plot temporal (X = fecha, Y = hora)
   const scatterData = (() => {
     // Verificar que hay datos antes de procesar
-    if (!myTranscriptions || myTranscriptions.length === 0) {
+    if (!analyzedInPeriod || analyzedInPeriod.length === 0) {
       return { branches: [], dates: [], dateToX: {} };
     }
     
-    const branches = [...new Set(myTranscriptions.map(t => t.branchName).filter(Boolean))];
+    const branches = [...new Set(analyzedInPeriod.map(tr => tr.branchName).filter(Boolean))];
     
     const allDates = [...new Set(
-      myTranscriptions
-        .filter(t => t.recordingDate)
-        .map(t => new Date(t.recordingDate).toDateString())
+      analyzedInPeriod
+        .filter(tr => tr.recordingDate)
+        .map(tr => new Date(tr.recordingDate).toDateString())
     )].sort((a, b) => new Date(a) - new Date(b));
     
     const dateToX = {};
@@ -158,21 +281,21 @@ export default function Dashboard() {
       branches: branches.map((branch, idx) => ({
         branch,
         color: BRANCH_COLORS[idx % BRANCH_COLORS.length],
-        data: myTranscriptions
-          .filter(t => t.branchName === branch && t.recordingDate)
-          .map(t => {
-            const date = new Date(t.recordingDate);
+        data: analyzedInPeriod
+          .filter(tr => tr.branchName === branch && tr.recordingDate)
+          .map(tr => {
+            const date = new Date(tr.recordingDate);
             const dateStr = date.toDateString();
             return {
-              x: dateToX[dateStr], // Fecha en X
-              y: date.getHours() + date.getMinutes() / 60, // Hora en Y
+              x: dateToX[dateStr],
+              y: date.getHours() + date.getMinutes() / 60,
               hour: date.getHours(),
               minutes: date.getMinutes(),
               dayName: DAYS_FULL[date.getDay()],
               dateStr: date.toLocaleDateString('es-AR'),
               branch,
               branchColor: BRANCH_COLORS[idx % BRANCH_COLORS.length],
-              sale: t.saleCompleted
+              sale: tr.saleCompleted
             };
           }) || []
       })),
@@ -190,6 +313,35 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Period selector + pending notice */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            {t('dashboard.period')}
+          </label>
+          <select
+            value={periodDays}
+            onChange={(e) => setPeriodDays(e.target.value)}
+            className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+          >
+            {PERIOD_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{t(`dashboard.${opt.labelKey}`)}</option>
+            ))}
+          </select>
+          <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+            {t('dashboard.analyzedOnly')}
+          </span>
+        </div>
+        {pendingCount > 0 && !userSellerId && (
+          <Link
+            to={drillDownLinks.pending}
+            className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${isDark ? 'border-amber-700/50 text-amber-400 hover:bg-amber-900/20' : 'border-amber-200 text-amber-700 hover:bg-amber-50'}`}
+          >
+            {pendingCount} {t('dashboard.pendingAnalysis')}
+          </Link>
+        )}
+      </div>
+
       {/* Main Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
@@ -198,6 +350,7 @@ export default function Dashboard() {
           subtitle={t('dashboard.transcriptions')}
           icon={FileText}
           variant="default"
+          to={drillDownLinks.all}
         />
         <MetricCard
           title={t('dashboard.sales')}
@@ -205,6 +358,7 @@ export default function Dashboard() {
           subtitle={`${conversionRate}% conversión`}
           icon={ShoppingCart}
           variant="success"
+          to={drillDownLinks.sales}
         />
         <MetricCard
           title={t('dashboard.noSale')}
@@ -212,6 +366,7 @@ export default function Dashboard() {
           subtitle={t('dashboard.opportunities')}
           icon={XCircle}
           variant="danger"
+          to={drillDownLinks.noSales}
         />
         <MetricCard
           title={t('dashboard.avgScore')}
@@ -219,6 +374,7 @@ export default function Dashboard() {
           subtitle={t('dashboard.rating')}
           icon={Award}
           variant="warning"
+          to={drillDownLinks.all}
         />
       </div>
 
@@ -280,14 +436,18 @@ export default function Dashboard() {
               </ResponsiveContainer>
               <div className="w-1/2 space-y-3">
                 {noSaleReasonsData.slice(0, 5).map((item, index) => (
-                  <div key={item.name} className="flex items-center gap-3">
+                  <Link
+                    key={item.name}
+                    to={buildTranscriptionsLink(periodDays, { saleCompleted: 'false', noSaleReason: item.name })}
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  >
                     <div 
                       className="w-3 h-3 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
                     <span className={`text-sm truncate flex-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{item.name}</span>
                     <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.value}</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -309,13 +469,16 @@ export default function Dashboard() {
             </div>
             <div>
               <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('dashboard.byConversionRate')}</p>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                {t('dashboard.byConversionRate')} · {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
+              </p>
             </div>
           </div>
           <div className="space-y-3">
             {sellerMetrics?.slice(0, 5).map((seller, index) => (
-              <div 
+              <Link
                 key={seller.userId}
+                to={buildTranscriptionsLink(periodDays, { userId: seller.userId })}
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -334,7 +497,7 @@ export default function Dashboard() {
                   <p className="text-lg font-bold text-green-400">{seller.conversionRate}%</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{seller.sales}/{seller.totalInteractions}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -352,8 +515,9 @@ export default function Dashboard() {
           </div>
           <div className="space-y-3">
             {branchMetrics?.slice(0, 5).map((branch, index) => (
-              <div 
+              <Link
                 key={branch.branchId}
+                to={buildTranscriptionsLink(periodDays, { branchId: branch.branchId })}
                 className={`flex items-center gap-4 p-4 rounded-xl transition-colors ${isDark ? 'bg-slate-700/50 hover:bg-slate-700' : 'bg-gray-50 hover:bg-gray-100'}`}
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -372,14 +536,14 @@ export default function Dashboard() {
                   <p className="text-lg font-bold text-green-400">{branch.conversionRate}%</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Score: {branch.averageScore?.toFixed(1) || '-'}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </div>
 
       {/* Traffic Distribution Section */}
-      {transcriptions?.length > 0 && (
+      {analyzedInPeriod.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#F5A623]/20 rounded-xl">

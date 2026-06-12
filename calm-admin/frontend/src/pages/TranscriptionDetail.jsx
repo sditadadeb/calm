@@ -24,9 +24,10 @@ import {
   Play,
   Pause,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
-import { getTranscriptions } from '../api';
+import { getTranscriptions, analyzeTranscription } from '../api';
 import api from '../api';
 
 // Reproductor de audio personalizado con duración fija
@@ -203,6 +204,7 @@ export default function TranscriptionDetail() {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.role === 'ADMIN';
 
@@ -406,6 +408,24 @@ export default function TranscriptionDetail() {
     return { ...cfg, label: t(cfg.labelKey), description: t(cfg.descKey) };
   };
 
+  const hasParseError = (trans) => {
+    const msg = trans?.noSaleReason || trans?.executiveSummary || '';
+    return msg.toLowerCase().includes('error parseando');
+  };
+
+  const handleReanalyze = async () => {
+    if (!window.confirm(t('detail.reanalyzeParseError') + '?')) return;
+    try {
+      setReanalyzing(true);
+      const response = await analyzeTranscription(id);
+      setTranscription(response.data);
+    } catch (err) {
+      alert('Error al re-analizar: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setReanalyzing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -452,6 +472,17 @@ export default function TranscriptionDetail() {
         
         {/* Flechas de navegación */}
         <div className="flex items-center gap-2">
+          {isAdmin && hasParseError(trans) && (
+            <button
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5A623] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              title={t('detail.reanalyzeParseError')}
+            >
+              {reanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {reanalyzing ? t('detail.reanalyzing') : t('detail.reanalyze')}
+            </button>
+          )}
           <button
             onClick={goToPrevious}
             disabled={!hasPrevious}

@@ -16,6 +16,9 @@ const useStore = create((set, get) => ({
     dateTo: null,
     minScore: null,
     maxScore: null,
+    analyzed: null,
+    saleCompleted: null,
+    noSaleReason: null,
   },
   loading: false,
   recalculating: false,
@@ -38,6 +41,9 @@ const useStore = create((set, get) => ({
         dateTo: null,
         minScore: null,
         maxScore: null,
+        analyzed: null,
+        saleCompleted: null,
+        noSaleReason: null,
       }
     });
   },

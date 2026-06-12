@@ -137,6 +137,8 @@ public class JsonRepairTest {
         json = json.replace('\u00A0', ' ');
         if (json.startsWith("\uFEFF")) json = json.substring(1);
         json = json.replace("\r\n", "\n").replace("\r", "\n");
+        json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
+        json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
         json = json.replaceAll(":\\s*True\\b", ": true");
         json = json.replaceAll(":\\s*False\\b", ": false");
         json = json.replaceAll(":\\s*None\\b", ": null");
@@ -374,6 +376,32 @@ public class JsonRepairTest {
         assertTrue(root.get("noSaleReason").isNull());
 
         System.out.println("  FULL V4 ZERO COMMAS + ZERO COLONS PARSED!");
+    }
+
+    @Test void testExtraQuoteAfterBoolean() throws Exception {
+        JsonNode root = fullParse("""
+        {
+          "confidenceTrace": {
+            "signals": {
+              "wordCount": 420,
+              "turnCount": 22,
+              "dialogueDetectable": true"
+              "explicitCloseSignal": false
+            },
+            "weights": {
+              "textIntegrity": 0.50,
+              "conversationalCoherence": 0.35,
+              "analyticsUsability": 0.15
+            }
+          },
+          "saleCompleted": true,
+          "saleStatus": "SALE_CONFIRMED",
+          "analysisConfidence": 62
+        }
+        """);
+        assertTrue(root.get("saleCompleted").asBoolean());
+        assertTrue(root.get("confidenceTrace").get("signals").get("dialogueDetectable").asBoolean());
+        assertEquals(0.50, root.get("confidenceTrace").get("weights").get("textIntegrity").asDouble(), 0.01);
     }
 
     /**

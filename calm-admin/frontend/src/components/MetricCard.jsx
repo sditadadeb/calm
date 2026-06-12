@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -8,7 +9,8 @@ export default function MetricCard({
   icon: Icon, 
   trend, 
   trendValue,
-  variant = 'default' 
+  variant = 'default',
+  to,
 }) {
   const { isDark } = useTheme();
   
@@ -39,8 +41,8 @@ export default function MetricCard({
 
   const isPrimary = variant === 'primary';
 
-  return (
-    <div className={`rounded-2xl p-6 transition-all hover:shadow-lg hover:translate-y-[-2px] ${variants[variant]}`}>
+  const card = (
+    <div className={`rounded-2xl p-6 transition-all hover:shadow-lg hover:translate-y-[-2px] ${variants[variant]} ${to ? 'cursor-pointer' : ''}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className={`text-sm font-medium ${isPrimary ? 'text-white/70' : isDark ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -75,4 +77,9 @@ export default function MetricCard({
       )}
     </div>
   );
+
+  if (to) {
+    return <Link to={to} className="block">{card}</Link>;
+  }
+  return card;
 }

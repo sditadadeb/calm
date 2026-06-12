@@ -60,6 +60,18 @@ export default function Transcriptions() {
       if (filters.minScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore < Number(filters.minScore))) return false;
       // Filtro por puntuación máxima
       if (filters.maxScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore > Number(filters.maxScore))) return false;
+      // Filtro por estado de análisis
+      if (filters.analyzed === true || filters.analyzed === 'true') {
+        if (!t.analyzed) return false;
+      }
+      if (filters.analyzed === false || filters.analyzed === 'false') {
+        if (t.analyzed) return false;
+      }
+      // Filtro por resultado binario venta/no venta
+      if (filters.saleCompleted === 'true' && t.saleCompleted !== true) return false;
+      if (filters.saleCompleted === 'false' && t.saleCompleted !== false) return false;
+      // Filtro por razón de no venta
+      if (filters.noSaleReason && t.noSaleReason !== filters.noSaleReason) return false;
       return true;
     });
   }, [transcriptions, filters]);
@@ -150,6 +162,9 @@ export default function Transcriptions() {
     const dateTo = searchParams.get('dateTo');
     const minScore = searchParams.get('minScore');
     const maxScore = searchParams.get('maxScore');
+    const analyzed = searchParams.get('analyzed');
+    const saleCompleted = searchParams.get('saleCompleted');
+    const noSaleReason = searchParams.get('noSaleReason');
 
     if (userId) urlFilters.userId = userId;
     if (branchId) urlFilters.branchId = branchId;
@@ -158,6 +173,9 @@ export default function Transcriptions() {
     if (dateTo) urlFilters.dateTo = dateTo;
     if (minScore) urlFilters.minScore = parseInt(minScore);
     if (maxScore) urlFilters.maxScore = parseInt(maxScore);
+    if (analyzed) urlFilters.analyzed = analyzed;
+    if (saleCompleted) urlFilters.saleCompleted = saleCompleted;
+    if (noSaleReason) urlFilters.noSaleReason = noSaleReason;
 
     if (Object.keys(urlFilters).length > 0) {
       setFilters(urlFilters);

@@ -169,9 +169,13 @@ export default function Timeline() {
 
   const formatTick = (ts) => {
     const d = new Date(ts);
-    return groupBy === 'month'
-      ? d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })
-      : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    if (groupBy === 'month') {
+      return d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+    }
+    if (groupBy === 'day') {
+      return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    }
+    return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
   };
 
   const chartData = useMemo(() => {
@@ -201,6 +205,7 @@ export default function Timeline() {
           <label className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{t('timeline.groupBy')}</label>
           <select value={groupBy} onChange={e => setGroupBy(e.target.value)}
             className={`px-3 py-1.5 rounded-lg border text-sm ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+            <option value="day">{t('timeline.day')}</option>
             <option value="week">{t('timeline.week')}</option>
             <option value="month">{t('timeline.month')}</option>
           </select>

@@ -482,6 +482,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
         // === FASE 2: Correcciones de valores ===
+        // Extra quote after boolean/number/null: true" -> true
+        json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
+        json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
         // Python-style booleans/null
         json = json.replaceAll(":\\s*True\\b", ": true");
         json = json.replaceAll(":\\s*False\\b", ": false");
