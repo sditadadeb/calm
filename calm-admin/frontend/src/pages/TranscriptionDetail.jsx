@@ -420,8 +420,8 @@ export default function TranscriptionDetail() {
     trans?.transcriptionText?.startsWith('[Audio disponible');
 
   const hasParseError = (trans) => {
-    const msg = trans?.noSaleReason || trans?.executiveSummary || '';
-    return msg.toLowerCase().includes('error parseando');
+    const fields = [trans?.noSaleReason, trans?.executiveSummary, trans?.saleEvidence].filter(Boolean);
+    return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('Análisis no disponible'));
   };
 
   const handleReanalyze = async () => {
@@ -486,7 +486,7 @@ export default function TranscriptionDetail() {
         
         {/* Flechas de navegación */}
         <div className="flex items-center gap-2">
-          {isAdmin && hasParseError(trans) && (
+          {hasParseError(trans) && (
             <button
               onClick={handleReanalyze}
               disabled={reanalyzing}
@@ -636,7 +636,18 @@ export default function TranscriptionDetail() {
       </div>
 
       {/* Analysis Grid */}
-      {!pendingTranscription && (
+      {!pendingTranscription && hasParseError(trans) && (
+        <div className={`rounded-2xl border p-6 ${isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <div>
+              <h3 className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>{t('detail.parseErrorTitle')}</h3>
+              <p className={`text-sm mt-1 ${isDark ? 'text-amber-200/80' : 'text-amber-700'}`}>{t('detail.parseErrorDesc')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {!pendingTranscription && !hasParseError(trans) && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Executive Summary */}
         {trans.executiveSummary && (

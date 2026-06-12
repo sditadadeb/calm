@@ -466,6 +466,18 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             return input;
         }
     }
+
+    /** : .5 → : 0.5 (Java replaceAll no permite $10.$2 de forma segura) */
+    private static String fixLeadingDecimalAfterColon(String json) {
+        try {
+            return java.util.regex.Pattern.compile("(:\\s*)\\.(\\d)")
+                    .matcher(json)
+                    .replaceAll(mr -> mr.group(1) + "0." + mr.group(2));
+        } catch (StackOverflowError e) {
+            log.warn("Leading decimal fix stack overflow ({} chars), skipping", json.length());
+            return json;
+        }
+    }
     
     /**
      * Repara JSON malformado que GPT a veces genera.
@@ -531,8 +543,12 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         json = safeReplaceAll(json, "(?i):\\s*eighty(?=\\s*[,}\\]])", ": 80");
         json = safeReplaceAll(json, "(?i):\\s*ninety(?=\\s*[,}\\]])", ": 90");
         json = safeReplaceAll(json, "(?i):\\s*hundred(?=\\s*[,}\\]])", ": 100");
-        json = safeReplaceAll(json, "(:\\s*)\\.(\\d)", "$10.$2");
+        json = fixLeadingDecimalAfterColon(json);
         json = safeReplaceAll(json, "(:\\s*)\\.(?=\\s*[,}\\]])", ": 0");
+        // GPT a veces pone punto en lugar de coma entre propiedades: true. "nextKey"
+        json = safeReplaceAll(json, "(true|false|null)\\s*\\.\\s*(?=\")", "$1, ");
+        json = safeReplaceAll(json, "(\\d(?:\\.\\d+)?)\\s*\\.\\s*(?=\"[a-zA-Z_])", "$1, ");
+        json = safeReplaceAll(json, "([}\\]])\\s*\\.\\s*(?=\")", "$1, ");
         
         // === FASE 3: Trailing commas ===
         json = safeReplaceAll(json, ",\\s*}", "}");
@@ -716,6 +732,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                         result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
+                    } else if (c == '.') {
+                        // Decimal sin cero inicial: .35 → 0.35
+                        result.append('0');
                     } else if (c == '-' || Character.isDigit(c)) {
                         // Números
                         int start = i;
@@ -758,6 +777,22 @@ Si no hay evidencia, dilo y deja arrays vacíos.
                         result.append(correct); i++;
                         if (!stack.isEmpty()) stack.pop();
                         state = ST_AFTER_VALUE;
+                    } else if (c == '.') {
+                        // GPT usó punto en lugar de coma: true. "key" o 0.35. "key"
+                        int j = i + 1;
+                        while (j < len && Character.isWhitespace(json.charAt(j))) j++;
+                        if (j < len && (json.charAt(j) == '"' || Character.isLetter(json.charAt(j)) || json.charAt(j) == '_')) {
+                            result.append(',');
+                            i++;
+                            if (!stack.isEmpty() && stack.peek() == '{') {
+                                state = ST_EXPECT_KEY;
+                            } else {
+                                state = ST_EXPECT_VALUE;
+                            }
+                        } else {
+                            result.append(c);
+                            i++;
+                        }
                     } else {
                         // Falta coma → insertarla
                         result.append(',');
@@ -947,16 +982,17 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         result.setSaleCompleted(false);
         result.setSaleStatus("UNINTERPRETABLE");
         result.setAnalysisConfidence(0);
-        result.setSaleEvidence("Análisis no disponible");
-        result.setNoSaleReason(reason);
+        result.setSaleEvidence(null);
+        result.setNoSaleReason("Error parseando respuesta de GPT");
         result.setProductsDiscussed(new ArrayList<>());
         result.setCustomerObjections(new ArrayList<>());
         result.setImprovementSuggestions(new ArrayList<>());
-        result.setExecutiveSummary("Análisis no disponible - " + reason);
+        result.setExecutiveSummary(null);
         result.setSellerScore(0);
         result.setSellerStrengths(new ArrayList<>());
         result.setSellerWeaknesses(new ArrayList<>());
         result.setFollowUpRecommendation(null);
+        log.warn("GPT analysis parse failed: {}", reason);
         return result;
     }
 }

@@ -244,6 +244,12 @@ public class TranscriptionService {
         }
     }
 
+    static boolean isGptParseError(AnalysisResult analysis) {
+        if (analysis == null) return false;
+        String reason = analysis.getNoSaleReason();
+        return reason != null && reason.startsWith("Error parseando respuesta de GPT");
+    }
+
     static boolean isPlaceholderText(String text) {
         return text != null && text.startsWith(PLACEHOLDER_PREFIX);
     }
@@ -338,6 +344,26 @@ public class TranscriptionService {
     }
 
     private void applyAnalysisResult(Transcription transcription, AnalysisResult analysis, String recordingId) {
+        if (isGptParseError(analysis)) {
+            log.warn("GPT JSON parse failed for {}, leaving unanalyzed", recordingId);
+            transcription.setAnalyzed(false);
+            transcription.setAnalyzedAt(null);
+            transcription.setSaleCompleted(null);
+            transcription.setSaleStatus(null);
+            transcription.setAnalysisConfidence(null);
+            transcription.setConfidenceTrace(null);
+            transcription.setSaleEvidence(null);
+            transcription.setSaleEvidenceMeta(null);
+            transcription.setNoSaleReason("Error parseando respuesta de GPT");
+            transcription.setProductsDiscussed(null);
+            transcription.setCustomerObjections(null);
+            transcription.setImprovementSuggestions(null);
+            transcription.setExecutiveSummary(null);
+            transcription.setSellerScore(null);
+            transcription.setSellerStrengths(null);
+            transcription.setSellerWeaknesses(null);
+            return;
+        }
         transcription.setSaleCompleted(analysis.isSaleCompleted());
         transcription.setSaleStatus(analysis.getSaleStatus());
         transcription.setAnalysisConfidence(analysis.getAnalysisConfidence());

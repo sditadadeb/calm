@@ -184,6 +184,8 @@ export default {
     reanalyze: 'Re-analyze',
     reanalyzing: 'Re-analyzing...',
     reanalyzeParseError: 'Re-analyze with GPT (parse error detected)',
+    parseErrorTitle: 'Failed to interpret GPT response',
+    parseErrorDesc: 'Analysis failed due to malformed JSON. Use Re-analyze to try again.',
     loading: 'Loading transcription...',
     attentionScore: 'Attention Score',
     analysisConfidence: 'Analysis confidence',

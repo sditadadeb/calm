@@ -184,6 +184,8 @@ export default {
     reanalyze: 'Re-analizar',
     reanalyzing: 'Re-analizando...',
     reanalyzeParseError: 'Re-analizar con GPT (error de parseo detectado)',
+    parseErrorTitle: 'Error al interpretar la respuesta de GPT',
+    parseErrorDesc: 'El análisis falló por JSON malformado. Usá Re-analizar para volver a intentarlo.',
     loading: 'Cargando transcripción...',
     attentionScore: 'Score de Atención',
     analysisConfidence: 'Confianza del análisis',
