@@ -83,6 +83,33 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
 
     boolean existsByRecordingIdLike(String pattern);
 
+    // --- Queries nativas: bypassean @SQLRestriction y ven también los excluidos ---
+
+    /** Existe el registro aunque esté excluido (clave para que el sync no re-importe excluidos). */
+    @Query(value = "SELECT COUNT(*) FROM transcriptions WHERE recording_id = :recordingId", nativeQuery = true)
+    long countAnyByRecordingId(@Param("recordingId") String recordingId);
+
+    default boolean existsAnyByRecordingId(String recordingId) {
+        return countAnyByRecordingId(recordingId) > 0;
+    }
+
+    @Query(value = "SELECT COUNT(*) FROM transcriptions WHERE recording_id LIKE :pattern", nativeQuery = true)
+    long countAnyByRecordingIdLike(@Param("pattern") String pattern);
+
+    @Query(value = "SELECT * FROM transcriptions WHERE excluded = TRUE ORDER BY recording_date DESC", nativeQuery = true)
+    List<Transcription> findExcluded();
+
+    @Query(value = "SELECT COUNT(*) FROM transcriptions WHERE excluded = TRUE", nativeQuery = true)
+    long countExcluded();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "UPDATE transcriptions SET excluded = TRUE, updated_at = CURRENT_TIMESTAMP WHERE recording_id = :recordingId", nativeQuery = true)
+    int markExcluded(@Param("recordingId") String recordingId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "UPDATE transcriptions SET excluded = FALSE, updated_at = CURRENT_TIMESTAMP WHERE recording_id = :recordingId", nativeQuery = true)
+    int markRestored(@Param("recordingId") String recordingId);
+
     List<Transcription> findByTranscriptionTextStartingWith(String prefix);
 
     @Query("SELECT t FROM Transcription t WHERE t.recordingDate >= :since AND (" +

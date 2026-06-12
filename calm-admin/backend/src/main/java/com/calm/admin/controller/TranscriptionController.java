@@ -206,6 +206,60 @@ public class TranscriptionController {
             @PathVariable String subfolder, @PathVariable String recordingId) {
         return deleteTranscription(subfolder + "/" + recordingId);
     }
+
+    /**
+     * Excluye una transcripción (soft delete): sale de listados y métricas,
+     * pero no se elimina y el sync no la re-importa. Solo admin.
+     */
+    @PostMapping("/transcriptions/{recordingId}/exclude")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> excludeTranscription(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        transcriptionService.excludeTranscription(recordingId);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Transcripcion excluida correctamente",
+            "recordingId", recordingId
+        ));
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/exclude")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> excludeTranscriptionWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return excludeTranscription(subfolder + "/" + recordingId);
+    }
+
+    /**
+     * Restaura una transcripción excluida. Solo admin.
+     */
+    @PostMapping("/transcriptions/{recordingId}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> restoreTranscription(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        transcriptionService.restoreTranscription(recordingId);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Transcripcion restaurada correctamente",
+            "recordingId", recordingId
+        ));
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> restoreTranscriptionWithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return restoreTranscription(subfolder + "/" + recordingId);
+    }
+
+    /**
+     * Lista las transcripciones excluidas. Solo admin.
+     */
+    @GetMapping("/transcriptions/excluded")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<TranscriptionDTO>> getExcludedTranscriptions() {
+        return ResponseEntity.ok(transcriptionService.getExcludedTranscriptions());
+    }
     
     /**
      * Busca texto en las transcripciones.

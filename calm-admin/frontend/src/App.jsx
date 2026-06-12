@@ -14,6 +14,7 @@ import Users from './pages/Users';
 import Recommendations from './pages/Recommendations';
 import Search from './pages/Search';
 import Timeline from './pages/Timeline';
+import Excluded from './pages/Excluded';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/branches" element={<Branches />} />
                   <Route path="/recommendations" element={<Recommendations />} />
                   <Route path="/timeline" element={<Timeline />} />
+                  <Route path="/excluded" element={<Excluded />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>

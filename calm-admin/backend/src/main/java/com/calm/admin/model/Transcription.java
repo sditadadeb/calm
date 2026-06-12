@@ -1,10 +1,18 @@
 package com.calm.admin.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
+
 import java.time.LocalDateTime;
 
+/**
+ * Las transcripciones excluidas (excluded = true) quedan fuera de TODAS las
+ * queries JPA/JPQL gracias a @SQLRestriction: no aparecen en listados, métricas,
+ * timeline ni análisis. Solo se acceden vía queries nativas del repositorio.
+ */
 @Entity
 @Table(name = "transcriptions")
+@SQLRestriction("excluded IS NOT TRUE")
 public class Transcription {
 
     @Id
@@ -65,6 +73,7 @@ public class Transcription {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean analyzed;
+    private Boolean excluded;
 
     public Transcription() {}
 
@@ -73,6 +82,7 @@ public class Transcription {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (analyzed == null) analyzed = false;
+        if (excluded == null) excluded = false;
     }
 
     @PreUpdate
@@ -155,4 +165,7 @@ public class Transcription {
     
     public Boolean getAnalyzed() { return analyzed; }
     public void setAnalyzed(Boolean analyzed) { this.analyzed = analyzed; }
+
+    public Boolean getExcluded() { return excluded; }
+    public void setExcluded(Boolean excluded) { this.excluded = excluded; }
 }

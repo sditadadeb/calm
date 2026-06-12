@@ -174,6 +174,48 @@ const useStore = create((set, get) => ({
       throw error;
     }
   },
+
+  excludeTranscription: async (recordingId) => {
+    try {
+      await api.excludeTranscription(recordingId);
+
+      set({ recalculating: true });
+
+      await Promise.all([
+        get().fetchDashboardMetrics(),
+        get().fetchTranscriptions(),
+        get().fetchSellers(),
+        get().fetchBranches(),
+      ]);
+
+      set({ recalculating: false });
+      return { success: true };
+    } catch (error) {
+      set({ recalculating: false });
+      throw error;
+    }
+  },
+
+  restoreTranscription: async (recordingId) => {
+    try {
+      await api.restoreTranscription(recordingId);
+
+      set({ recalculating: true });
+
+      await Promise.all([
+        get().fetchDashboardMetrics(),
+        get().fetchTranscriptions(),
+        get().fetchSellers(),
+        get().fetchBranches(),
+      ]);
+
+      set({ recalculating: false });
+      return { success: true };
+    } catch (error) {
+      set({ recalculating: false });
+      throw error;
+    }
+  },
 }));
 
 export default useStore;

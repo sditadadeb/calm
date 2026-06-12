@@ -52,7 +52,8 @@ public class TranscriptionService {
         int newCount = 0;
         
         for (String recordingId : recordingIds) {
-            if (!repository.existsByRecordingId(recordingId)) {
+            // existsAnyByRecordingId también ve los excluidos: no se re-importan
+            if (!repository.existsAnyByRecordingId(recordingId)) {
                 if (s3Service.transcriptionExists(recordingId)) {
                     try {
                         Transcription imported = importTranscription(recordingId);
@@ -80,7 +81,7 @@ public class TranscriptionService {
         int imported = 0;
 
         for (String recordingId : s3Ids) {
-            if (!repository.existsByRecordingId(recordingId)) {
+            if (!repository.existsAnyByRecordingId(recordingId)) {
                 if (s3Service.transcriptionExists(recordingId)) {
                     try {
                         if (importTranscription(recordingId) != null) {
@@ -107,7 +108,7 @@ public class TranscriptionService {
     public Transcription importTranscription(String recordingId) {
         // Skip flat IDs when full path version already exists (prevents duplicates)
         if (!recordingId.contains("/")) {
-            if (repository.existsByRecordingIdLike("%/" + recordingId)) {
+            if (repository.countAnyByRecordingIdLike("%/" + recordingId) > 0) {
                 log.info("Skipping flat recording ID {} - full path version already exists", recordingId);
                 return null;
             }
@@ -513,7 +514,7 @@ public class TranscriptionService {
                 // Count new ones first (pre-filter excluded branches via metadata check)
                 List<String> newIds = new ArrayList<>();
                 for (String recordingId : recordingIds) {
-                    if (!repository.existsByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
+                    if (!repository.existsAnyByRecordingId(recordingId) && s3Service.transcriptionExists(recordingId)) {
                         Map<String, Object> meta = s3Service.getMetadata(recordingId);
                         Long bId = parseLong(meta.get("branchId"));
                         if (bId != null && EXCLUDED_BRANCH_IDS.contains(bId)) {
@@ -989,6 +990,44 @@ public class TranscriptionService {
         repository.delete(transcription);
         
         log.info("Transcripción eliminada: {}", recordingId);
+    }
+
+    /**
+     * Excluye una transcripción (soft delete): deja de aparecer en listados y métricas,
+     * pero el registro permanece en la BD así el sync no la re-importa.
+     */
+    @Transactional
+    public void excludeTranscription(String recordingId) {
+        if (!repository.existsAnyByRecordingId(recordingId)) {
+            throw new RuntimeException("Transcripción no encontrada: " + recordingId);
+        }
+        int updated = repository.markExcluded(recordingId);
+        if (updated == 0) {
+            throw new RuntimeException("No se pudo excluir la transcripción: " + recordingId);
+        }
+        log.info("Transcripción excluida: {}", recordingId);
+    }
+
+    /**
+     * Restaura una transcripción excluida: vuelve a aparecer en listados y métricas.
+     */
+    @Transactional
+    public void restoreTranscription(String recordingId) {
+        int updated = repository.markRestored(recordingId);
+        if (updated == 0) {
+            throw new RuntimeException("Transcripción no encontrada: " + recordingId);
+        }
+        log.info("Transcripción restaurada: {}", recordingId);
+    }
+
+    /**
+     * Lista las transcripciones excluidas (solo admin).
+     */
+    @Transactional(readOnly = true)
+    public List<TranscriptionDTO> getExcludedTranscriptions() {
+        return repository.findExcluded().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
     
     /**

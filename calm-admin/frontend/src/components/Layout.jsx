@@ -13,7 +13,8 @@ import {
   Sun,
   Moon,
   Search,
-  TrendingUp
+  TrendingUp,
+  EyeOff
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
@@ -41,6 +42,7 @@ export default function Layout({ children }) {
     '/branches': { name: t('nav.branches'), subtitle: t('nav.branchesSub'), icon: Building2 },
     '/recommendations': { name: t('nav.recommendations'), subtitle: t('nav.recommendationsSub'), icon: Lightbulb },
     '/timeline': { name: t('nav.timeline'), subtitle: t('nav.timelineSub'), icon: TrendingUp },
+    '/excluded': { name: t('nav.excluded'), subtitle: t('nav.excludedSub'), icon: EyeOff },
     '/users': { name: t('nav.users'), subtitle: t('nav.usersSub'), icon: UserPlus },
     '/settings': { name: t('nav.settings'), subtitle: t('nav.settingsSub'), icon: Settings },
   };
@@ -56,6 +58,7 @@ export default function Layout({ children }) {
 
   const adminNavigation = [
     { name: t('nav.timeline'), href: '/timeline', icon: TrendingUp },
+    { name: t('nav.excluded'), href: '/excluded', icon: EyeOff },
     { name: t('nav.users'), href: '/users', icon: UserPlus },
     { name: t('nav.settings'), href: '/settings', icon: Settings },
   ];

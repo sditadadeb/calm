@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, EyeOff, Sparkles, Clock, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import useStore from '../store/useStore';
 import { analyzeTranscription as apiAnalyzeTranscription } from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Transcriptions() {
-  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, deleteTranscription, setFilters, filters } = useStore();
+  const { transcriptions, loading, recalculating, fetchTranscriptions, analyzeTranscription, excludeTranscription, setFilters, filters } = useStore();
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
@@ -274,23 +274,19 @@ export default function Transcriptions() {
     }
   };
 
-  const handleDelete = async (recordingId, e) => {
+  const handleExclude = async (recordingId, e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const confirmed = window.confirm(
-      '¿Estás seguro de eliminar esta transcripción?\n\n' +
-      '⚠️ Esta acción no se puede deshacer.\n' +
-      '📊 Las métricas del dashboard cambiarán al eliminar esta transcripción.'
-    );
+    const confirmed = window.confirm(t('transcriptions.excludeConfirm'));
     
     if (!confirmed) return;
     
     try {
       setDeleting(recordingId);
-      await deleteTranscription(recordingId);
+      await excludeTranscription(recordingId);
     } catch (error) {
-      alert('Error al eliminar: ' + (error.response?.data?.message || error.message));
+      alert(t('transcriptions.excludeError') + ': ' + (error.response?.data?.message || error.message));
     } finally {
       setDeleting(null);
     }
@@ -580,7 +576,7 @@ export default function Transcriptions() {
                         )}
                         {isAdmin && (
                           <button
-                            onClick={(e) => handleDelete(transcription.recordingId, e)}
+                            onClick={(e) => handleExclude(transcription.recordingId, e)}
                             className={`text-xs py-2 w-9 justify-center inline-flex items-center rounded-lg transition-colors ${
                               deleting === transcription.recordingId 
                                 ? 'bg-red-500/50 text-white cursor-not-allowed' 
@@ -589,9 +585,9 @@ export default function Transcriptions() {
                                   : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
                             }`}
                             disabled={deleting === transcription.recordingId || bulkAnalyzing}
-                            title={t('transcriptions.deleteTranscription')}
+                            title={t('transcriptions.excludeTranscription')}
                           >
-                            <Trash2 className={`w-3 h-3 ${deleting === transcription.recordingId ? 'animate-spin' : ''}`} />
+                            <EyeOff className={`w-3 h-3 ${deleting === transcription.recordingId ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                       </div>

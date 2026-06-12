@@ -77,6 +77,9 @@ export const analyzeTranscription = (recordingId) => api.post(`/transcriptions/$
 export const checkNewTranscriptions = () => api.post('/transcriptions/check-new');
 
 export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/${encodeURI(recordingId)}`);
+export const excludeTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/exclude`);
+export const restoreTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/restore`);
+export const getExcludedTranscriptions = () => api.get('/transcriptions/excluded');
 
 // Search
 export const searchTranscriptions = (query, filters = {}) => {
