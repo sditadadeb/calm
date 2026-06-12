@@ -261,7 +261,10 @@ public class TranscriptionService {
         }
 
         String current = transcription.getTranscriptionText();
+        // Texto < 200 chars: vale la pena re-chequear S3 (solo reemplaza si encuentra algo más largo)
+        boolean veryShortText = current != null && current.trim().length() < 200;
         boolean needsRefresh = isPlaceholderText(current)
+                || veryShortText
                 || s3Service.isSuspiciouslyShortForAudio(recordingId, current);
 
         if (!needsRefresh) {

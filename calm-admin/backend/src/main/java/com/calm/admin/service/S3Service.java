@@ -635,7 +635,47 @@ public class S3Service {
     public String getTranscription(String recordingId) {
         String fromNewBucket = getTranscriptionFromNewBucket(recordingId);
         String fromOldBucket = getTranscriptionFromOldBucket(recordingId);
-        return pickLongerTranscription(fromNewBucket, fromOldBucket);
+        String fromLegacyBucket = getTranscriptionFromLegacyTranscriptionsBucket(recordingId);
+        return pickLongerTranscription(pickLongerTranscription(fromNewBucket, fromOldBucket), fromLegacyBucket);
+    }
+
+    /**
+     * Bucket histórico de transcripciones (poc-video-aws/calm/transcripciones/).
+     * Fuente original de transcripciones para grabaciones con ID plano.
+     */
+    private String getTranscriptionFromLegacyTranscriptionsBucket(String recordingId) {
+        if (transcriptionsS3Client == null) return null;
+
+        Set<String> candidates = new LinkedHashSet<>();
+        candidates.add(flatRecordingId(recordingId));
+        candidates.add(recordingId);
+
+        for (String candidate : candidates) {
+            try {
+                String key = transcriptionsPrefix + candidate + ".json";
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(transcriptionsBucket)
+                        .key(key)
+                        .build();
+
+                ResponseInputStream<GetObjectResponse> response = transcriptionsS3Client.getObject(request);
+                String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                        .lines()
+                        .collect(Collectors.joining("\n"));
+
+                String result = parseTranscriptionJson(content, recordingId);
+                if (result != null && !result.isBlank()) {
+                    log.info("Retrieved transcription from legacy transcriptions bucket for {} ({} chars)",
+                            recordingId, result.length());
+                    return result;
+                }
+            } catch (NoSuchKeyException e) {
+                // probar siguiente candidato
+            } catch (Exception e) {
+                log.error("Error reading legacy transcriptions bucket for {}: {}", recordingId, e.getMessage());
+            }
+        }
+        return null;
     }
     
     /**
