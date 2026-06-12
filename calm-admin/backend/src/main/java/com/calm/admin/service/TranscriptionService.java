@@ -199,25 +199,13 @@ public class TranscriptionService {
 
         for (Transcription transcription : all) {
             if (!S3Service.isMigrationPeriodRecording(transcription.getRecordingId())) continue;
-            try {
-                java.time.Instant before = transcription.getRecordingDate() != null
-                        ? transcription.getRecordingDate().atZone(java.time.ZoneId.systemDefault()).toInstant()
-                        : null;
-                applyRecordingDateFromS3(transcription);
-                java.time.Instant after = transcription.getRecordingDate() != null
-                        ? transcription.getRecordingDate().atZone(java.time.ZoneId.systemDefault()).toInstant()
-                        : null;
-                if (after != null && !after.equals(before)) {
-                    repository.save(transcription);
-                    updated++;
-                }
-            } catch (Exception e) {
-                log.error("Error fixing date for {}: {}", transcription.getRecordingId(), e.getMessage());
-            }
+            applyRecordingDateFromS3(transcription);
+            repository.save(transcription);
+            updated++;
         }
 
         if (updated > 0) {
-            log.info("Updated recording dates for {} migration-period transcriptions (Jun 9-11)", updated);
+            log.info("Updated recording dates for {} migration-period transcriptions (Jun 9-11 from CSV)", updated);
         }
         return updated;
     }

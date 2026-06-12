@@ -36,6 +36,7 @@ public class S3Service {
     private final S3Client newBucketS3Client;
     private final S3Presigner metadataS3Presigner;
     private final ObjectMapper objectMapper;
+    private final OriginalRecordingDateService originalRecordingDateService;
 
     @Value("${aws.s3.metadata.bucket}")
     private String metadataBucket;
@@ -61,12 +62,14 @@ public class S3Service {
             @Qualifier("transcriptionsS3Client") @Nullable S3Client transcriptionsS3Client,
             @Qualifier("newBucketS3Client") @Nullable S3Client newBucketS3Client,
             @Qualifier("metadataS3Presigner") @Nullable S3Presigner metadataS3Presigner,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            OriginalRecordingDateService originalRecordingDateService) {
         this.metadataS3Client = metadataS3Client;
         this.transcriptionsS3Client = transcriptionsS3Client;
         this.newBucketS3Client = newBucketS3Client;
         this.metadataS3Presigner = metadataS3Presigner;
         this.objectMapper = objectMapper;
+        this.originalRecordingDateService = originalRecordingDateService;
     }
 
     public boolean isConfigured() {
@@ -750,11 +753,13 @@ public class S3Service {
     }
 
     public java.time.Instant getTranscriptionDate(String recordingId) {
-        // June 9-11: date from old bucket (migration window). After that: new bucket only.
+        // June 9-11: use original dates from CSV. June 12+: new bucket, then old.
         if (isMigrationPeriodRecording(recordingId)) {
-            java.time.Instant oldDate = getMetadataDateFromOldBucket(recordingId);
-            if (oldDate != null) return oldDate;
-            return getMetadataDateFromNewBucket(recordingId);
+            return originalRecordingDateService.getOriginalDate(recordingId)
+                    .orElseGet(() -> {
+                        java.time.Instant oldDate = getMetadataDateFromOldBucket(recordingId);
+                        return oldDate != null ? oldDate : getMetadataDateFromNewBucket(recordingId);
+                    });
         }
         java.time.Instant newDate = getMetadataDateFromNewBucket(recordingId);
         if (newDate != null) return newDate;

@@ -78,6 +78,7 @@ public class DataInitializer implements CommandLineRunner {
         purgeMetadataAsText();
         dedupeFlatRecordingIds();
         runMigrationRefresh();
+        applyCsvOriginalDates();
     }
 
     private void ensureMigrationsTable() {
@@ -147,6 +148,20 @@ public class DataInitializer implements CommandLineRunner {
                     datesFixed, refreshed);
         } catch (Exception e) {
             log.error("Error en migracion bucket refresh: {}", e.getMessage());
+        }
+    }
+
+    private void applyCsvOriginalDates() {
+        try {
+            if (isMigrationApplied("csv_original_dates_v1")) {
+                return;
+            }
+
+            int datesFixed = transcriptionService.fixMigrationPeriodDates();
+            markMigrationApplied("csv_original_dates_v1");
+            log.info("Migracion CSV fechas originales: {} registros actualizados (Jun 9-11)", datesFixed);
+        } catch (Exception e) {
+            log.error("Error aplicando fechas originales desde CSV: {}", e.getMessage());
         }
     }
 
