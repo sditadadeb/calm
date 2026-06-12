@@ -52,6 +52,11 @@ body.dark {
   z-index: 0;
 }
 
+/* Filas de tabla: hover con tinte de marca + barra izquierda */
+.dark .row-cal:hover { background: rgba(245,166,35,.035); }
+.dark .row-cal:hover td:first-child { box-shadow: inset 3px 0 0 #F5A623; }
+.row-cal:not(.dark *):hover td:first-child { box-shadow: inset 3px 0 0 #F5A623; }
+
 /* Estados: punto de color + texto */
 .status-dot {
   width: 7px;

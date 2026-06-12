@@ -27,14 +27,14 @@ export default function ScoreBadge({ score, size = 'default' }) {
 
   const colors = getScoreColor(score);
 
-  // Número en mono + barra fina, sin fondos rellenos
+  // Número + barra fina en horizontal, como en la maqueta
   if (size === 'small') {
     return (
-      <div className="inline-flex flex-col gap-1">
-        <span className={`font-mono text-[13px] font-medium tabular-nums ${colors.text}`}>
-          {score}<span className={isDark ? 'text-slate-600' : 'text-gray-300'}>/10</span>
+      <div className="inline-flex items-center gap-2">
+        <span className={`font-display text-sm font-semibold tabular-nums w-[18px] ${colors.text}`}>
+          {score}
         </span>
-        <div className={`h-[3px] w-12 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+        <div className={`h-[3px] w-[52px] rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
           <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${score * 10}%` }} />
         </div>
       </div>

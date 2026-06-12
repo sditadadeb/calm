@@ -61,11 +61,11 @@ const InfoTooltip = ({ text, children }) => (
 
 // Umbrales configurables
 const THRESHOLDS = {
-  confidence: { min: 60, label: 'Confidence Score mÃ­nimo esperado' },
-  conversion: { min: 40, label: 'ConversiÃ³n mÃ­nima esperada (%)' },
-  sellerScore: { min: 6, label: 'Score mÃ­nimo de vendedor' },
-  descubrimiento: { min: 20, label: 'Descubrimiento mÃ­nimo (%)' },
-  cierre: { min: 10, label: 'Cierre mÃ­nimo (%)' },
+  confidence: { min: 60, label: 'Confidence Score mínimo esperado' },
+  conversion: { min: 40, label: 'Conversión mínima esperada (%)' },
+  sellerScore: { min: 6, label: 'Score mínimo de vendedor' },
+  descubrimiento: { min: 20, label: 'Descubrimiento mínimo (%)' },
+  cierre: { min: 10, label: 'Cierre mínimo (%)' },
 };
 
 const FLOW_COLORS = {
@@ -82,7 +82,7 @@ export default function Recommendations() {
   const { dashboardMetrics, fetchDashboardMetrics } = useStore();
   const { isDark } = useTheme();
   
-  // Estado para datos del anÃ¡lisis avanzado
+  // Estado para datos del análisis avanzado
   const [advancedMetrics, setAdvancedMetrics] = useState(null);
   const [vendorMetrics, setVendorMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ export default function Recommendations() {
     }
   };
 
-  // Ejecutar anÃ¡lisis avanzado
+  // Ejecutar análisis avanzado
   const runAdvancedAnalysis = () => {
     setAnalyzing(true);
     setAnalysisProgress({ current: 0, total: 0, message: 'Conectando...' });
@@ -153,7 +153,7 @@ export default function Recommendations() {
       loadAdvancedMetrics(); // Recargar datos
       
       if (analysisProgress.total > 0) {
-        alert(`AnÃ¡lisis completado: ${analysisProgress.current} transcripciones procesadas`);
+        alert(`Análisis completado: ${analysisProgress.current} transcripciones procesadas`);
       }
     });
   };
@@ -203,19 +203,19 @@ export default function Recommendations() {
     });
   };
 
-  // Limpiar todos los anÃ¡lisis para re-ejecutar
+  // Limpiar todos los análisis para re-ejecutar
   const clearAnalyses = async () => {
-    if (!confirm('Â¿EstÃ¡s seguro? Esto borrarÃ¡ todos los anÃ¡lisis avanzados y deberÃ¡s ejecutarlos de nuevo.')) {
+    if (!confirm('¿Estás seguro? Esto borrará todos los análisis avanzados y deberás ejecutarlos de nuevo.')) {
       return;
     }
     
     try {
       const response = await clearRecommendationsAnalyses();
-      alert(`Se borraron ${response.data.deleted} anÃ¡lisis. Ahora puedes ejecutar el anÃ¡lisis nuevamente.`);
+      alert(`Se borraron ${response.data.deleted} análisis. Ahora puedes ejecutar el análisis nuevamente.`);
       loadAdvancedMetrics();
     } catch (error) {
       console.error('Error clearing analyses:', error);
-      alert('Error al borrar los anÃ¡lisis: ' + (error.response?.data?.message || error.message));
+      alert('Error al borrar los análisis: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -234,7 +234,7 @@ export default function Recommendations() {
   const sellers = dashboardMetrics?.sellerMetrics || [];
   const branches = dashboardMetrics?.branchMetrics || [];
 
-  // FunciÃ³n para normalizar a exactamente 100%
+  // Función para normalizar a exactamente 100%
   const normalizeFlow = (flow) => {
     const total = (flow?.apertura || 0) + (flow?.descubrimiento || 0) + (flow?.objecion || 0) + 
                   (flow?.argumento || 0) + (flow?.cierre || 0) + (flow?.silencio || 0);
@@ -248,11 +248,11 @@ export default function Recommendations() {
     let cierre = Math.round((flow?.cierre || 0) * factor);
     let silencio = Math.round((flow?.silencio || 0) * factor);
     
-    // Ajustar el valor mÃ¡s grande para que sume exactamente 100
+    // Ajustar el valor más grande para que sume exactamente 100
     const sum = apertura + descubrimiento + objecion + argumento + cierre + silencio;
     const diff = 100 - sum;
     if (diff !== 0) {
-      // Ajustar el mÃ¡s grande
+      // Ajustar el más grande
       const values = { apertura, descubrimiento, objecion, argumento, cierre, silencio };
       const maxKey = Object.keys(values).reduce((a, b) => values[a] > values[b] ? a : b);
       if (maxKey === 'apertura') apertura += diff;
@@ -266,7 +266,7 @@ export default function Recommendations() {
     return { apertura, descubrimiento, objecion, argumento, cierre, silencio };
   };
 
-  // Conversation Flow - usar datos reales si estÃ¡n disponibles
+  // Conversation Flow - usar datos reales si están disponibles
   const conversationFlowData = hasAdvancedData && vendorMetrics.length > 0
     ? [
         ...vendorMetrics.slice(0, 5).map(v => {
@@ -291,7 +291,7 @@ export default function Recommendations() {
         ]
       : [{ name: 'Sin datos', apertura: 0, descubrimiento: 0, objecion: 0, argumento: 0, cierre: 0, silencio: 0 }];
 
-  // Customer Confidence - usar datos reales si estÃ¡n disponibles
+  // Customer Confidence - usar datos reales si están disponibles
   const confidenceScoreData = {
     byVendor: hasAdvancedData && vendorMetrics.length > 0
       ? vendorMetrics.slice(0, 6).map(v => ({
@@ -319,18 +319,18 @@ export default function Recommendations() {
 
   // Objeciones - usar datos reales
   const objectionTypes = hasAdvancedData ? [
-    { type: 'ExplÃ­citas', count: advancedMetrics?.totalObjections?.explicit || 0, example: '"El precio es muy alto para mi presupuesto"', color: '#ef4444' },
-    { type: 'ImplÃ­citas', count: advancedMetrics?.totalObjections?.implicit || 0, example: '"Voy a pensarlo..." (sin dar razÃ³n)', color: '#f59e0b' },
+    { type: 'Explícitas', count: advancedMetrics?.totalObjections?.explicit || 0, example: '"El precio es muy alto para mi presupuesto"', color: '#ef4444' },
+    { type: 'Implícitas', count: advancedMetrics?.totalObjections?.implicit || 0, example: '"Voy a pensarlo..." (sin dar razón)', color: '#f59e0b' },
     { type: 'No respondidas', count: advancedMetrics?.totalObjections?.unanswered || 0, example: 'Cliente menciona competencia, vendedor ignora', color: '#6b7280' },
     { type: 'Respondidas sin impacto', count: advancedMetrics?.totalObjections?.ineffective || 0, example: 'Se responde pero cliente no cambia postura', color: '#8b5cf6' },
   ] : [
-    { type: 'ExplÃ­citas', count: 0, example: 'Sin datos - ejecutar anÃ¡lisis', color: '#ef4444' },
-    { type: 'ImplÃ­citas', count: 0, example: 'Sin datos - ejecutar anÃ¡lisis', color: '#f59e0b' },
-    { type: 'No respondidas', count: 0, example: 'Sin datos - ejecutar anÃ¡lisis', color: '#6b7280' },
-    { type: 'Respondidas sin impacto', count: 0, example: 'Sin datos - ejecutar anÃ¡lisis', color: '#8b5cf6' },
+    { type: 'Explícitas', count: 0, example: 'Sin datos - ejecutar análisis', color: '#ef4444' },
+    { type: 'Implícitas', count: 0, example: 'Sin datos - ejecutar análisis', color: '#f59e0b' },
+    { type: 'No respondidas', count: 0, example: 'Sin datos - ejecutar análisis', color: '#6b7280' },
+    { type: 'Respondidas sin impacto', count: 0, example: 'Sin datos - ejecutar análisis', color: '#8b5cf6' },
   ];
 
-  // Loss Moments - usar datos reales con minuto especÃ­fico por frase
+  // Loss Moments - usar datos reales con minuto específico por frase
   const lossMoments = hasAdvancedData && advancedMetrics?.topLossMoments?.length > 0
     ? advancedMetrics.topLossMoments.map((m) => ({
         phrase: m.phrase || 'Sin frase',
@@ -338,16 +338,16 @@ export default function Recommendations() {
         avgMinute: m.avgMinute || 0,
       }))
     : [
-        { phrase: 'Sin datos - ejecutar anÃ¡lisis avanzado', frequency: 0, avgMinute: 0 },
+        { phrase: 'Sin datos - ejecutar análisis avanzado', frequency: 0, avgMinute: 0 },
       ];
   
-  // Calcular el mÃ¡ximo de objeciones para escalar las barras correctamente
+  // Calcular el máximo de objeciones para escalar las barras correctamente
   const maxObjectionCount = Math.max(
     ...objectionTypes.map(o => o.count),
-    1 // Evitar divisiÃ³n por cero
+    1 // Evitar división por cero
   );
 
-  // Seleccionar vendedor para perfil - usar datos avanzados si estÃ¡n disponibles
+  // Seleccionar vendedor para perfil - usar datos avanzados si están disponibles
   const topVendorAdvanced = vendorMetrics.length > 0 ? vendorMetrics[0] : null;
   const topSeller = sellers.length > 0 
     ? sellers.reduce((best, current) => 
@@ -374,18 +374,18 @@ export default function Recommendations() {
     { subject: 'Escucha activa', A: vendorProfile.escuchaActiva, fullMark: 100 },
     { subject: 'Manejo objeciones', A: vendorProfile.reaccionObjeciones, fullMark: 100 },
     { subject: 'Ritmo de cierre', A: vendorProfile.ritmosCierre, fullMark: 100 },
-    { subject: 'EmpatÃ­a', A: vendorProfile.empatiaLinguistica, fullMark: 100 },
+    { subject: 'Empatía', A: vendorProfile.empatiaLinguistica, fullMark: 100 },
   ];
 
   const aiInsights = [
     { type: 'warning', text: 'Las ventas caen 40% cuando el cliente menciona "competencia" sin respuesta del vendedor.' },
-    { type: 'success', text: 'Los vendedores que hacen mÃ¡s de 3 preguntas de descubrimiento tienen 2x mÃ¡s conversiÃ³n.' },
-    { type: 'info', text: 'El minuto 7-9 es crÃ­tico: 60% de las no-ventas ocurren en ese rango.' },
+    { type: 'success', text: 'Los vendedores que hacen más de 3 preguntas de descubrimiento tienen 2x más conversión.' },
+    { type: 'info', text: 'El minuto 7-9 es crítico: 60% de las no-ventas ocurren en ese rango.' },
     { type: 'warning', text: 'Sucursal Centro tiene 25% menos escucha activa que el promedio.' },
-    { type: 'success', text: 'Las conversaciones de venta duran en promedio 4 minutos mÃ¡s que las sin venta.' },
+    { type: 'success', text: 'Las conversaciones de venta duran en promedio 4 minutos más que las sin venta.' },
   ];
 
-  // Comparador basado en datos reales si estÃ¡n disponibles
+  // Comparador basado en datos reales si están disponibles
   const avgConversion = dashboardMetrics?.conversionRate || 35;
   const avgScore = dashboardMetrics?.averageSellerScore || 5;
   const avgConfidence = advancedMetrics?.avgCustomerConfidence || 50;
@@ -409,7 +409,7 @@ export default function Recommendations() {
     },
   };
 
-  // FunciÃ³n para generar recomendaciÃ³n basada en datos avanzados del vendedor
+  // Función para generar recomendación basada en datos avanzados del vendedor
   const getVendorRecommendation = (vendorName, seller) => {
     const vendorData = vendorMetrics.find(v => v.userName === vendorName);
     const conv = seller?.conversionRate || 0;
@@ -423,47 +423,47 @@ export default function Recommendations() {
       const empathy = vendorData.avgEmpathy || 50;
       const confidence = vendorData.avgConfidence || 50;
       
-      // Recomendaciones especÃ­ficas con valores reales
+      // Recomendaciones específicas con valores reales
       if (closing < 40) {
         return { 
-          recommendation: `Ritmo de cierre bajo (${Math.round(closing)}/100). Practicar: "Â¿QuÃ© le parece si lo separamos?" y manejo de "lo voy a pensar"`, 
+          recommendation: `Ritmo de cierre bajo (${Math.round(closing)}/100). Practicar: "¿Qué le parece si lo separamos?" y manejo de "lo voy a pensar"`, 
           priority: 'alta' 
         };
       }
       
       if (objHandling < 40) {
         return { 
-          recommendation: `Manejo de objeciones dÃ©bil (${Math.round(objHandling)}/100). Entrenar respuestas a: precio, competencia, "tengo que consultarlo"`, 
+          recommendation: `Manejo de objeciones débil (${Math.round(objHandling)}/100). Entrenar respuestas a: precio, competencia, "tengo que consultarlo"`, 
           priority: 'alta' 
         };
       }
       
       if (listening < 45) {
         return { 
-          recommendation: `Escucha activa baja (${Math.round(listening)}/100). Hacer mÃ¡s preguntas: "Â¿QuÃ© busca?" "Â¿CÃ³mo duerme hoy?" antes de mostrar productos`, 
+          recommendation: `Escucha activa baja (${Math.round(listening)}/100). Hacer más preguntas: "¿Qué busca?" "¿Cómo duerme hoy?" antes de mostrar productos`, 
           priority: 'alta' 
         };
       }
       
       if (empathy < 45) {
         return { 
-          recommendation: `EmpatÃ­a mejorable (${Math.round(empathy)}/100). Validar al cliente: "Entiendo su preocupaciÃ³n" "Tiene sentido lo que dice"`, 
+          recommendation: `Empatía mejorable (${Math.round(empathy)}/100). Validar al cliente: "Entiendo su preocupación" "Tiene sentido lo que dice"`, 
           priority: 'media' 
         };
       }
       
       if (conv < 35) {
-        // Usar datos de loss moments si estÃ¡n disponibles
+        // Usar datos de loss moments si están disponibles
         const topLoss = advancedMetrics?.topLossMoments?.[0];
         const avgMinute = advancedMetrics?.avgAbandonMinute || 0;
         if (topLoss) {
           return { 
-            recommendation: `ConversiÃ³n ${Math.round(conv)}%. Frase de abandono mÃ¡s comÃºn: "${topLoss.phrase}" (min ~${Math.round(avgMinute)}). Entrenar respuesta a esta objeciÃ³n`, 
+            recommendation: `Conversión ${Math.round(conv)}%. Frase de abandono más común: "${topLoss.phrase}" (min ~${Math.round(avgMinute)}). Entrenar respuesta a esta objeción`, 
             priority: 'media' 
           };
         }
         return { 
-          recommendation: `ConversiÃ³n ${Math.round(conv)}% (${totalSales}/${totalTranscriptions}). Enfocarse en tÃ©cnicas de retenciÃ³n en minutos 6-10 de la conversaciÃ³n`, 
+          recommendation: `Conversión ${Math.round(conv)}% (${totalSales}/${totalTranscriptions}). Enfocarse en técnicas de retención en minutos 6-10 de la conversación`, 
           priority: 'media' 
         };
       }
@@ -474,22 +474,22 @@ export default function Recommendations() {
         return { recommendation: `Excelente escucha activa (${Math.round(listening)}). Aprovechar para detectar oportunidades de upselling`, priority: 'baja' };
       }
       if (best === empathy) {
-        return { recommendation: `Gran empatÃ­a (${Math.round(empathy)}). Usar conexiÃ³n para manejar objeciones de precio`, priority: 'baja' };
+        return { recommendation: `Gran empatía (${Math.round(empathy)}). Usar conexión para manejar objeciones de precio`, priority: 'baja' };
       }
-      return { recommendation: `Buen desempeÃ±o general. ConversiÃ³n ${Math.round(conv)}% - explorar tÃ©cnicas de upselling`, priority: 'baja' };
+      return { recommendation: `Buen desempeño general. Conversión ${Math.round(conv)}% - explorar técnicas de upselling`, priority: 'baja' };
     }
     
-    // Fallback con datos bÃ¡sicos
+    // Fallback con datos básicos
     if (conv < 25) {
-      return { recommendation: `Solo ${Math.round(conv)}% de conversiÃ³n (${totalSales}/${totalTranscriptions}). Requiere acompaÃ±amiento urgente`, priority: 'alta' };
+      return { recommendation: `Solo ${Math.round(conv)}% de conversión (${totalSales}/${totalTranscriptions}). Requiere acompañamiento urgente`, priority: 'alta' };
     }
     if (conv < 40) {
-      return { recommendation: `ConversiÃ³n ${Math.round(conv)}% - debajo del objetivo. Reforzar cierre de ventas`, priority: 'media' };
+      return { recommendation: `Conversión ${Math.round(conv)}% - debajo del objetivo. Reforzar cierre de ventas`, priority: 'media' };
     }
-    return { recommendation: `ConversiÃ³n ${Math.round(conv)}%. Mantener nivel y explorar cross-selling`, priority: 'baja' };
+    return { recommendation: `Conversión ${Math.round(conv)}%. Mantener nivel y explorar cross-selling`, priority: 'baja' };
   };
 
-  // FunciÃ³n para generar recomendaciÃ³n por sucursal basada en datos avanzados
+  // Función para generar recomendación por sucursal basada en datos avanzados
   const getBranchRecommendation = (branchName, branch, index) => {
     // Buscar datos de confidence para esta sucursal
     const branchConfidence = hasAdvancedData && advancedMetrics?.confidenceByBranch 
@@ -506,10 +506,10 @@ export default function Recommendations() {
     const totalSales = branch?.totalSales || 0;
     const totalTranscriptions = branch?.totalTranscriptions || 0;
     
-    // Datos especÃ­ficos para recomendaciones detalladas
+    // Datos específicos para recomendaciones detalladas
     const noSaleCount = totalTranscriptions - totalSales;
     
-    // Recomendaciones MUY especÃ­ficas basadas en mÃ©tricas reales
+    // Recomendaciones MUY específicas basadas en métricas reales
     if (confidence > 0 && confidence < 50) {
       return { 
         recommendation: `Confidence Score muy bajo (${Math.round(confidence)}). Trabajar: saludo inicial, escucha activa, y preguntas abiertas para generar confianza`, 
@@ -521,12 +521,12 @@ export default function Recommendations() {
       const topLoss = advancedMetrics?.topLossMoments?.[0];
       if (topLoss) {
         return { 
-          recommendation: `Solo ${Math.round(conversion)}% de conversiÃ³n. Principal causa de pÃ©rdida: "${topLoss.phrase}". Capacitar al equipo en esta objeciÃ³n`, 
+          recommendation: `Solo ${Math.round(conversion)}% de conversión. Principal causa de pérdida: "${topLoss.phrase}". Capacitar al equipo en esta objeción`, 
           priority: 'alta' 
         };
       }
       return { 
-        recommendation: `Solo ${Math.round(conversion)}% de conversiÃ³n (${totalSales}/${totalTranscriptions}). Capacitar en manejo de objeciones de precio y competencia`, 
+        recommendation: `Solo ${Math.round(conversion)}% de conversión (${totalSales}/${totalTranscriptions}). Capacitar en manejo de objeciones de precio y competencia`, 
         priority: 'alta' 
       };
     }
@@ -535,19 +535,19 @@ export default function Recommendations() {
       const avgMinute = advancedMetrics?.avgAbandonMinute || 0;
       if (avgMinute > 0) {
         return { 
-          recommendation: `ConversiÃ³n ${Math.round(conversion)}%. Momento crÃ­tico: minuto ${Math.round(avgMinute)}. Reforzar tÃ©cnica de cierre en ese punto`, 
+          recommendation: `Conversión ${Math.round(conversion)}%. Momento crítico: minuto ${Math.round(avgMinute)}. Reforzar técnica de cierre en ese punto`, 
           priority: 'alta' 
         };
       }
       return { 
-        recommendation: `ConversiÃ³n ${Math.round(conversion)}% - debajo del objetivo 40%. Reforzar manejo de "lo voy a pensar" y "tengo que consultarlo"`, 
+        recommendation: `Conversión ${Math.round(conversion)}% - debajo del objetivo 40%. Reforzar manejo de "lo voy a pensar" y "tengo que consultarlo"`, 
         priority: 'alta' 
       };
     }
     
     if (avgScore < 5) {
       return { 
-        recommendation: `Score promedio bajo (${avgScore.toFixed(1)}/10). Revisar tÃ©cnicas de argumentaciÃ³n y respuesta a objeciones de precio`, 
+        recommendation: `Score promedio bajo (${avgScore.toFixed(1)}/10). Revisar técnicas de argumentación y respuesta a objeciones de precio`, 
         priority: 'media' 
       };
     }
@@ -561,21 +561,21 @@ export default function Recommendations() {
     
     if (confidence > 0 && confidence < 65) {
       return { 
-        recommendation: `Confidence ${Math.round(confidence)} - mejorable. Capacitar en tÃ©cnicas de rapport: contacto visual, parafraseo, validaciÃ³n emocional`, 
+        recommendation: `Confidence ${Math.round(confidence)} - mejorable. Capacitar en técnicas de rapport: contacto visual, parafraseo, validación emocional`, 
         priority: 'media' 
       };
     }
     
-    // Si todo estÃ¡ bien, recomendaciones de optimizaciÃ³n con datos
+    // Si todo está bien, recomendaciones de optimización con datos
     if (conversion >= 50) {
       return { 
-        recommendation: `Excelente conversiÃ³n (${Math.round(conversion)}%). Documentar mejores prÃ¡cticas para replicar en otras sucursales`, 
+        recommendation: `Excelente conversión (${Math.round(conversion)}%). Documentar mejores prácticas para replicar en otras sucursales`, 
         priority: 'baja' 
       };
     }
     
     return { 
-      recommendation: `ConversiÃ³n ${Math.round(conversion)}%, Score ${avgScore.toFixed(1)}. Mantener estÃ¡ndares y explorar upselling`, 
+      recommendation: `Conversión ${Math.round(conversion)}%, Score ${avgScore.toFixed(1)}. Mantener estándares y explorar upselling`, 
       priority: 'baja' 
     };
   };
@@ -607,12 +607,12 @@ export default function Recommendations() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-lg font-bold text-white">Conversation Flow Analysis</h3>
-                <InfoTooltip text={`AnÃ¡lisis de las fases de cada conversaciÃ³n de venta:\n\nâ€¢ Apertura: Saludo, presentaciÃ³n inicial\nâ€¢ Descubrimiento: Preguntas para entender necesidades (objetivo: >${THRESHOLDS.descubrimiento.min}%)\nâ€¢ ObjeciÃ³n: Cliente expresa dudas\nâ€¢ Argumento: Explicar beneficios\nâ€¢ Cierre: Intento de cerrar (objetivo: >${THRESHOLDS.cierre.min}%)\nâ€¢ Silencio: Pausas\n\nUn buen vendedor dedica mÃ¡s tiempo a Descubrimiento que a Argumento.`}>
+                <InfoTooltip text={`Análisis de las fases de cada conversación de venta:\n\n• Apertura: Saludo, presentación inicial\n• Descubrimiento: Preguntas para entender necesidades (objetivo: >${THRESHOLDS.descubrimiento.min}%)\n• Objeción: Cliente expresa dudas\n• Argumento: Explicar beneficios\n• Cierre: Intento de cerrar (objetivo: >${THRESHOLDS.cierre.min}%)\n• Silencio: Pausas\n\nUn buen vendedor dedica más tiempo a Descubrimiento que a Argumento.`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-indigo-500 cursor-help" />
                 </InfoTooltip>
               </div>
               <p className="text-sm text-slate-500 mb-4">
-                DistribuciÃ³n del tiempo de cada conversaciÃ³n por fase del proceso de venta.
+                Distribución del tiempo de cada conversación por fase del proceso de venta.
               </p>
             </div>
             
@@ -633,7 +633,7 @@ export default function Recommendations() {
                   <Tooltip formatter={(v) => `${v}%`} />
                   <Bar dataKey="apertura" stackId="a" fill={FLOW_COLORS.apertura} name="Apertura" />
                   <Bar dataKey="descubrimiento" stackId="a" fill={FLOW_COLORS.descubrimiento} name="Descubrimiento" />
-                  <Bar dataKey="objecion" stackId="a" fill={FLOW_COLORS.objecion} name="ObjeciÃ³n" />
+                  <Bar dataKey="objecion" stackId="a" fill={FLOW_COLORS.objecion} name="Objeción" />
                   <Bar dataKey="argumento" stackId="a" fill={FLOW_COLORS.argumento} name="Argumento" />
                   <Bar dataKey="cierre" stackId="a" fill={FLOW_COLORS.cierre} name="Cierre" />
                   <Bar dataKey="silencio" stackId="a" fill={FLOW_COLORS.silencio} name="Silencio" />
@@ -648,7 +648,7 @@ export default function Recommendations() {
               </div>
               <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-purple-600">28%</p>
-                <p className="text-xs text-slate-500">ArgumentaciÃ³n promedio</p>
+                <p className="text-xs text-slate-500">Argumentación promedio</p>
               </div>
               <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-pink-600">16%</p>
@@ -664,12 +664,12 @@ export default function Recommendations() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-lg font-bold text-white">Customer Confidence Score</h3>
-                <InfoTooltip text={`Mide el nivel de confianza/interÃ©s del cliente durante la conversaciÃ³n (0-100).\n\nSe calcula analizando:\nâ€¢ Tono y lenguaje del cliente\nâ€¢ Preguntas que hace\nâ€¢ Respuestas positivas/negativas\nâ€¢ Nivel de engagement\n\nðŸŽ¯ Umbral: >${THRESHOLDS.confidence.min} = Bueno\nâš ï¸ <${THRESHOLDS.confidence.min} = Necesita mejorar rapport\n\nLas ventas exitosas tienen en promedio 20-30 puntos mÃ¡s de confidence.`}>
+                <InfoTooltip text={`Mide el nivel de confianza/interés del cliente durante la conversación (0-100).\n\nSe calcula analizando:\n• Tono y lenguaje del cliente\n• Preguntas que hace\n• Respuestas positivas/negativas\n• Nivel de engagement\n\n🎯 Umbral: >${THRESHOLDS.confidence.min} = Bueno\n⚠️ <${THRESHOLDS.confidence.min} = Necesita mejorar rapport\n\nLas ventas exitosas tienen en promedio 20-30 puntos más de confidence.`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-pink-500 cursor-help" />
                 </InfoTooltip>
               </div>
               <p className="text-sm text-slate-500 mb-4">
-                Nivel de confianza del cliente detectado mediante anÃ¡lisis semÃ¡ntico.
+                Nivel de confianza del cliente detectado mediante análisis semántico.
               </p>
             </div>
 
@@ -677,7 +677,7 @@ export default function Recommendations() {
               <div className="bg-slate-700/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <h4 className="font-semibold text-gray-700">Por Vendedor (Venta vs No Venta)</h4>
-                  <InfoTooltip text={`Compara el confidence score promedio de cada vendedor:\n\nðŸŸ¢ Con Venta: Score en conversaciones que terminaron en venta\nðŸ”´ Sin Venta: Score en conversaciones sin venta\n\nLa diferencia entre ambos indica cuÃ¡nto impacta la confianza en el cierre.`}>
+                  <InfoTooltip text={`Compara el confidence score promedio de cada vendedor:\n\n🟢 Con Venta: Score en conversaciones que terminaron en venta\n🔴 Sin Venta: Score en conversaciones sin venta\n\nLa diferencia entre ambos indica cuánto impacta la confianza en el cierre.`}>
                     <Info className="w-3 h-3 text-gray-400 hover:text-pink-500 cursor-help" />
                   </InfoTooltip>
                 </div>
@@ -696,7 +696,7 @@ export default function Recommendations() {
               <div className="bg-slate-700/50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <h4 className="font-semibold text-gray-700">Por Sucursal</h4>
-                  <InfoTooltip text={`Confidence Score promedio por sucursal.\n\nðŸŽ¯ Objetivo: >${THRESHOLDS.confidence.min}\n\nColores:\nðŸŸ¢ Verde (>70): Excelente rapport\nðŸŸ  Naranja (50-70): Aceptable\nðŸ”´ Rojo (<50): Requiere atenciÃ³n\n\nSucursales con bajo confidence necesitan trabajar la primera impresiÃ³n y conexiÃ³n inicial.`}>
+                  <InfoTooltip text={`Confidence Score promedio por sucursal.\n\n🎯 Objetivo: >${THRESHOLDS.confidence.min}\n\nColores:\n🟢 Verde (>70): Excelente rapport\n🟠 Naranja (50-70): Aceptable\n🔴 Rojo (<50): Requiere atención\n\nSucursales con bajo confidence necesitan trabajar la primera impresión y conexión inicial.`}>
                     <Info className="w-3 h-3 text-gray-400 hover:text-pink-500 cursor-help" />
                   </InfoTooltip>
                 </div>
@@ -738,9 +738,9 @@ export default function Recommendations() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-white mb-2">ClasificaciÃ³n de Objeciones</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Clasificación de Objeciones</h3>
               <p className="text-sm text-slate-500 mb-4">
-                AnÃ¡lisis detallado de cÃ³mo se manejan las objeciones del cliente.
+                Análisis detallado de cómo se manejan las objeciones del cliente.
               </p>
             </div>
 
@@ -775,9 +775,9 @@ export default function Recommendations() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-amber-800">Ãrea de mejora detectada</p>
+                  <p className="font-semibold text-amber-800">Área de mejora detectada</p>
                   <p className="text-sm text-amber-700">
-                    El 15% de las objeciones no estÃ¡n siendo respondidas. Capacitar en tÃ©cnicas de escucha activa.
+                    El 15% de las objeciones no están siendo respondidas. Capacitar en técnicas de escucha activa.
                   </p>
                 </div>
               </div>
@@ -816,8 +816,8 @@ export default function Recommendations() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-red-800">Minuto CrÃ­tico</p>
-                  <p className="text-sm text-red-600">La mayorÃ­a de abandonos ocurren entre el minuto 6 y 12</p>
+                  <p className="font-semibold text-red-800">Minuto Crítico</p>
+                  <p className="text-sm text-red-600">La mayoría de abandonos ocurren entre el minuto 6 y 12</p>
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-red-600">7-9 min</p>
@@ -834,10 +834,10 @@ export default function Recommendations() {
             <div>
               <h3 className="text-lg font-bold text-white mb-2">Perfil de Vendedor</h3>
               <p className="text-sm text-slate-500 mb-4">
-                AnÃ¡lisis multidimensional de habilidades de venta.
+                Análisis multidimensional de habilidades de venta.
                 {hasAdvancedData 
                   ? <span className="ml-2 text-purple-600 font-medium">(Promedio general)</span>
-                  : topSeller && <span className="ml-2 text-gray-400">(Sin datos de anÃ¡lisis)</span>
+                  : topSeller && <span className="ml-2 text-gray-400">(Sin datos de análisis)</span>
                 }
               </p>
             </div>
@@ -887,7 +887,7 @@ export default function Recommendations() {
             <div>
               <h3 className="text-lg font-bold text-white mb-2">AI Insights</h3>
               <p className="text-sm text-slate-500 mb-4">
-                Conclusiones automÃ¡ticas basadas en el anÃ¡lisis de datos.
+                Conclusiones automáticas basadas en el análisis de datos.
               </p>
             </div>
 
@@ -939,7 +939,7 @@ export default function Recommendations() {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">DuraciÃ³n promedio</span>
+                    <span className="text-slate-400">Duración promedio</span>
                     <span className="font-bold text-green-700">{comparisonData.conVenta.duracion} min</span>
                   </div>
                   <div className="flex justify-between">
@@ -964,7 +964,7 @@ export default function Recommendations() {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">DuraciÃ³n promedio</span>
+                    <span className="text-slate-400">Duración promedio</span>
                     <span className="font-bold text-red-700">{comparisonData.sinVenta.duracion} min</span>
                   </div>
                   <div className="flex justify-between">
@@ -985,9 +985,9 @@ export default function Recommendations() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
-                <strong>Insight:</strong> Las conversaciones exitosas duran {(comparisonData.conVenta.duracion - comparisonData.sinVenta.duracion).toFixed(1)} minutos mÃ¡s 
+                <strong>Insight:</strong> Las conversaciones exitosas duran {(comparisonData.conVenta.duracion - comparisonData.sinVenta.duracion).toFixed(1)} minutos más 
                 y el vendedor habla {comparisonData.sinVenta.ratioVendedor - comparisonData.conVenta.ratioVendedor}% menos, 
-                dejando mÃ¡s espacio para el cliente.
+                dejando más espacio para el cliente.
               </p>
             </div>
           </div>
@@ -999,12 +999,12 @@ export default function Recommendations() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-lg font-bold text-white">Recomendaciones Accionables</h3>
-                <InfoTooltip text={`Recomendaciones automÃ¡ticas basadas en el anÃ¡lisis de datos.\n\nUmbrales utilizados:\nâ€¢ Confidence < ${THRESHOLDS.confidence.min}: Problema de rapport\nâ€¢ ConversiÃ³n < ${THRESHOLDS.conversion.min}%: Problema de cierre\nâ€¢ Score vendedor < ${THRESHOLDS.sellerScore.min}: Problema general\n\nPrioridades:\nðŸ”´ Alta: Requiere acciÃ³n inmediata\nðŸŸ  Media: Mejorar en prÃ³ximas semanas\nðŸŸ¢ Baja: OptimizaciÃ³n opcional`}>
+                <InfoTooltip text={`Recomendaciones automáticas basadas en el análisis de datos.\n\nUmbrales utilizados:\n• Confidence < ${THRESHOLDS.confidence.min}: Problema de rapport\n• Conversión < ${THRESHOLDS.conversion.min}%: Problema de cierre\n• Score vendedor < ${THRESHOLDS.sellerScore.min}: Problema general\n\nPrioridades:\n🔴 Alta: Requiere acción inmediata\n🟠 Media: Mejorar en próximas semanas\n🟢 Baja: Optimización opcional`}>
                   <Info className="w-4 h-4 text-gray-400 hover:text-orange-500 cursor-help" />
                 </InfoTooltip>
               </div>
               <p className="text-sm text-slate-500 mb-4">
-                Acciones especÃ­ficas basadas en los puntos de fuga detectados.
+                Acciones específicas basadas en los puntos de fuga detectados.
               </p>
             </div>
 
@@ -1036,7 +1036,7 @@ export default function Recommendations() {
             <div className="space-y-4">
               <h4 className="font-semibold text-gray-700 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" /> Por Sucursal
-                <InfoTooltip text={`Recomendaciones por sucursal basadas en:\n\nâ€¢ Confidence Score promedio\nâ€¢ Tasa de conversiÃ³n\nâ€¢ Score promedio de vendedores\n\nSe identifica el punto mÃ¡s dÃ©bil de cada sucursal y se sugiere una acciÃ³n especÃ­fica.`}>
+                <InfoTooltip text={`Recomendaciones por sucursal basadas en:\n\n• Confidence Score promedio\n• Tasa de conversión\n• Score promedio de vendedores\n\nSe identifica el punto más débil de cada sucursal y se sugiere una acción específica.`}>
                   <Info className="w-3 h-3 text-gray-400 hover:text-orange-500 cursor-help" />
                 </InfoTooltip>
               </h4>
@@ -1098,7 +1098,7 @@ export default function Recommendations() {
             ) : (
               <>
                 <Play className="w-4 h-4" />
-                {hasAdvancedData ? 'Actualizar' : 'Ejecutar AnÃ¡lisis'}
+                {hasAdvancedData ? 'Actualizar' : 'Ejecutar Análisis'}
               </>
             )}
           </button>
@@ -1128,7 +1128,7 @@ export default function Recommendations() {
                   ? 'bg-gray-300 text-slate-500 cursor-not-allowed' 
                   : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
               }`}
-              title="Borrar todos los anÃ¡lisis para re-ejecutar"
+              title="Borrar todos los análisis para re-ejecutar"
             >
               <Database className="w-4 h-4" />
               Limpiar
@@ -1216,7 +1216,7 @@ export default function Recommendations() {
         </div>
         <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <p className="text-2xl font-bold text-green-400">{dashboardMetrics?.conversionRate || 0}%</p>
-          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Tasa de conversiÃ³n</p>
+          <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Tasa de conversión</p>
         </div>
         <div className={`rounded-xl border p-4 text-center ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <p className="text-2xl font-bold text-amber-400">{dashboardMetrics?.averageSellerScore?.toFixed(1) || '-'}</p>

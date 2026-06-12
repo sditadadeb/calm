@@ -16,28 +16,35 @@ export default function MetricCard({
 }) {
   const { isDark } = useTheme();
   
+  // Como en la maqueta: valor grande blanco (o naranja si es highlight)
+  // y el color queda en la línea de delta/subtítulo.
   const valueColor = {
     default: isDark ? 'text-white' : 'text-gray-900',
     primary: 'text-[#F5A623]',
+    success: isDark ? 'text-white' : 'text-gray-900',
+    danger: isDark ? 'text-white' : 'text-gray-900',
+    warning: 'text-[#F5A623]',
+  }[variant];
+
+  const subtitleColor = {
+    default: isDark ? 'text-slate-500' : 'text-gray-400',
+    primary: isDark ? 'text-slate-500' : 'text-gray-400',
     success: 'text-emerald-400',
     danger: 'text-red-400',
-    warning: 'text-[#F5A623]',
+    warning: isDark ? 'text-slate-500' : 'text-gray-400',
   }[variant];
 
   const cell = (
     <div className={`px-5 py-4 h-full transition-colors ${to ? 'cursor-pointer ' + (isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50') : ''}`}>
-      <div className="flex items-center gap-1.5">
-        {Icon && <Icon className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} strokeWidth={1.8} />}
-        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-          {title}
-        </p>
-      </div>
-      <p className={`font-display text-[28px] font-semibold leading-tight mt-2 tabular-nums ${valueColor}`}>
+      <p className={`text-[11.5px] font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+        {title}
+      </p>
+      <p className={`font-display text-[30px] font-semibold leading-tight mt-1.5 tabular-nums ${valueColor}`}>
         {value}
       </p>
-      <div className="flex items-center gap-2 mt-0.5">
+      <div className="flex items-center gap-2 mt-1.5">
         {subtitle && (
-          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+          <p className={`text-xs font-medium ${subtitleColor}`}>
             {subtitle}
           </p>
         )}

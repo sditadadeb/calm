@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, Eye, EyeOff, Sparkles, Clock, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { FileText, Eye, EyeOff, Sparkles, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import useStore from '../store/useStore';
 import { analyzeTranscription as apiAnalyzeTranscription, reimportAndAnalyzeTranscription as apiReimportAnalyze } from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -27,7 +27,7 @@ export default function Transcriptions() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user.role === 'ADMIN';
 
-  // FunciÃ³n para ordenar
+  // Función para ordenar
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
@@ -58,11 +58,11 @@ export default function Transcriptions() {
         const recDate = new Date(t.recordingDate).toISOString().slice(0, 10);
         if (recDate > filters.dateTo) return false;
       }
-      // Filtro por puntuaciÃ³n mÃ­nima
+      // Filtro por puntuación mínima
       if (filters.minScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore < Number(filters.minScore))) return false;
-      // Filtro por puntuaciÃ³n mÃ¡xima
+      // Filtro por puntuación máxima
       if (filters.maxScore && (t.sellerScore === null || t.sellerScore === undefined || t.sellerScore > Number(filters.maxScore))) return false;
-      // Filtro por estado de anÃ¡lisis
+      // Filtro por estado de análisis
       if (filters.analyzed === true || filters.analyzed === 'true') {
         if (!t.analyzed) return false;
       }
@@ -72,7 +72,7 @@ export default function Transcriptions() {
       // Filtro por resultado binario venta/no venta
       if (filters.saleCompleted === 'true' && t.saleCompleted !== true) return false;
       if (filters.saleCompleted === 'false' && t.saleCompleted !== false) return false;
-      // Filtro por razÃ³n de no venta
+      // Filtro por razón de no venta
       if (filters.noSaleReason && t.noSaleReason !== filters.noSaleReason) return false;
       return true;
     });
@@ -97,7 +97,7 @@ export default function Transcriptions() {
         bVal = bVal ? new Date(bVal).getTime() : 0;
       }
       
-      // Comparar nÃºmeros
+      // Comparar números
       if (key === 'sellerScore' || key === 'analysisConfidence') {
         aVal = aVal || 0;
         bVal = bVal || 0;
@@ -154,7 +154,7 @@ export default function Transcriptions() {
     );
   };
 
-  // Estado con punto de color (rediseÃ±o): reemplaza las pills rellenas
+  // Estado con punto de color (rediseño): reemplaza las pills rellenas
   const StatusDot = ({ dotClass, textClass, icon: StatusIcon, title, children, pulse = false }) => (
     <span className={`inline-flex items-center gap-1.5 text-[12.5px] font-medium ${textClass}`} title={title}>
       <span className={`status-dot ${dotClass} ${pulse ? 'pulse' : ''}`} />
@@ -304,7 +304,7 @@ export default function Transcriptions() {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
-      return format(new Date(dateString), 'dd MMM yyyy HH:mm', { locale: es });
+      return format(new Date(dateString), "d MMM · HH:mm", { locale: es });
     } catch {
       return '-';
     }
@@ -312,7 +312,7 @@ export default function Transcriptions() {
 
   return (
     <div className="space-y-6">
-      {/* Barra de recalculando mÃ©tricas */}
+      {/* Barra de recalculando métricas */}
       {recalculating && (
         <div className={`rounded-lg p-4 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-3">
@@ -422,14 +422,14 @@ export default function Transcriptions() {
                   <SortableHeader label={t('transcriptions.result')} sortKey="saleCompleted" />
                   <SortableHeader label={t('transcriptions.score')} sortKey="sellerScore" />
                   <SortableHeader label={t('transcriptions.status')} sortKey="analyzed" />
-                  <th className={`px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('common.actions')}</th>
+                  <th className={`px-5 py-2.5 text-right text-[10.5px] font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-line' : 'divide-gray-200'}`}>
                 {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
-                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-70' : 'opacity-80') : ''} ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}`}
+                    className={`row-cal animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-70' : 'opacity-80') : ''} ${isDark ? '' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     {isAdmin && (
@@ -445,24 +445,21 @@ export default function Transcriptions() {
                       </td>
                     )}
                     <td className="px-5 py-3 max-w-[120px]">
-                      <span className="font-mono text-xs font-medium text-[#F5A623] block truncate" title={transcription.recordingId}>
-                        #{transcription.recordingId.length > 12 ? transcription.recordingId.slice(-12) : transcription.recordingId}
+                      <span className="font-mono text-xs text-[#F5A623]/85 block truncate" title={transcription.recordingId}>
+                        #…{transcription.recordingId.length > 12 ? transcription.recordingId.slice(-12) : transcription.recordingId}
                       </span>
                     </td>
                     <td className="px-5 py-3">
                       <div>
-                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{transcription.userName || t('common.unknown')}</p>
-                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID: {transcription.userId}</p>
+                        <p className={`font-semibold text-[13.5px] ${isDark ? 'text-white' : 'text-gray-800'}`}>{transcription.userName || t('common.unknown')}</p>
+                        <p className={`text-[11.5px] mt-px ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>ID {transcription.userId}</p>
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`capitalize ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{transcription.branchName || '-'}</span>
+                      <span className={`capitalize text-[13.5px] ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{transcription.branchName || '-'}</span>
                     </td>
-                    <td className="px-5 py-3">
-                      <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm">{formatDate(transcription.recordingDate)}</span>
-                      </div>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <span className={`text-[13px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{formatDate(transcription.recordingDate)}</span>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex flex-col gap-1">
@@ -554,61 +551,46 @@ export default function Transcriptions() {
                       )}
                     </td>
                     <td className="px-5 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Link
                           to={`/transcriptions/${transcription.recordingId}`}
-                          className={`text-xs py-1.5 w-[72px] justify-center inline-flex items-center gap-1 rounded-md border transition-colors ${isDark ? 'border-line-strong text-slate-300 hover:text-white hover:border-white/30' : 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'}`}
+                          className={`w-7 h-7 grid place-items-center rounded border border-transparent transition-all ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:border-line-strong hover:bg-ink-overlay' : 'text-gray-400 hover:text-[#F5A623] hover:border-gray-300 hover:bg-gray-50'}`}
+                          title={t('common.view')}
                         >
-                          <Eye className="w-3 h-3" /> {t('common.view')}
+                          <Eye className="w-3.5 h-3.5" strokeWidth={1.8} />
                         </Link>
                         {!transcription.analyzed && !isAdmin && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
-                            className="text-xs py-1.5 w-[118px] justify-center inline-flex items-center gap-1 bg-[#F5A623] text-[#16120A] font-semibold rounded-md hover:bg-[#FFBB54] transition-colors disabled:opacity-50"
+                            className={`w-7 h-7 grid place-items-center rounded border border-transparent transition-all disabled:opacity-40 ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:border-line-strong hover:bg-ink-overlay' : 'text-gray-400 hover:text-[#F5A623] hover:border-gray-300 hover:bg-gray-50'}`}
                             disabled={loading || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
-                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : undefined}
+                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : t('transcriptions.analyze')}
                           >
                             {analyzing === transcription.recordingId ? (
-                              <RefreshCw className="w-3 h-3 animate-spin" />
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#F5A623]" strokeWidth={1.8} />
                             ) : (
-                              <Sparkles className="w-3 h-3" />
+                              <Sparkles className="w-3.5 h-3.5" strokeWidth={1.8} />
                             )}
-                            {t('transcriptions.analyze')}
                           </button>
                         )}
                         {isAdmin && (
                           <button
                             onClick={(e) => handleReanalyze(transcription.recordingId, e)}
-                            className={`text-xs py-1.5 w-[118px] justify-center inline-flex items-center gap-1 rounded-md border transition-colors disabled:opacity-50 ${
-                              isDark
-                                ? 'border-[#F5A623]/30 text-[#F5A623] hover:bg-[#F5A623]/10 hover:border-[#F5A623]/60'
-                                : 'border-[#F5A623]/40 text-amber-700 hover:bg-amber-50'
-                            }`}
+                            className={`w-7 h-7 grid place-items-center rounded border border-transparent transition-all disabled:opacity-40 ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:border-line-strong hover:bg-ink-overlay' : 'text-gray-400 hover:text-[#F5A623] hover:border-gray-300 hover:bg-gray-50'}`}
                             disabled={bulkAnalyzing || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
-                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : t('transcriptions.reanalyze')}
+                            title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : (transcription.analyzed ? t('transcriptions.reanalyze') : t('transcriptions.analyze'))}
                           >
-                            {analyzing === transcription.recordingId ? (
-                              <RefreshCw className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-3 h-3" />
-                            )}
-                            {transcription.analyzed ? t('transcriptions.reanalyze') : t('transcriptions.analyze')}
+                            <RefreshCw className={`w-3.5 h-3.5 ${analyzing === transcription.recordingId ? 'animate-spin text-[#F5A623]' : ''}`} strokeWidth={1.8} />
                           </button>
                         )}
                         {isAdmin && (
                           <button
                             onClick={(e) => handleExclude(transcription.recordingId, e)}
-                            className={`text-xs py-1.5 w-9 justify-center inline-flex items-center rounded-md border transition-colors ${
-                              deleting === transcription.recordingId 
-                                ? 'border-red-500/50 text-red-300 cursor-not-allowed' 
-                                : isDark 
-                                  ? 'border-line-strong text-red-400 hover:border-red-500/60 hover:bg-red-500/10' 
-                                  : 'border-gray-300 text-red-500 hover:border-red-400 hover:bg-red-50'
-                            }`}
+                            className={`w-7 h-7 grid place-items-center rounded border border-transparent transition-all disabled:opacity-40 ${isDark ? 'text-slate-500 hover:text-red-400 hover:border-line-strong hover:bg-ink-overlay' : 'text-gray-400 hover:text-red-500 hover:border-gray-300 hover:bg-gray-50'}`}
                             disabled={deleting === transcription.recordingId || bulkAnalyzing}
                             title={t('transcriptions.excludeTranscription')}
                           >
-                            <EyeOff className={`w-3 h-3 ${deleting === transcription.recordingId ? 'animate-spin' : ''}`} />
+                            <EyeOff className={`w-3.5 h-3.5 ${deleting === transcription.recordingId ? 'animate-pulse text-red-400' : ''}`} strokeWidth={1.8} />
                           </button>
                         )}
                       </div>

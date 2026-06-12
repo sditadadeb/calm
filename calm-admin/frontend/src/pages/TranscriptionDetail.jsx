@@ -31,7 +31,7 @@ import {
 import { getTranscriptions, reimportAndAnalyzeTranscription } from '../api';
 import api from '../api';
 
-// Reproductor de audio personalizado con duraciÃ³n fija
+// Reproductor de audio personalizado con duración fija
 function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -201,7 +201,7 @@ export default function TranscriptionDetail() {
   const [audioAvailable, setAudioAvailable] = useState(false);
   const [audioLoading, setAudioLoading] = useState(true);
   
-  // NavegaciÃ³n entre transcripciones
+  // Navegación entre transcripciones
   const [allIds, setAllIds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -258,7 +258,7 @@ export default function TranscriptionDetail() {
               const blob = xhr.response;
               const blobUrl = URL.createObjectURL(blob);
               
-              // Truco para obtener duraciÃ³n de webm: crear audio temporal y forzar seek
+              // Truco para obtener duración de webm: crear audio temporal y forzar seek
               const tempAudio = new Audio();
               tempAudio.preload = 'metadata';
               
@@ -269,7 +269,7 @@ export default function TranscriptionDetail() {
                   setAudioAvailable(true);
                   setAudioLoading(false);
                 } else {
-                  // Si no hay duraciÃ³n, forzar seek al final
+                  // Si no hay duración, forzar seek al final
                   tempAudio.currentTime = Number.MAX_SAFE_INTEGER;
                 }
               };
@@ -285,7 +285,7 @@ export default function TranscriptionDetail() {
               };
               
               tempAudio.onerror = () => {
-                // AÃºn sin duraciÃ³n, mostrar el reproductor
+                // Aún sin duración, mostrar el reproductor
                 setAudioUrl(blobUrl);
                 setAudioAvailable(true);
                 setAudioLoading(false);
@@ -327,7 +327,7 @@ export default function TranscriptionDetail() {
     };
   }, [id]);
 
-  // Cargar lista de IDs para navegaciÃ³n
+  // Cargar lista de IDs para navegación
   useEffect(() => {
     const fetchAllIds = async () => {
       try {
@@ -380,7 +380,7 @@ export default function TranscriptionDetail() {
     }
   };
 
-  // NavegaciÃ³n
+  // Navegación
   const goToPrevious = () => {
     if (currentIndex > 0) {
       navigate(`/transcriptions/${allIds[currentIndex - 1]}`);
@@ -412,7 +412,7 @@ export default function TranscriptionDetail() {
     }
   };
 
-  // Obtener configuraciÃ³n del status (con labels traducidos)
+  // Obtener configuración del status (con labels traducidos)
   const getStatusConfig = (status) => {
     const cfg = SALE_STATUS_CONFIG[status] || SALE_STATUS_CONFIG.NO_SALE;
     return { ...cfg, label: t(cfg.labelKey), description: t(cfg.descKey) };
@@ -433,7 +433,7 @@ export default function TranscriptionDetail() {
 
   const hasParseError = (trans) => {
     const fields = [trans?.noSaleReason, trans?.executiveSummary, trans?.saleEvidence].filter(Boolean);
-    return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('AnÃ¡lisis no disponible'));
+    return fields.some(msg => msg.toLowerCase().includes('error parseando') || msg.includes('Análisis no disponible'));
   };
 
   const handleReanalyze = async () => {
@@ -498,7 +498,7 @@ export default function TranscriptionDetail() {
           {t('detail.backToList')}
         </button>
         
-        {/* Flechas de navegaciÃ³n */}
+        {/* Flechas de navegación */}
         <div className="flex items-center gap-2">
           {(hasParseError(trans) || textSuspiciouslyShort || trans.analyzed) && (
             <button
@@ -737,7 +737,7 @@ export default function TranscriptionDetail() {
             <ul className="space-y-2">
               {trans.customerObjections.map((obj, i) => (
                 <li key={i} className={`flex items-start gap-2 text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                  <span className="text-orange-400 mt-0.5">â€¢</span>
+                  <span className="text-orange-400 mt-0.5">•</span>
                   {obj}
                 </li>
               ))}
@@ -860,7 +860,7 @@ export default function TranscriptionDetail() {
                       className={`text-xs px-2 py-1 rounded transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
                       title={t('detail.deleteComment')}
                     >
-                      âœ•
+                      ✕
                     </button>
                   )}
                 </div>

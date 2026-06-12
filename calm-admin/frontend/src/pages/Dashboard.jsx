@@ -70,7 +70,7 @@ function isUninterpretableOrError(t) {
   if (t.saleStatus === 'UNINTERPRETABLE') return true;
   const reason = (t.noSaleReason || '').toLowerCase();
   if (reason.startsWith('error parseando')) return true;
-  return reason.includes('transcripcion no interpretable') || reason.includes('transcripciÃ³n no interpretable');
+  return reason.includes('transcripcion no interpretable') || reason.includes('transcripción no interpretable');
 }
 
 function inPeriod(t, periodDays) {
@@ -214,7 +214,7 @@ export default function Dashboard() {
     );
   }
 
-  // MÃ©tricas comerciales: excluye no interpretables y errores de parseo
+  // Métricas comerciales: excluye no interpretables y errores de parseo
   const totalTranscriptions = actionableInPeriod.length;
   const totalSales = actionableInPeriod.filter(tr => tr.saleCompleted === true).length;
   const totalNoSales = actionableInPeriod.filter(tr => tr.saleCompleted === false).length;
@@ -241,10 +241,10 @@ export default function Dashboard() {
         .slice(0, 5)
     : [];
 
-  // Procesar datos para Heatmap semanal (dÃ­as vs horas)
+  // Procesar datos para Heatmap semanal (días vs horas)
   const heatmapData = (() => {
     const matrix = {};
-    // Inicializar matriz 7 dÃ­as x 24 horas
+    // Inicializar matriz 7 días x 24 horas
     for (let day = 0; day < 7; day++) {
       matrix[day] = {};
       for (let hour = 0; hour < 24; hour++) {
@@ -264,7 +264,7 @@ export default function Dashboard() {
     return matrix;
   })();
 
-  // Obtener el mÃ¡ximo para escala de colores del heatmap
+  // Obtener el máximo para escala de colores del heatmap
   const maxHeatmapValue = Math.max(
     1,
     ...Object.values(heatmapData).flatMap(hours => Object.values(hours))
@@ -353,7 +353,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Main Metrics: franja Ãºnica con divisores */}
+      {/* Main Metrics: franja única con divisores */}
       <div className={`grid grid-cols-2 lg:grid-cols-4 rounded-lg border overflow-hidden divide-x divide-y lg:divide-y-0 ${
         isDark ? 'bg-ink-raised border-line divide-line' : 'bg-white border-gray-200 divide-gray-200'
       }`}>
@@ -368,7 +368,7 @@ export default function Dashboard() {
         <MetricCard
           title={t('dashboard.sales')}
           value={totalSales}
-          subtitle={`${conversionRate}% conversiÃ³n`}
+          subtitle={`${conversionRate}% conversión`}
           icon={ShoppingCart}
           variant="success"
           to={drillDownLinks.sales}
@@ -410,8 +410,8 @@ export default function Dashboard() {
                 <XAxis type="number" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} />
                 <YAxis type="category" dataKey="name" stroke={isDark ? '#64748b' : '#9ca3af'} fontSize={12} width={80} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="ventas" name={t('dashboard.sales')} fill="#22c55e" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="sinVenta" name={t('dashboard.noSaleShort')} fill="#ef4444" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="ventas" name={t('dashboard.sales')} fill="#34d399" radius={[0, 3, 3, 0]} barSize={14} />
+                <Bar dataKey="sinVenta" name={t('dashboard.noSaleShort')} fill="#f87171" radius={[0, 3, 3, 0]} barSize={14} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -483,7 +483,7 @@ export default function Dashboard() {
             <div>
               <h3 className={`font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('dashboard.sellerRanking')}</h3>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                {t('dashboard.byConversionRate')} Â· {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
+                {t('dashboard.byConversionRate')} · {t(`dashboard.${PERIOD_OPTIONS.find(p => p.value === periodDays)?.labelKey || 'period30d'}`)}
               </p>
             </div>
           </div>
@@ -507,7 +507,7 @@ export default function Dashboard() {
                   <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{seller.branchName}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-400">{seller.conversionRate}%</p>
+                  <p className="font-display text-lg font-semibold text-emerald-400">{seller.conversionRate}%</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{seller.sales}/{seller.totalInteractions}</p>
                 </div>
               </Link>
@@ -546,7 +546,7 @@ export default function Dashboard() {
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{branch.totalInteractions} {t('dashboard.attendances')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-400">{branch.conversionRate}%</p>
+                  <p className="font-display text-lg font-semibold text-emerald-400">{branch.conversionRate}%</p>
                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Score: {branch.averageScore?.toFixed(1) || '-'}</p>
                 </div>
               </Link>
@@ -591,7 +591,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                   
-                  {/* Filas por dÃ­a */}
+                  {/* Filas por día */}
                   {DAYS.map((day, dayIdx) => (
                     <div key={day} className="flex items-center mb-1">
                       <div className={`w-10 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
