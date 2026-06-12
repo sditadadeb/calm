@@ -22,11 +22,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401/403 responses (unauthorized/forbidden - token expired or invalid)
+// 401 = token vencido/inválido → volver al login.
+// 403 = sin permisos: NO desloguear, se muestra el error en la UI.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

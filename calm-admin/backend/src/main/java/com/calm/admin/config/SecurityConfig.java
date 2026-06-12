@@ -2,6 +2,7 @@ package com.calm.admin.config;
 
 import com.calm.admin.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -49,6 +50,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disabled for stateless JWT API
             .cors(cors -> {})
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Sin token o token vencido → 401 (el frontend redirige a login).
+            // Antes devolvía 403 para todo, indistinguible de un error de permisos.
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                    new org.springframework.security.web.authentication.HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> {
                 // Public endpoints
                 auth.requestMatchers("/api/auth/**").permitAll();
@@ -60,6 +65,10 @@ public class SecurityConfig {
                 
                 // Health check endpoint (for load balancers)
                 auth.requestMatchers("/actuator/health").permitAll();
+                
+                // Error dispatch: sin esto, toda excepción del backend se convierte
+                // en un 403 vacío (el forward interno a /error caía en denyAll)
+                auth.requestMatchers("/error").permitAll();
                 
                 // Protected endpoints
                 auth.requestMatchers("/api/**").authenticated();
