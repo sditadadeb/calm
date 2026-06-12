@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Eye, Sparkles, Clock, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, AlertTriangle, TrendingUp, HelpCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import useStore from '../store/useStore';
+import { analyzeTranscription as apiAnalyzeTranscription } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import Filters from '../components/Filters';
@@ -18,6 +19,9 @@ export default function Transcriptions() {
   const [analyzing, setAnalyzing] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(0);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkAnalyzing, setBulkAnalyzing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
   const pageSize = 25;
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -212,6 +216,64 @@ export default function Transcriptions() {
     }
   };
 
+  const selectablePageIds = useMemo(
+    () => paginatedTranscriptions.filter(tr => !isPendingTranscription(tr)).map(tr => tr.recordingId),
+    [paginatedTranscriptions]
+  );
+  const allPageSelected = selectablePageIds.length > 0 && selectablePageIds.every(id => selected.has(id));
+
+  const toggleSelect = (recordingId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(recordingId)) next.delete(recordingId);
+      else next.add(recordingId);
+      return next;
+    });
+  };
+
+  const toggleSelectPage = () => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        selectablePageIds.forEach(id => next.delete(id));
+      } else {
+        selectablePageIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkReanalyze = async () => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!window.confirm(t('transcriptions.bulkConfirm', { count: ids.length }))) return;
+
+    setBulkAnalyzing(true);
+    setBulkProgress({ current: 0, total: ids.length });
+    let errors = 0;
+
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        setAnalyzing(ids[i]);
+        await apiAnalyzeTranscription(ids[i]);
+      } catch {
+        errors++;
+      } finally {
+        setBulkProgress({ current: i + 1, total: ids.length });
+      }
+    }
+
+    setAnalyzing(null);
+    setBulkAnalyzing(false);
+    setSelected(new Set());
+    await fetchTranscriptions();
+    useStore.getState().fetchDashboardMetrics();
+
+    if (errors > 0) {
+      alert(`${t('transcriptions.bulkDone')}: ${ids.length - errors} OK, ${errors} ${t('transcriptions.bulkErrors')}`);
+    }
+  };
+
   const handleDelete = async (recordingId, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -277,6 +339,44 @@ export default function Transcriptions() {
       {/* Filters - client-side, no need to re-fetch */}
       <Filters />
 
+      {/* Barra de acciones masivas */}
+      {isAdmin && (selected.size > 0 || bulkAnalyzing) && (
+        <div className={`rounded-xl px-5 py-3 border flex flex-wrap items-center gap-4 ${isDark ? 'bg-slate-800 border-[#F5A623]/40' : 'bg-amber-50 border-[#F5A623]/40'}`}>
+          {bulkAnalyzing ? (
+            <>
+              <RefreshCw className="w-4 h-4 text-[#F5A623] animate-spin" />
+              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {t('transcriptions.bulkAnalyzing')} {bulkProgress.current}/{bulkProgress.total}
+              </span>
+              <div className={`flex-1 min-w-[120px] h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}>
+                <div
+                  className="h-full bg-gradient-to-r from-[#F5A623] to-[#FFBB54] transition-all duration-300"
+                  style={{ width: bulkProgress.total > 0 ? `${(bulkProgress.current / bulkProgress.total) * 100}%` : '0%' }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {selected.size} {t('transcriptions.selectedCount')}
+              </span>
+              <button
+                onClick={handleBulkReanalyze}
+                className="text-xs py-2 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> {t('transcriptions.reanalyzeSelected')}
+              </button>
+              <button
+                onClick={() => setSelected(new Set())}
+                className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
+              >
+                <X className="w-3.5 h-3.5" /> {t('transcriptions.clearSelection')}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Table */}
       <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
         {loading ? (
@@ -298,6 +398,18 @@ export default function Transcriptions() {
             <table className="w-full">
               <thead className={isDark ? 'bg-slate-700/50' : 'bg-gray-50'}>
                 <tr>
+                  {isAdmin && (
+                    <th className="pl-6 pr-2 py-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allPageSelected}
+                        onChange={toggleSelectPage}
+                        disabled={bulkAnalyzing || selectablePageIds.length === 0}
+                        className="w-4 h-4 rounded accent-[#F5A623] cursor-pointer"
+                        title={t('transcriptions.selectPage')}
+                      />
+                    </th>
+                  )}
                   <SortableHeader label={t('transcriptions.id')} sortKey="recordingId" />
                   <SortableHeader label={t('transcriptions.seller')} sortKey="userName" />
                   <SortableHeader label={t('transcriptions.branch')} sortKey="branchName" />
@@ -312,9 +424,21 @@ export default function Transcriptions() {
                 {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
-                    className={`animate-fade-in transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
+                    className={`animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
+                    {isAdmin && (
+                      <td className="pl-6 pr-2 py-4 w-10">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(transcription.recordingId)}
+                          onChange={() => toggleSelect(transcription.recordingId)}
+                          disabled={bulkAnalyzing || isPendingTranscription(transcription)}
+                          className="w-4 h-4 rounded accent-[#F5A623] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                          title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : undefined}
+                        />
+                      </td>
+                    )}
                     <td className="px-6 py-4 max-w-[120px]">
                       <span className="font-mono text-xs font-medium text-[#F5A623] block truncate" title={transcription.recordingId}>
                         #{transcription.recordingId.length > 12 ? transcription.recordingId.slice(-12) : transcription.recordingId}
@@ -412,18 +536,18 @@ export default function Transcriptions() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/transcriptions/${transcription.recordingId}`}
-                          className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
+                          className={`text-xs py-2 w-[72px] justify-center inline-flex items-center gap-1 rounded-lg transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-[#F5A623] hover:text-white' : 'bg-gray-100 text-gray-600 hover:bg-[#F5A623] hover:text-white'}`}
                         >
                           <Eye className="w-3 h-3" /> {t('common.view')}
                         </Link>
                         {!transcription.analyzed && !isAdmin && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
-                            className="text-xs py-2 px-3 inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                            className="text-xs py-2 w-[118px] justify-center inline-flex items-center gap-1 bg-gradient-to-r from-[#F5A623] to-[#FFBB54] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
                             disabled={loading || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
                             title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : undefined}
                           >
@@ -438,12 +562,12 @@ export default function Transcriptions() {
                         {isAdmin && (
                           <button
                             onClick={(e) => handleReanalyze(transcription.recordingId, e)}
-                            className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors disabled:opacity-50 ${
+                            className={`text-xs py-2 w-[118px] justify-center inline-flex items-center gap-1 rounded-lg transition-colors disabled:opacity-50 ${
                               isDark
                                 ? 'bg-slate-700 text-[#F5A623] hover:bg-[#F5A623] hover:text-white'
                                 : 'bg-amber-50 text-amber-700 hover:bg-[#F5A623] hover:text-white'
                             }`}
-                            disabled={analyzing === transcription.recordingId || isPendingTranscription(transcription)}
+                            disabled={bulkAnalyzing || analyzing === transcription.recordingId || isPendingTranscription(transcription)}
                             title={isPendingTranscription(transcription) ? t('transcriptions.reanalyzePending') : t('transcriptions.reanalyze')}
                           >
                             {analyzing === transcription.recordingId ? (
@@ -457,14 +581,14 @@ export default function Transcriptions() {
                         {isAdmin && (
                           <button
                             onClick={(e) => handleDelete(transcription.recordingId, e)}
-                            className={`text-xs py-2 px-3 inline-flex items-center gap-1 rounded-lg transition-colors ${
+                            className={`text-xs py-2 w-9 justify-center inline-flex items-center rounded-lg transition-colors ${
                               deleting === transcription.recordingId 
                                 ? 'bg-red-500/50 text-white cursor-not-allowed' 
                                 : isDark 
                                   ? 'bg-slate-700 text-red-400 hover:bg-red-500 hover:text-white' 
                                   : 'bg-gray-100 text-red-500 hover:bg-red-500 hover:text-white'
                             }`}
-                            disabled={deleting === transcription.recordingId}
+                            disabled={deleting === transcription.recordingId || bulkAnalyzing}
                             title={t('transcriptions.deleteTranscription')}
                           >
                             <Trash2 className={`w-3 h-3 ${deleting === transcription.recordingId ? 'animate-spin' : ''}`} />
