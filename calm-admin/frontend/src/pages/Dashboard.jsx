@@ -66,6 +66,13 @@ function isAnalyzed(t) {
   return t.analyzed === true;
 }
 
+function isUninterpretableOrError(t) {
+  if (t.saleStatus === 'UNINTERPRETABLE') return true;
+  const reason = (t.noSaleReason || '').toLowerCase();
+  if (reason.startsWith('error parseando')) return true;
+  return reason.includes('transcripcion no interpretable') || reason.includes('transcripción no interpretable');
+}
+
 function inPeriod(t, periodDays) {
   if (!t.recordingDate) return false;
   if (periodDays === 'all') return true;
@@ -140,7 +147,7 @@ function buildNoSaleReasons(list) {
   const counts = {};
   for (const t of list) {
     if (t.saleCompleted !== false || !t.noSaleReason) continue;
-    if (t.noSaleReason.toLowerCase().startsWith('error parseando')) continue;
+    if (isUninterpretableOrError(t)) continue;
     counts[t.noSaleReason] = (counts[t.noSaleReason] || 0) + 1;
   }
   return counts;
@@ -169,6 +176,11 @@ export default function Dashboard() {
     }
     return list.filter(tr => isAnalyzed(tr) && inPeriod(tr, periodDays));
   }, [transcriptions, userSellerId, periodDays]);
+
+  const actionableInPeriod = useMemo(
+    () => analyzedInPeriod.filter(tr => !isUninterpretableOrError(tr)),
+    [analyzedInPeriod]
+  );
 
   const pendingCount = dashboardMetrics?.pendingAnalysis ?? 0;
 
@@ -202,19 +214,19 @@ export default function Dashboard() {
     );
   }
 
-  // Métricas solo de transcripciones analizadas en el período seleccionado
-  const totalTranscriptions = analyzedInPeriod.length;
-  const totalSales = analyzedInPeriod.filter(tr => tr.saleCompleted === true).length;
-  const totalNoSales = analyzedInPeriod.filter(tr => tr.saleCompleted === false).length;
+  // Métricas comerciales: excluye no interpretables y errores de parseo
+  const totalTranscriptions = actionableInPeriod.length;
+  const totalSales = actionableInPeriod.filter(tr => tr.saleCompleted === true).length;
+  const totalNoSales = actionableInPeriod.filter(tr => tr.saleCompleted === false).length;
   const conversionRate = totalTranscriptions > 0 ? Math.round((totalSales / totalTranscriptions) * 100) : 0;
-  const scored = analyzedInPeriod.filter(tr => tr.sellerScore != null && tr.sellerScore > 0);
+  const scored = actionableInPeriod.filter(tr => tr.sellerScore != null && tr.sellerScore > 0);
   const averageSellerScore = scored.length
     ? scored.reduce((sum, tr) => sum + tr.sellerScore, 0) / scored.length
     : 0;
 
-  const sellerMetrics = buildSellerMetrics(analyzedInPeriod);
-  const branchMetrics = buildBranchMetrics(analyzedInPeriod);
-  const noSaleReasons = buildNoSaleReasons(analyzedInPeriod);
+  const sellerMetrics = buildSellerMetrics(actionableInPeriod);
+  const branchMetrics = buildBranchMetrics(actionableInPeriod);
+  const noSaleReasons = buildNoSaleReasons(actionableInPeriod);
 
   const sellerChartData = sellerMetrics?.slice(0, 5).map(s => ({
     name: s.userName?.split(' ')[0] || 'N/A',
@@ -225,7 +237,6 @@ export default function Dashboard() {
   const noSaleReasonsData = noSaleReasons 
     ? Object.entries(noSaleReasons)
         .map(([name, value]) => ({ name, value }))
-        .filter(item => !item.name.toLowerCase().startsWith('error parseando'))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5)
     : [];

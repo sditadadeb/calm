@@ -242,6 +242,14 @@ public class TranscriptionService {
         return text != null && text.startsWith(PLACEHOLDER_PREFIX);
     }
 
+    static boolean isExcludedFromObjectionMetrics(String saleStatus, String noSaleReason) {
+        if ("UNINTERPRETABLE".equals(saleStatus)) return true;
+        if (noSaleReason == null) return false;
+        String lower = noSaleReason.toLowerCase();
+        if (lower.startsWith("error parseando")) return true;
+        return lower.contains("transcripcion no interpretable") || lower.contains("transcripción no interpretable");
+    }
+
     /**
      * If S3 now has the real transcription, replace placeholder and analyze.
      */
@@ -411,7 +419,7 @@ public class TranscriptionService {
         Map<String, Long> noSaleReasons = repository.countByNoSaleReason().stream()
                 .filter(row -> {
                     String reason = (String) row[0];
-                    return reason != null && !reason.toLowerCase().startsWith("error parseando");
+                    return reason != null && !isExcludedFromObjectionMetrics(null, reason);
                 })
                 .collect(Collectors.toMap(
                         row -> (String) row[0],

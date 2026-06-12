@@ -60,7 +60,7 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
     @Query("SELECT DISTINCT t.branchId, t.branchName FROM Transcription t WHERE t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL")
     List<Object[]> findAllBranches();
 
-    @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL) GROUP BY t.noSaleReason")
+    @Query("SELECT t.noSaleReason, COUNT(t) FROM Transcription t WHERE t.analyzed = true AND t.saleCompleted = false AND t.noSaleReason IS NOT NULL AND (t.saleStatus IS NULL OR t.saleStatus <> 'UNINTERPRETABLE') AND (t.branchId NOT IN (4476, 4495, 4496) OR t.branchId IS NULL) GROUP BY t.noSaleReason")
     List<Object[]> countByNoSaleReason();
 
     @Query("SELECT t.userId, t.userName, t.branchName, " +
