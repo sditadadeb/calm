@@ -481,11 +481,16 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         // Normalizar line endings
         json = json.replace("\r\n", "\n").replace("\r", "\n");
         
+        // Escapar control chars temprano (evita que \n rompa regexes siguientes)
+        json = escapeControlCharsInJsonStrings(json);
+        
         // === FASE 2: Correcciones de valores ===
         // GPT orphan commas before keys: { ","key" or , ","key"
         json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
         json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
         json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
+        // GPT artifact: "key":": value → "key": value
+        json = json.replaceAll("\":\\s*\":\\s*", "\": ");
         // String sin cerrar antes de la siguiente key: "value, "nextKey": → "value", "nextKey":
         json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
         // Extra quote after boolean/number/null: true" -> true
@@ -544,6 +549,21 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         }
         
         return json;
+    }
+    
+    private JsonNode parseRepairedJson(String raw, ObjectMapper mapper) throws com.fasterxml.jackson.core.JsonProcessingException {
+        String json = raw;
+        com.fasterxml.jackson.core.JsonProcessingException lastError = null;
+        for (int pass = 0; pass < 3; pass++) {
+            json = repairJson(json);
+            try {
+                return mapper.readTree(json.trim());
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                lastError = e;
+                log.warn("JSON repair pass {} failed: {}", pass + 1, e.getMessage());
+            }
+        }
+        throw lastError;
     }
     
     // Estados del parser de reparación JSON
@@ -867,14 +887,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
     
     private AnalysisResult parseAnalysisResponse(String response) {
         try {
-            String cleanJson = extractJsonBlock(response);
+            String             cleanJson = extractJsonBlock(response);
             
             log.info("Raw GPT JSON (first 300 chars): {}", 
-                    cleanJson.length() > 300 ? cleanJson.substring(0, 300) + "..." : cleanJson);
-            
-            cleanJson = repairJson(cleanJson);
-            
-            log.info("Repaired JSON (first 300 chars): {}", 
                     cleanJson.length() > 300 ? cleanJson.substring(0, 300) + "..." : cleanJson);
             
             // Usar ObjectMapper con modo MUY leniente
@@ -884,7 +899,9 @@ Si no hay evidencia, dilo y deja arrays vacíos.
             lenientMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             lenientMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
             
-            JsonNode root = lenientMapper.readTree(cleanJson.trim());
+            JsonNode root = parseRepairedJson(cleanJson, lenientMapper);
+            
+            log.info("Repaired JSON parsed successfully");
 
             AnalysisResult result = new AnalysisResult();
             result.setSaleCompleted(root.has("saleCompleted") && root.get("saleCompleted").asBoolean());

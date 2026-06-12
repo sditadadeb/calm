@@ -1,6 +1,7 @@
 package com.calm.admin.service;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -176,9 +177,11 @@ public class JsonRepairTest {
         json = json.replace('\u00A0', ' ');
         if (json.startsWith("\uFEFF")) json = json.substring(1);
         json = json.replace("\r\n", "\n").replace("\r", "\n");
+        json = escapeControlCharsInJsonStrings(json);
         json = json.replaceAll("\\{\\s*,\\s*\"", "{ \"");
         json = json.replaceAll("\\[\\s*,\\s*\"", "[ \"");
         json = json.replaceAll(",\\s*\",\\s*\"", ", \"");
+        json = json.replaceAll("\":\\s*\":\\s*", "\": ");
         json = json.replaceAll("(\"(?:[^\"\\\\]|\\\\.)*?), \"([a-zA-Z_][a-zA-Z0-9_]*)\"\\s*:", "$1\", \"$2\":");
         json = json.replaceAll("\\b(true|false|null)(\")(?=\\s*[,}\\]])", "$1");
         json = json.replaceAll("(\\d+(?:\\.\\d+)?)(\")(?=\\s*[,}\\]])", "$1");
@@ -200,8 +203,16 @@ public class JsonRepairTest {
 
     private JsonNode fullParse(String raw) throws Exception {
         String json = extractJsonBlock(raw);
-        json = repairJson(json);
-        return mapper.readTree(json.trim());
+        JsonProcessingException last = null;
+        for (int pass = 0; pass < 3; pass++) {
+            json = repairJson(json);
+            try {
+                return mapper.readTree(json.trim());
+            } catch (JsonProcessingException e) {
+                last = e;
+            }
+        }
+        throw last;
     }
 
     // ======= TESTS =======
@@ -486,6 +497,19 @@ public class JsonRepairTest {
         """);
         assertEquals("confidence_v4_2026-02", root.get("confidenceTrace").get("methodVersion").asText());
         assertEquals(20, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
+    }
+
+    /** JSON exacto observado en producción (28971948) */
+    @Test void testProductionDoubleColonArtifact() throws Exception {
+        JsonNode root = fullParse("""
+        { "saleCompleted": false, "saleStatus": "UNINTERPRETABLE", "analysisConfidence": 18, "confidenceTrace": { "methodVersion": "confidence_v4_2026-02, ","subscores":": { ","textIntegrity":": 20, ","conversationalCoherence":": 10, ","analyticsUsability":": 0 }, ","weights":": { ","textIntegrity":": 0.5, ","conversationalCoherence":": 0.35, ","analyticsUsability":": 0.15 }, ","signals":": { ","wordCount":": 1, ","turnCount":": 1, ","dialogueDetectable":": true } }, "executiveSummary": "Texto muy corto", "noSaleReason": "Transcripción no interpretable" }
+        """);
+        assertEquals(18, root.get("analysisConfidence").asInt());
+        assertEquals("confidence_v4_2026-02", root.get("confidenceTrace").get("methodVersion").asText());
+        assertEquals(20, root.get("confidenceTrace").get("subscores").get("textIntegrity").asInt());
+        assertEquals(0.5, root.get("confidenceTrace").get("weights").get("textIntegrity").asDouble(), 0.01);
+        assertEquals(1, root.get("confidenceTrace").get("signals").get("wordCount").asInt());
+        assertTrue(root.get("confidenceTrace").get("signals").get("dialogueDetectable").asBoolean());
     }
 
     /**
