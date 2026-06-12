@@ -606,9 +606,18 @@ public class S3Service {
         StringBuilder transcriptionText = new StringBuilder();
 
         if (root.isObject() && (root.has("user") || root.has("branch"))
-                && !root.has("text") && !root.has("transcript") && !root.has("results")) {
+                && !root.has("text") && !root.has("transcript") && !root.has("results")
+                && !root.has("segments")) {
             log.info("File for {} is metadata, not transcription", recordingId);
             return null;
+        }
+
+        if (root.isObject() && root.has("segments") && root.get("segments").isArray()) {
+            String fromSegments = extractTextFromNewBucketTranscriptionRoot(root, content);
+            if (fromSegments != null && !fromSegments.isBlank()) {
+                log.info("Retrieved transcription from segments for {} ({} chars)", recordingId, fromSegments.length());
+                return fromSegments;
+            }
         }
 
         if (root.isArray()) {
@@ -684,6 +693,104 @@ public class S3Service {
         String fromOldBucket = getTranscriptionFromOldBucket(recordingId);
         String fromLegacyBucket = getTranscriptionFromLegacyTranscriptionsBucket(recordingId);
         return pickLongerTranscription(pickLongerTranscription(fromNewBucket, fromOldBucket), fromLegacyBucket);
+    }
+
+    /**
+     * Diagnóstico: qué hay en cada bucket/fuente S3 para esta grabación.
+     */
+    public Map<String, Object> probeTranscriptionSources(String recordingId) {
+        Map<String, Object> probe = new LinkedHashMap<>();
+        probe.put("recordingId", recordingId);
+        probe.put("flatId", flatRecordingId(recordingId));
+        probe.put("audioSizeBytes", getAudioSize(recordingId));
+
+        List<Map<String, Object>> sources = new ArrayList<>();
+
+        if (newBucketS3Client != null) {
+            Set<String> idCandidates = new LinkedHashSet<>();
+            idCandidates.add(recordingId);
+            idCandidates.add(flatRecordingId(recordingId));
+            for (String candidate : idCandidates) {
+                sources.add(probeS3Object(newBucketS3Client, newBucket,
+                        newBucketPrefix + candidate + ".transcripcion.json",
+                        recordingId, "newBucket.transcripcion"));
+                sources.add(probeS3Object(newBucketS3Client, newBucket,
+                        newBucketPrefix + candidate + ".json",
+                        recordingId, "newBucket.metadata"));
+            }
+        }
+        if (metadataS3Client != null) {
+            sources.add(probeS3Object(metadataS3Client, metadataBucket,
+                    metadataPrefix + recordingId + ".json", recordingId, "metadataBucket"));
+            String flat = flatRecordingId(recordingId);
+            if (!flat.equals(recordingId)) {
+                sources.add(probeS3Object(metadataS3Client, metadataBucket,
+                        metadataPrefix + flat + ".json", recordingId, "metadataBucket.flat"));
+            }
+        }
+        if (transcriptionsS3Client != null) {
+            for (String candidate : List.of(flatRecordingId(recordingId), recordingId)) {
+                sources.add(probeS3Object(transcriptionsS3Client, transcriptionsBucket,
+                        transcriptionsPrefix + candidate + ".json", recordingId, "legacyTranscriptions"));
+            }
+        }
+
+        probe.put("sources", sources.stream().filter(Objects::nonNull).toList());
+
+        String merged = getTranscription(recordingId);
+        probe.put("mergedTextLength", merged != null ? merged.length() : 0);
+        if (merged != null && !merged.isBlank()) {
+            probe.put("mergedPreview", merged.length() > 200 ? merged.substring(0, 200) + "…" : merged);
+        } else {
+            probe.put("mergedPreview", null);
+        }
+        probe.put("suspiciouslyShortForAudio", isSuspiciouslyShortForAudio(recordingId, merged));
+        return probe;
+    }
+
+    private Map<String, Object> probeS3Object(S3Client client, String bucket, String key,
+                                              String recordingId, String sourceLabel) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("source", sourceLabel);
+        entry.put("bucket", bucket);
+        entry.put("key", key);
+        try {
+            HeadObjectResponse head = client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket).key(key).build());
+            entry.put("exists", true);
+            entry.put("rawBytes", head.contentLength());
+
+            GetObjectRequest request = GetObjectRequest.builder().bucket(bucket).key(key).build();
+            ResponseInputStream<GetObjectResponse> response = client.getObject(request);
+            String content = new BufferedReader(new InputStreamReader(response, StandardCharsets.UTF_8))
+                    .lines().collect(Collectors.joining("\n"));
+
+            String parsed;
+            try {
+                parsed = parseTranscriptionJson(content, recordingId);
+            } catch (Exception e) {
+                parsed = null;
+                entry.put("parseError", e.getMessage());
+            }
+            entry.put("parsedChars", parsed != null ? parsed.length() : 0);
+            if (parsed != null && !parsed.isBlank()) {
+                entry.put("preview", parsed.length() > 120 ? parsed.substring(0, 120) + "…" : parsed);
+            }
+            try {
+                JsonNode root = objectMapper.readTree(content);
+                if (root.isObject() && root.has("segments") && root.get("segments").isArray()) {
+                    entry.put("segmentCount", root.get("segments").size());
+                }
+            } catch (Exception ignored) {
+                // optional diagnostic
+            }
+        } catch (NoSuchKeyException e) {
+            entry.put("exists", false);
+        } catch (Exception e) {
+            entry.put("exists", false);
+            entry.put("error", e.getMessage());
+        }
+        return entry;
     }
 
     /**

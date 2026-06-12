@@ -267,16 +267,31 @@ public class TranscriptionService {
      */
     @Transactional
     public boolean refreshSingleIfStale(String recordingId) {
+        boolean refreshed = doRefreshTextFromS3(recordingId);
+        if (refreshed) {
+            try {
+                analyzeTranscription(recordingId);
+            } catch (Exception e) {
+                log.error("Error analyzing refreshed transcription {}: {}", recordingId, e.getMessage());
+            }
+        }
+        return refreshed;
+    }
+
+    /** Re-fetch text from S3 (own transaction — safe desde analyzeTranscription). */
+    public boolean refreshTextFromS3IfNeeded(String recordingId) {
+        return Boolean.TRUE.equals(transactionTemplate.execute(status -> doRefreshTextFromS3(recordingId)));
+    }
+
+    private boolean doRefreshTextFromS3(String recordingId) {
         Transcription transcription = repository.findById(recordingId).orElse(null);
         if (transcription == null) {
             return false;
         }
 
         String current = transcription.getTranscriptionText();
-        // Texto < 200 chars: vale la pena re-chequear S3 (solo reemplaza si encuentra algo más largo)
-        boolean veryShortText = current != null && current.trim().length() < 200;
         boolean needsRefresh = isPlaceholderText(current)
-                || veryShortText
+                || (current != null && current.trim().length() < 200)
                 || s3Service.isSuspiciouslyShortForAudio(recordingId, current);
 
         if (!needsRefresh) {
@@ -285,15 +300,18 @@ public class TranscriptionService {
 
         String text = s3Service.getTranscription(recordingId);
         if (text == null || text.isBlank() || isPlaceholderText(text)) {
-            // Análisis previo sobre el placeholder (ej. UNINTERPRETABLE) es inválido
             if (isPlaceholderText(current) && Boolean.TRUE.equals(transcription.getAnalyzed())) {
                 clearAnalysisForPendingTranscription(transcription);
                 repository.save(transcription);
                 log.info("Cleared bogus analysis for pending transcription {}", recordingId);
             }
+            log.warn("S3 sin texto mejor para {} (db={} chars). audioSize={}",
+                    recordingId, current != null ? current.length() : 0, s3Service.getAudioSize(recordingId));
             return false;
         }
         if (current != null && text.length() <= current.length()) {
+            log.warn("S3 no tiene texto más largo para {} (db={} chars, s3={} chars, audioSize={})",
+                    recordingId, current.length(), text.length(), s3Service.getAudioSize(recordingId));
             return false;
         }
 
@@ -303,17 +321,13 @@ public class TranscriptionService {
         repository.save(transcription);
         log.info("Refreshed transcription text from S3 for {} ({} -> {} chars)",
                 recordingId, current != null ? current.length() : 0, text.length());
-
-        try {
-            analyzeTranscription(recordingId);
-        } catch (Exception e) {
-            log.error("Error analyzing refreshed transcription {}: {}", recordingId, e.getMessage());
-        }
         return true;
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TranscriptionDTO analyzeTranscription(String recordingId) {
+        refreshTextFromS3IfNeeded(recordingId);
+
         Transcription loaded = repository.findById(recordingId)
                 .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
 

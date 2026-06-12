@@ -109,6 +109,39 @@ public class TranscriptionController {
         return analyzeTranscription(subfolder + "/" + recordingId);
     }
 
+    /** Diagnóstico: longitud del texto en cada fuente S3 vs audio. */
+    @GetMapping("/transcriptions/{recordingId}/s3-probe")
+    public ResponseEntity<Map<String, Object>> probeTranscriptionS3(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        return ResponseEntity.ok(s3Service.probeTranscriptionSources(recordingId));
+    }
+
+    @GetMapping("/transcriptions/{subfolder}/{recordingId}/s3-probe")
+    public ResponseEntity<Map<String, Object>> probeTranscriptionS3WithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return probeTranscriptionS3(subfolder + "/" + recordingId);
+    }
+
+    /** Fuerza re-lectura del texto desde S3 si hay uno más largo. */
+    @PostMapping("/transcriptions/{recordingId}/refresh-from-s3")
+    public ResponseEntity<Map<String, Object>> refreshTranscriptionFromS3(@PathVariable String recordingId) {
+        validateRecordingId(recordingId);
+        boolean refreshed = transcriptionService.refreshTextFromS3IfNeeded(recordingId);
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("refreshed", refreshed);
+        body.put("probe", s3Service.probeTranscriptionSources(recordingId));
+        if (refreshed) {
+            body.put("transcription", transcriptionService.getTranscription(recordingId));
+        }
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/transcriptions/{subfolder}/{recordingId}/refresh-from-s3")
+    public ResponseEntity<Map<String, Object>> refreshTranscriptionFromS3WithSubfolder(
+            @PathVariable String subfolder, @PathVariable String recordingId) {
+        return refreshTranscriptionFromS3(subfolder + "/" + recordingId);
+    }
+
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncTranscriptions() {
         return ResponseEntity.ok(transcriptionService.forceSync());

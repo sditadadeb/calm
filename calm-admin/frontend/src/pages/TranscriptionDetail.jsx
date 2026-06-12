@@ -206,6 +206,7 @@ export default function TranscriptionDetail() {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(null);
+  const [audioSizeBytes, setAudioSizeBytes] = useState(null);
   const audioRef = useRef(null);
   
   // Comments

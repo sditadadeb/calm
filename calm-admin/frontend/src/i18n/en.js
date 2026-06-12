@@ -186,6 +186,8 @@ export default {
     reanalyzeParseError: 'Re-analyze with GPT (parse error detected)',
     parseErrorTitle: 'Failed to interpret GPT response',
     parseErrorDesc: 'Analysis failed due to malformed JSON. Use Re-analyze to try again.',
+    truncatedTextTitle: 'Transcription incomplete vs audio length',
+    truncatedTextDesc: 'Audio is long but stored text is very short. Re-analyze now re-reads S3 before sending to GPT. If it stays short, the S3 transcription file is incomplete.',
     loading: 'Loading transcription...',
     attentionScore: 'Attention Score',
     analysisConfidence: 'Analysis confidence',
