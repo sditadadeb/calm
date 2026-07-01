@@ -26,10 +26,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Clock
+  Clock,
+  Edit
 } from 'lucide-react';
-import { getTranscriptions, reimportAndAnalyzeTranscription } from '../api';
+import { getTranscriptions, reimportAndAnalyzeTranscription, getExtraDataSchema, getBranches } from '../api';
 import api from '../api';
+import ExtraDataModal from '../components/ExtraDataModal';
+import { ExtraDataReadOnly, findBranchForTranscription } from '../components/ExtraDataFields';
 
 // Reproductor de audio personalizado con duración fija
 function AudioPlayerCustom({ src, duration: initialDuration, isDark }) {
@@ -216,6 +219,30 @@ export default function TranscriptionDetail() {
   const [reanalyzing, setReanalyzing] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = currentUser.role === 'ADMIN';
+
+  // Datos extra (schema configurable por sucursal)
+  const [extraDataFields, setExtraDataFields] = useState([]);
+  const [editingExtraData, setEditingExtraData] = useState(false);
+
+  useEffect(() => {
+    if (!transcription) return;
+    const loadExtraDataSchema = async () => {
+      try {
+        const branchesRes = await getBranches();
+        const branches = (branchesRes.data || []).map((b) => ({ id: b.id, name: b.name ?? b.branchName }));
+        const branch = findBranchForTranscription(transcription, branches);
+        if (!branch?.name) {
+          setExtraDataFields([]);
+          return;
+        }
+        const res = await getExtraDataSchema(branch);
+        setExtraDataFields(res.data.fields || []);
+      } catch {
+        setExtraDataFields([]);
+      }
+    };
+    loadExtraDataSchema();
+  }, [transcription]);
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -797,7 +824,22 @@ export default function TranscriptionDetail() {
             </div>
           </div>
         )}
+
+        <ExtraDataReadOnly
+          fields={extraDataFields}
+          transcription={trans}
+          isDark={isDark}
+          onEdit={() => setEditingExtraData(true)}
+        />
       </div>
+      )}
+
+      {editingExtraData && (
+        <ExtraDataModal
+          transcription={trans}
+          onSaved={(updated) => setTranscription(updated)}
+          onClose={() => setEditingExtraData(false)}
+        />
       )}
 
       {/* Full Transcription */}

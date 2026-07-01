@@ -2,9 +2,10 @@ package com.calm.admin.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public class TranscriptionDTO {
-    
+
     private String recordingId;
     private Long userId;
     private String userName;
@@ -28,6 +29,7 @@ public class TranscriptionDTO {
     private LocalDateTime recordingDate;
     private LocalDateTime analyzedAt;
     private Boolean analyzed;
+    private Map<String, Object> extraData;
 
     public TranscriptionDTO() {}
 
@@ -99,4 +101,7 @@ public class TranscriptionDTO {
 
     public Boolean getAnalyzed() { return analyzed; }
     public void setAnalyzed(Boolean analyzed) { this.analyzed = analyzed; }
+
+    public Map<String, Object> getExtraData() { return extraData; }
+    public void setExtraData(Map<String, Object> extraData) { this.extraData = extraData; }
 }

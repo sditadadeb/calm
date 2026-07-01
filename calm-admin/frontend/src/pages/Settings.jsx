@@ -3,6 +3,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getPromptConfig, updatePromptConfig, resetPromptConfig, getReanalyzeAllStreamUrl, previewParseErrors, reanalyzeParseErrors } from '../api';
 import { RefreshCw } from 'lucide-react';
+import ExtraDataSchemaSettings from '../components/ExtraDataSchemaSettings';
 
 const InfoIcon = ({ tooltip, isDark }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -432,6 +433,15 @@ const Settings = () => {
             {parseErrorSweeping ? t('settings.parseErrorSweeping') : t('settings.parseErrorSweep')}
           </button>
         </div>
+      </div>
+
+      {/* Datos extra configurables por sucursal */}
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+        <h2 className={`text-lg font-semibold mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          🗂️ Datos extra
+          <InfoIcon isDark={isDark} tooltip="Constructor de campos personalizados por sucursal. Se muestran y editan desde el detalle de cada transcripción y se incluyen en el export." />
+        </h2>
+        <ExtraDataSchemaSettings onMessage={(msg) => { setMessage(msg); setTimeout(() => setMessage(null), 4000); }} />
       </div>
 
       {/* Campos analizados */}

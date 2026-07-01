@@ -1,11 +1,15 @@
 package com.calm.admin.controller;
 
+import com.calm.admin.dto.ExtraDataSchemaDTO;
 import com.calm.admin.dto.PromptConfigDTO;
 import com.calm.admin.model.SystemConfig;
 import com.calm.admin.repository.SystemConfigRepository;
+import com.calm.admin.service.ExtraDataSchemaProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/config")
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConfigController {
 
     private final SystemConfigRepository configRepository;
+    private final ExtraDataSchemaProvider extraDataSchemaProvider;
 
     @Value("${openai.model}")
     private String defaultModel;
@@ -226,8 +231,9 @@ Prioriza confiabilidad, explicabilidad y usabilidad por sobre completitud.
 Si no hay evidencia, dilo y deja arrays vacíos.
 """;
 
-    public ConfigController(SystemConfigRepository configRepository) {
+    public ConfigController(SystemConfigRepository configRepository, ExtraDataSchemaProvider extraDataSchemaProvider) {
         this.configRepository = configRepository;
+        this.extraDataSchemaProvider = extraDataSchemaProvider;
     }
 
     @GetMapping("/prompt")
@@ -294,6 +300,42 @@ Si no hay evidencia, dilo y deja arrays vacíos.
         configRepository.save(promptConfig);
 
         return getPromptConfig();
+    }
+
+    @GetMapping("/extra-data-schema")
+    public ResponseEntity<?> getExtraDataSchema(
+            @RequestParam(required = false) Long branchId,
+            @RequestParam String branchName) {
+        try {
+            return ResponseEntity.ok(extraDataSchemaProvider.getSchema(branchId, branchName));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/extra-data-schema")
+    public ResponseEntity<?> updateExtraDataSchema(
+            @RequestParam(required = false) Long branchId,
+            @RequestParam String branchName,
+            @RequestBody ExtraDataSchemaDTO schema) {
+        try {
+            extraDataSchemaProvider.saveSchema(branchId, branchName, schema);
+            return ResponseEntity.ok(extraDataSchemaProvider.getSchema(branchId, branchName));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/extra-data-schema/reset-template")
+    public ResponseEntity<?> resetExtraDataSchemaTemplate(
+            @RequestParam(required = false) Long branchId,
+            @RequestParam String branchName) {
+        try {
+            extraDataSchemaProvider.resetToTemplate(branchId, branchName);
+            return ResponseEntity.ok(extraDataSchemaProvider.getSchema(branchId, branchName));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }
 

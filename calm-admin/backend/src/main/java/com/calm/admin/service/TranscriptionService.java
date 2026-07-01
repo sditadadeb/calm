@@ -1,6 +1,8 @@
 package com.calm.admin.service;
 
 import com.calm.admin.dto.DashboardMetricsDTO;
+import com.calm.admin.dto.ExtraDataFieldDTO;
+import com.calm.admin.dto.ExtraDataRequest;
 import com.calm.admin.dto.FilterDTO;
 import com.calm.admin.dto.SearchResultDTO;
 import com.calm.admin.dto.TranscriptionDTO;
@@ -9,6 +11,9 @@ import com.calm.admin.model.Transcription;
 import com.calm.admin.repository.AdvancedAnalysisRepository;
 import com.calm.admin.repository.TranscriptionCommentRepository;
 import com.calm.admin.repository.TranscriptionRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,6 +36,7 @@ public class TranscriptionService {
 
     private static final Set<Long> EXCLUDED_BRANCH_IDS = Set.of(4476L, 4495L, 4496L);
     static final String PLACEHOLDER_PREFIX = "[Audio disponible";
+    public static final int EXPORT_MAX_ROWS = 5000;
 
     private final TranscriptionRepository repository;
     private final AdvancedAnalysisRepository advancedAnalysisRepository;
@@ -38,16 +44,22 @@ public class TranscriptionService {
     private final S3Service s3Service;
     private final ChatGPTAnalyzerService analyzerService;
     private final TransactionTemplate transactionTemplate;
+    private final ExtraDataSchemaProvider extraDataSchemaProvider;
+    private final ObjectMapper objectMapper;
 
-    public TranscriptionService(TranscriptionRepository repository, 
+    public TranscriptionService(TranscriptionRepository repository,
                                 AdvancedAnalysisRepository advancedAnalysisRepository,
                                 TranscriptionCommentRepository commentRepository,
-                                S3Service s3Service, 
+                                S3Service s3Service,
                                 ChatGPTAnalyzerService analyzerService,
-                                org.springframework.transaction.PlatformTransactionManager transactionManager) {
+                                org.springframework.transaction.PlatformTransactionManager transactionManager,
+                                ExtraDataSchemaProvider extraDataSchemaProvider,
+                                ObjectMapper objectMapper) {
         this.repository = repository;
         this.advancedAnalysisRepository = advancedAnalysisRepository;
         this.commentRepository = commentRepository;
+        this.extraDataSchemaProvider = extraDataSchemaProvider;
+        this.objectMapper = objectMapper;
         this.s3Service = s3Service;
         this.analyzerService = analyzerService;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -498,6 +510,123 @@ public class TranscriptionService {
         return transcriptions.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<TranscriptionDTO> getTranscriptionsForExport(FilterDTO filter, int maxRows) {
+        List<TranscriptionDTO> rows = getTranscriptions(filter);
+        return rows.size() > maxRows ? rows.subList(0, maxRows) : rows;
+    }
+
+    /**
+     * Actualiza los "datos extra" de una transcripción (schema dinámico por sucursal).
+     * Sincroniza los campos que tengan systemKey con las columnas legacy (saleCompleted, noSaleReason).
+     */
+    @Transactional
+    public TranscriptionDTO updateExtraData(String recordingId, ExtraDataRequest req) {
+        Transcription t = repository.findById(recordingId)
+                .orElseThrow(() -> new RuntimeException("Transcripción no encontrada: " + recordingId));
+
+        Map<String, Object> values = new LinkedHashMap<>(buildExtraDataMap(t));
+
+        if (req.getValues() != null && !req.getValues().isEmpty()) {
+            values.putAll(req.getValues());
+        }
+
+        if (req.getSaleCompleted() != null) {
+            values.put(findFieldIdBySystemKey(t, "saleCompleted"), req.getSaleCompleted());
+            t.setSaleCompleted(req.getSaleCompleted());
+        }
+        if (req.getNoSaleReason() != null) {
+            values.put(findFieldIdBySystemKey(t, "noSaleReason"), req.getNoSaleReason());
+            t.setNoSaleReason(req.getNoSaleReason());
+        }
+
+        for (ExtraDataFieldDTO field : extraDataSchemaProvider.getSortedFields(t.getBranchId(), t.getBranchName())) {
+            if (values.containsKey(field.getId())) {
+                syncSystemKeyToLegacy(t, field, values.get(field.getId()));
+            }
+        }
+
+        t.setExtraData(serializeExtraDataJson(values));
+        return toDTO(repository.save(t));
+    }
+
+    private void syncSystemKeyToLegacy(Transcription t, ExtraDataFieldDTO field, Object value) {
+        if (field.getSystemKey() == null || field.getSystemKey().isBlank()) {
+            return;
+        }
+        switch (field.getSystemKey()) {
+            case "saleCompleted" -> t.setSaleCompleted(toBooleanOrNull(value));
+            case "noSaleReason" -> t.setNoSaleReason(value != null ? String.valueOf(value) : null);
+            default -> {}
+        }
+    }
+
+    private Boolean toBooleanOrNull(Object value) {
+        if (value == null) return null;
+        if (value instanceof Boolean b) return b;
+        if (value instanceof String s) {
+            return "true".equalsIgnoreCase(s) || "si".equalsIgnoreCase(s) || "sí".equalsIgnoreCase(s) || "1".equals(s);
+        }
+        return null;
+    }
+
+    private String findFieldIdBySystemKey(Transcription t, String systemKey) {
+        return extraDataSchemaProvider.getSortedFields(t.getBranchId(), t.getBranchName()).stream()
+                .filter(f -> systemKey.equals(f.getSystemKey()))
+                .map(ExtraDataFieldDTO::getId)
+                .findFirst()
+                .orElse(systemKey);
+    }
+
+    private Map<String, Object> buildExtraDataMap(Transcription t) {
+        Map<String, Object> map = parseExtraDataJson(t.getExtraData());
+        for (ExtraDataFieldDTO field : extraDataSchemaProvider.getSortedFields(t.getBranchId(), t.getBranchName())) {
+            if (field.getSystemKey() == null || field.getSystemKey().isBlank()) {
+                continue;
+            }
+            if (!map.containsKey(field.getId()) || isEmptyValue(map.get(field.getId()))) {
+                Object legacy = getLegacyValue(t, field.getSystemKey());
+                if (legacy != null && !isEmptyValue(legacy)) {
+                    map.put(field.getId(), legacy);
+                }
+            }
+        }
+        return map;
+    }
+
+    private Object getLegacyValue(Transcription t, String systemKey) {
+        return switch (systemKey) {
+            case "saleCompleted" -> t.getSaleCompleted();
+            case "noSaleReason" -> t.getNoSaleReason();
+            default -> null;
+        };
+    }
+
+    private boolean isEmptyValue(Object value) {
+        if (value == null) return true;
+        if (value instanceof String s) return s.isBlank();
+        return false;
+    }
+
+    private Map<String, Object> parseExtraDataJson(String json) {
+        if (json == null || json.isBlank()) {
+            return new LinkedHashMap<>();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<LinkedHashMap<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            log.warn("Invalid extra_data JSON for transcription");
+            return new LinkedHashMap<>();
+        }
+    }
+
+    private String serializeExtraDataJson(Map<String, Object> map) {
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("No se pudo guardar extra_data");
+        }
     }
 
     @Transactional
@@ -1078,6 +1207,7 @@ public class TranscriptionService {
         dto.setRecordingDate(t.getRecordingDate());
         dto.setAnalyzedAt(t.getAnalyzedAt());
         dto.setAnalyzed(t.getAnalyzed());
+        dto.setExtraData(parseExtraDataJson(t.getExtraData()));
         return dto;
     }
     

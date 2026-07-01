@@ -37,3 +37,6 @@ npm-debug.log*
 # Dependencies
 dependency-reduced-pom.xml
 
+mock-examples/
+backend/src/main/java/com/calm/admin/service/MockDataSeeder.java
+backend/src/main/java/com/calm/admin/controller/DevSeedController.java
