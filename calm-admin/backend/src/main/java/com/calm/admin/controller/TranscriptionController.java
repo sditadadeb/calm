@@ -1,13 +1,16 @@
 package com.calm.admin.controller;
 
 import com.calm.admin.dto.DashboardMetricsDTO;
+import com.calm.admin.dto.ExtraDataRequest;
 import com.calm.admin.dto.FilterDTO;
 import com.calm.admin.dto.TranscriptionDTO;
 import com.calm.admin.model.TranscriptionComment;
 import com.calm.admin.repository.TranscriptionCommentRepository;
 import com.calm.admin.service.S3Service;
+import com.calm.admin.service.TranscriptionExportService;
 import com.calm.admin.service.TranscriptionService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +21,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,14 +38,17 @@ public class TranscriptionController {
     private final TranscriptionService transcriptionService;
     private final S3Service s3Service;
     private final TranscriptionCommentRepository commentRepository;
-    
+    private final TranscriptionExportService exportService;
+
     private static final Pattern VALID_RECORDING_ID = Pattern.compile("^[a-zA-Z0-9 _/.\\-]+$");
 
     public TranscriptionController(TranscriptionService transcriptionService, S3Service s3Service,
-                                   TranscriptionCommentRepository commentRepository) {
+                                   TranscriptionCommentRepository commentRepository,
+                                   TranscriptionExportService exportService) {
         this.transcriptionService = transcriptionService;
         this.s3Service = s3Service;
         this.commentRepository = commentRepository;
+        this.exportService = exportService;
     }
 
     @GetMapping("/dashboard")
@@ -85,10 +94,97 @@ public class TranscriptionController {
         return ResponseEntity.ok(transcriptionService.getTranscriptions(filter));
     }
 
+    @GetMapping("/transcriptions/export")
+    public ResponseEntity<byte[]> exportTranscriptions(
+            @RequestParam(defaultValue = "csv") String format,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) Boolean saleCompleted,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Integer minScore,
+            @RequestParam(required = false) Integer maxScore,
+            @RequestParam(defaultValue = "false") boolean splitByBranch
+    ) throws Exception {
+        if (dateFrom == null || dateTo == null) {
+            return exportError("Las fechas desde y hasta son obligatorias para exportar");
+        }
+        if (dateTo.isBefore(dateFrom)) {
+            return exportError("La fecha hasta no puede ser anterior a la fecha desde");
+        }
+        if (dateTo.isAfter(dateFrom.plusMonths(1))) {
+            return exportError("El rango de exportación no puede superar un mes");
+        }
+
+        FilterDTO filter = new FilterDTO();
+        filter.setUserId(userId);
+        filter.setBranchId(branchId);
+        filter.setSaleCompleted(saleCompleted);
+        filter.setDateFrom(dateFrom);
+        filter.setDateTo(dateTo);
+        filter.setMinScore(minScore);
+        filter.setMaxScore(maxScore);
+
+        List<TranscriptionDTO> rows = transcriptionService.getTranscriptionsForExport(filter, TranscriptionService.EXPORT_MAX_ROWS);
+        String dateStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String rangeStamp = dateFrom + "_" + dateTo;
+        boolean shouldSplit = splitByBranch && branchId == null && countDistinctBranches(rows) > 1;
+
+        if (shouldSplit && "xlsx".equalsIgnoreCase(format)) {
+            byte[] data = exportService.exportXlsxByBranch(rows);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=transcripciones_" + rangeStamp + ".xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        }
+
+        if (shouldSplit) {
+            byte[] data = exportService.exportCsvZipByBranch(rows);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=transcripciones_" + rangeStamp + ".zip")
+                    .contentType(MediaType.parseMediaType("application/zip"))
+                    .body(data);
+        }
+
+        if ("xlsx".equalsIgnoreCase(format)) {
+            byte[] data = exportService.exportXlsx(rows, branchId);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=transcripciones_" + dateStamp + ".xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(data);
+        }
+
+        byte[] data = exportService.exportCsv(rows, branchId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=transcripciones_" + dateStamp + ".csv")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(data);
+    }
+
+    private ResponseEntity<byte[]> exportError(String message) {
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(("{\"error\":\"" + message + "\"}").getBytes(StandardCharsets.UTF_8));
+    }
+
+    private long countDistinctBranches(List<TranscriptionDTO> rows) {
+        return rows.stream()
+                .map(r -> (r.getBranchId() != null ? r.getBranchId() : "null") + ":" + (r.getBranchName() != null ? r.getBranchName() : ""))
+                .distinct()
+                .count();
+    }
+
     @GetMapping("/transcriptions/{recordingId}")
     public ResponseEntity<TranscriptionDTO> getTranscription(@PathVariable String recordingId) {
         validateRecordingId(recordingId);
         return ResponseEntity.ok(transcriptionService.getTranscription(recordingId));
+    }
+
+    @PatchMapping("/transcriptions/{recordingId}/extra-data")
+    public ResponseEntity<TranscriptionDTO> updateExtraData(
+            @PathVariable String recordingId, @RequestBody ExtraDataRequest request) {
+        validateRecordingId(recordingId);
+        return ResponseEntity.ok(transcriptionService.updateExtraData(recordingId, request));
     }
 
     @GetMapping("/transcriptions/{subfolder}/{recordingId}")

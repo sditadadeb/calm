@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { branchSchemaParams } from '../components/ExtraDataFields';
 
 // Use environment variable for API URL, fallback to localhost for dev
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -85,6 +86,46 @@ export const deleteTranscription = (recordingId) => api.delete(`/transcriptions/
 export const excludeTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/exclude`);
 export const restoreTranscription = (recordingId) => api.post(`/transcriptions/${encodeURI(recordingId)}/restore`);
 export const getExcludedTranscriptions = () => api.get('/transcriptions/excluded');
+
+// Extra data (datos extra configurables por sucursal)
+export const updateExtraData = (recordingId, data) =>
+  api.patch(`/transcriptions/${encodeURI(recordingId)}/extra-data`, data);
+
+export const getExtraDataSchema = (branch) =>
+  api.get('/config/extra-data-schema', { params: branchSchemaParams(branch) });
+export const updateExtraDataSchema = (branch, schema) =>
+  api.put('/config/extra-data-schema', schema, { params: branchSchemaParams(branch) });
+export const resetExtraDataSchemaTemplate = (branch) =>
+  api.post('/config/extra-data-schema/reset-template', null, { params: branchSchemaParams(branch) });
+
+// Export de transcripciones (CSV/XLSX, rango de fechas obligatorio, máx. 1 mes)
+export const exportTranscriptions = async (format, filters = {}) => {
+  const params = new URLSearchParams();
+  params.append('format', format);
+  if (filters.userId) params.append('userId', filters.userId);
+  if (filters.branchId) params.append('branchId', filters.branchId);
+  if (filters.saleCompleted !== null && filters.saleCompleted !== undefined) {
+    params.append('saleCompleted', filters.saleCompleted);
+  }
+  if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+  if (filters.dateTo) params.append('dateTo', filters.dateTo);
+  if (filters.minScore) params.append('minScore', filters.minScore);
+  if (filters.maxScore) params.append('maxScore', filters.maxScore);
+  if (filters.splitByBranch) params.append('splitByBranch', 'true');
+  try {
+    return await api.get(`/transcriptions/export?${params.toString()}`, { responseType: 'blob' });
+  } catch (err) {
+    if (err.response?.data instanceof Blob && err.response.data.type?.includes('json')) {
+      const text = await err.response.data.text();
+      try {
+        err.response.data = JSON.parse(text);
+      } catch {
+        err.response.data = { error: text };
+      }
+    }
+    throw err;
+  }
+};
 
 // Search
 export const searchTranscriptions = (query, filters = {}) => {

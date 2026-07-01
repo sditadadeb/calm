@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { FileText, Eye, EyeOff, Sparkles, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { FileText, Eye, EyeOff, Edit, Sparkles, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, X, Download } from 'lucide-react';
 import useStore from '../store/useStore';
-import { analyzeTranscription as apiAnalyzeTranscription, reimportAndAnalyzeTranscription as apiReimportAnalyze } from '../api';
+import { analyzeTranscription as apiAnalyzeTranscription, reimportAndAnalyzeTranscription as apiReimportAnalyze, exportTranscriptions } from '../api';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import Filters from '../components/Filters';
 import ScoreBadge from '../components/ScoreBadge';
+import ExtraDataModal from '../components/ExtraDataModal';
+import ExportDateModal from '../components/ExportDateModal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -15,6 +17,7 @@ export default function Transcriptions() {
   const { isDark } = useTheme();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [deleting, setDeleting] = useState(null);
   const [analyzing, setAnalyzing] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'recordingDate', direction: 'desc' });
@@ -22,6 +25,10 @@ export default function Transcriptions() {
   const [selected, setSelected] = useState(new Set());
   const [bulkAnalyzing, setBulkAnalyzing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [editingExtraData, setEditingExtraData] = useState(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const pageSize = 25;
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -195,6 +202,10 @@ export default function Transcriptions() {
     fetchTranscriptions();
   }, [searchParams]);
 
+  const handleRowClick = (recordingId) => {
+    navigate(`/transcriptions/${recordingId}`);
+  };
+
   const handleAnalyze = async (recordingId, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -301,6 +312,29 @@ export default function Transcriptions() {
     }
   };
 
+  const handleExportConfirm = async ({ dateFrom, dateTo, splitByBranch }) => {
+    try {
+      setExporting(true);
+      const response = await exportTranscriptions(exportFormat, { ...filters, dateFrom, dateTo, splitByBranch });
+      const contentType = response.headers['content-type'] || '';
+      const ext = contentType.includes('zip') ? 'zip' : exportFormat;
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `transcripciones_${dateFrom}_${dateTo}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportFormat(null);
+    } catch (error) {
+      alert('Error al exportar: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -335,10 +369,33 @@ export default function Transcriptions() {
         </div>
       )}
 
-      {/* Info */}
-      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-        <FileText className="w-4 h-4" />
-        <span>{filteredTranscriptions.length} {t('common.of')} {transcriptions.length} {t('common.records')}</span>
+      {/* Info + export */}
+      <div className="flex items-center justify-between gap-2">
+        <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <FileText className="w-4 h-4" />
+          <span>{filteredTranscriptions.length} {t('common.of')} {transcriptions.length} {t('common.records')}</span>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setExportMenuOpen((v) => !v)}
+            className={`text-sm px-3 py-2 rounded-md border inline-flex items-center gap-1.5 transition-colors ${isDark ? 'border-line-strong text-slate-300 hover:bg-white/5' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          >
+            <Download className="w-3.5 h-3.5" /> Exportar
+          </button>
+          {exportMenuOpen && (
+            <div className={`absolute right-0 mt-1 w-32 rounded-md border shadow-lg z-20 ${isDark ? 'bg-ink-raised border-line' : 'bg-white border-gray-200'}`}>
+              {['csv', 'xlsx'].map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => { setExportFormat(fmt); setExportMenuOpen(false); }}
+                  className={`w-full text-left text-sm px-3 py-2 transition-colors ${isDark ? 'text-slate-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  {fmt.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filters - client-side, no need to re-fetch */}
@@ -429,11 +486,12 @@ export default function Transcriptions() {
                 {paginatedTranscriptions.map((transcription, index) => (
                   <tr 
                     key={transcription.recordingId}
-                    className={`row-cal animate-fade-in transition-colors ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-70' : 'opacity-80') : ''} ${isDark ? '' : 'hover:bg-gray-50'}`}
+                    onClick={() => handleRowClick(transcription.recordingId)}
+                    className={`row-cal animate-fade-in transition-colors cursor-pointer ${selected.has(transcription.recordingId) ? (isDark ? 'bg-[#F5A623]/10' : 'bg-amber-50/70') : ''} ${isPendingTranscription(transcription) ? (isDark ? 'opacity-70' : 'opacity-80') : ''} ${isDark ? 'hover:bg-white/[0.03]' : 'hover:bg-gray-50'}`}
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     {isAdmin && (
-                      <td className="pl-5 pr-2 py-3 w-10">
+                      <td className="pl-5 pr-2 py-3 w-10" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selected.has(transcription.recordingId)}
@@ -550,7 +608,7 @@ export default function Transcriptions() {
                         </StatusDot>
                       )}
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap">
+                    <td className="px-5 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           to={`/transcriptions/${transcription.recordingId}`}
@@ -559,6 +617,13 @@ export default function Transcriptions() {
                         >
                           <Eye className="w-3.5 h-3.5" strokeWidth={1.8} />
                         </Link>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingExtraData(transcription); }}
+                          className={`w-7 h-7 grid place-items-center rounded border border-transparent transition-all ${isDark ? 'text-slate-500 hover:text-[#F5A623] hover:border-line-strong hover:bg-ink-overlay' : 'text-gray-400 hover:text-[#F5A623] hover:border-gray-300 hover:bg-gray-50'}`}
+                          title="Editar datos extra"
+                        >
+                          <Edit className="w-3.5 h-3.5" strokeWidth={1.8} />
+                        </button>
                         {!transcription.analyzed && !isAdmin && (
                           <button
                             onClick={(e) => handleAnalyze(transcription.recordingId, e)}
@@ -630,6 +695,24 @@ export default function Transcriptions() {
           </>
         )}
       </div>
+
+      {editingExtraData && (
+        <ExtraDataModal
+          transcription={editingExtraData}
+          onSaved={() => fetchTranscriptions()}
+          onClose={() => setEditingExtraData(null)}
+        />
+      )}
+
+      {exportFormat && (
+        <ExportDateModal
+          formatLabel={exportFormat.toUpperCase()}
+          exporting={exporting}
+          branchFilterActive={!!filters.branchId}
+          onClose={() => setExportFormat(null)}
+          onConfirm={handleExportConfirm}
+        />
+      )}
     </div>
   );
 }

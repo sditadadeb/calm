@@ -68,6 +68,9 @@ public class Transcription {
     @Column(columnDefinition = "TEXT")
     private String sellerWeaknesses;
 
+    @Column(columnDefinition = "TEXT")
+    private String extraData;
+
     private LocalDateTime recordingDate;
     private LocalDateTime analyzedAt;
     private LocalDateTime createdAt;
@@ -150,7 +153,10 @@ public class Transcription {
     
     public String getSellerWeaknesses() { return sellerWeaknesses; }
     public void setSellerWeaknesses(String sellerWeaknesses) { this.sellerWeaknesses = sellerWeaknesses; }
-    
+
+    public String getExtraData() { return extraData; }
+    public void setExtraData(String extraData) { this.extraData = extraData; }
+
     public LocalDateTime getRecordingDate() { return recordingDate; }
     public void setRecordingDate(LocalDateTime recordingDate) { this.recordingDate = recordingDate; }
     

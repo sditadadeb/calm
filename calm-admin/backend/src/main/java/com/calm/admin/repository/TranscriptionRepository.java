@@ -140,5 +140,9 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
             @Param("branchId") Long branchId,
             @Param("saleCompleted") Boolean saleCompleted
     );
+
+    @Query("SELECT COUNT(t) > 0 FROM Transcription t WHERE " +
+           "((:branchId IS NULL AND t.branchId IS NULL) OR t.branchId = :branchId) AND t.branchName = :branchName")
+    boolean existsBranchPair(@Param("branchId") Long branchId, @Param("branchName") String branchName);
 }
 
