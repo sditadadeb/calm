@@ -24,8 +24,8 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, St
            "(:userId IS NULL OR t.userId = :userId) AND " +
            "(:branchId IS NULL OR t.branchId = :branchId) AND " +
            "(:saleCompleted IS NULL OR t.saleCompleted = :saleCompleted) AND " +
-           "(:dateFrom IS NULL OR t.recordingDate >= :dateFrom) AND " +
-           "(:dateTo IS NULL OR t.recordingDate <= :dateTo) AND " +
+           "t.recordingDate >= COALESCE(:dateFrom, t.recordingDate) AND " +
+           "t.recordingDate <= COALESCE(:dateTo, t.recordingDate) AND " +
            "(:minScore IS NULL OR t.sellerScore >= :minScore) AND " +
            "(:maxScore IS NULL OR t.sellerScore <= :maxScore) " +
            "ORDER BY t.recordingDate DESC")

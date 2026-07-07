@@ -74,11 +74,26 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         applyTimezoneCorrection();
+        ensureExtraDataColumn();
         purgeExcludedBranches();
         purgeMetadataAsText();
         dedupeFlatRecordingIds();
         runMigrationRefresh();
         applyCsvOriginalDates();
+    }
+
+    /** Columna requerida por export / datos extra (commit 0821d2fc). ddl-auto a veces no la crea en prod. */
+    private void ensureExtraDataColumn() {
+        try {
+            if (isMigrationApplied("extra_data_column_v1")) {
+                return;
+            }
+            jdbcTemplate.execute("ALTER TABLE transcriptions ADD COLUMN IF NOT EXISTS extra_data TEXT");
+            markMigrationApplied("extra_data_column_v1");
+            log.info("Migracion extra_data: columna asegurada en transcriptions");
+        } catch (Exception e) {
+            log.error("Error en migracion extra_data: {}", e.getMessage());
+        }
     }
 
     private void ensureMigrationsTable() {
